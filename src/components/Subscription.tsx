@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -21,7 +20,21 @@ const features = {
     "Unlimited device protection",
     "24/7 priority support",
     "Voice assistant integration",
-    "Family protection plan"
+    "Family protection plan",
+    "AI Detected Emergency Alert",
+    "Natural Disaster Detection",
+    "Live Incident Capturing",
+    "Instant Police Voice Call",
+    "AI Threat Detection",
+    "200m Radius Alert",
+    "Cyber Threat Detection",
+    "Smartwatch Integration",
+    "Personalized Safety AI",
+    "Live Location Sharing",
+    "Integration with Worldwide Emergency Services",
+    "Police Siren Mode",
+    "Health Monitor",
+    "Stealth Mode"
   ]
 };
 
@@ -74,7 +87,14 @@ const PricingCard = ({
           ))}
           {type === 'free' && (
             <>
-              {['Dark web monitoring', 'Voice assistant integration', 'Family protection plan'].map((feature, i) => (
+              {[
+                'AI Detected Emergency Alert',
+                'Natural Disaster Detection',
+                'Live Incident Capturing',
+                'AI Threat Detection',
+                'Smartwatch Integration',
+                'Police Siren Mode'
+              ].map((feature, i) => (
                 <li key={`unavailable-${i}`} className="flex items-baseline gap-2">
                   <XCircle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-muted-foreground">{feature}</span>
@@ -187,6 +207,14 @@ const Subscription = () => {
                 { name: "Voice Assistant", free: "No", premium: "Yes" },
                 { name: "Family Protection", free: "No", premium: "Up to 5 members" },
                 { name: "Support", free: "Email", premium: "24/7 Priority" },
+                { name: "Natural Disaster Detection", free: "No", premium: "Yes" },
+                { name: "Live Incident Capturing", free: "No", premium: "Yes" },
+                { name: "Instant Police Voice Call", free: "No", premium: "Yes" },
+                { name: "200m Radius Alert", free: "No", premium: "Yes" },
+                { name: "Smartwatch Integration", free: "No", premium: "Yes" },
+                { name: "Personalized Safety AI", free: "No", premium: "Yes" },
+                { name: "Health Monitoring", free: "No", premium: "Yes" },
+                { name: "Stealth Mode", free: "No", premium: "Yes" },
               ].map((feature, idx) => (
                 <tr key={idx} className="border-b last:border-b-0">
                   <td className="py-4 text-sm">{feature.name}</td>
@@ -208,6 +236,63 @@ const Subscription = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Feature descriptions */}
+      <div className="mt-12 max-w-3xl mx-auto">
+        <h2 className="text-xl font-semibold text-center mb-8">Premium Features</h2>
+        
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">AI Detected Emergency Alert</h3>
+              <p className="text-sm text-muted-foreground">
+                Instantly notifies family, law enforcement and emergency responders as soon as a threat is detected, 
+                ensuring rapid response when you need it most.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">Natural Disaster Detection</h3>
+              <p className="text-sm text-muted-foreground">
+                Soteria uses NASA's Earth API to detect natural disasters before they occur and provides safe 
+                evacuation routes while alerting family and rescue teams.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">Live Incident Capturing</h3>
+              <p className="text-sm text-muted-foreground">
+                Uses your phone's camera and sound recorder to capture live video, images and voices of incidents 
+                for sharing with law enforcement, family and emergency responders.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">AI Threat Detection</h3>
+              <p className="text-sm text-muted-foreground">
+                Advanced AI algorithms recognize gunshots, screams, and violent incidents, providing 
+                early warning and automated response protocols.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">Smartwatch Integration</h3>
+              <p className="text-sm text-muted-foreground">
+                Using DarkTrace Technology, Soteria integrates with smartwatches, causing them to vibrate 
+                to warn users of potential threats even when your phone is not accessible.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
