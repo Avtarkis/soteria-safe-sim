@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import { Check, XCircle, CreditCard, Shield, ArrowRight, Zap, BadgeCheck, Clock } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Check, XCircle, CreditCard, Shield, ArrowRight, Zap, BadgeCheck, Clock, Smartphone, Bell, AlertTriangle, MapPin, Camera, Mic, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 const features = {
   free: [
@@ -110,6 +112,19 @@ const PricingCard = ({
             type === 'free' ? "bg-secondary hover:bg-secondary/80" : ""
           )}
           variant={type === 'free' ? 'secondary' : 'default'}
+          onClick={() => {
+            if (type === 'premium') {
+              toast({
+                title: "Premium Plan Selected",
+                description: "You've chosen the Soteria Premium plan. Experience advanced safety features!",
+              });
+            } else {
+              toast({
+                title: "Free Plan Selected",
+                description: "You've chosen the Soteria Free plan.",
+              });
+            }
+          }}
         >
           {buttonText}
         </Button>
@@ -118,8 +133,131 @@ const PricingCard = ({
   );
 };
 
+const FeatureDemo = ({ title, icon: Icon, description, onClick }) => {
+  return (
+    <Card className="hover:border-primary transition-colors duration-300 cursor-pointer" onClick={onClick}>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Subscription = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [demoActive, setDemoActive] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(3);
+  
+  // Simulate demo countdown and completion
+  useEffect(() => {
+    if (!demoActive) return;
+    
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else {
+      // Demo completion actions
+      setTimeout(() => {
+        if (demoActive === 'emergency') {
+          toast({
+            title: "Emergency Alert Sent",
+            description: "Emergency contacts and authorities have been notified with your location.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'disaster') {
+          toast({
+            title: "Natural Disaster Alert",
+            description: "Potential flood detected in your area. Evacuation routes have been sent.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'incident') {
+          toast({
+            title: "Incident Captured",
+            description: "Video and audio evidence has been securely saved and shared with emergency contacts.",
+          });
+        } else if (demoActive === 'police') {
+          toast({
+            title: "Police Notification",
+            description: "Emergency services have been contacted. Help is on the way.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'threat') {
+          toast({
+            title: "Threat Detected",
+            description: "Unusual sound pattern detected. Analyzing for potential threats.",
+            variant: "default",
+          });
+        } else if (demoActive === 'radius') {
+          toast({
+            title: "SOS Alert Broadcast",
+            description: "Alert sent to 12 Soteria users within 200m of your location.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'cyber') {
+          toast({
+            title: "Cyber Threat Detected",
+            description: "Suspicious login attempt blocked from unknown location.",
+          });
+        } else if (demoActive === 'smartwatch') {
+          toast({
+            title: "Smartwatch Alert",
+            description: "Alert sent to your connected smartwatch.",
+          });
+        } else if (demoActive === 'ai') {
+          toast({
+            title: "Safety Recommendation",
+            description: "Based on your recent activity, we suggest avoiding this route after 10 PM.",
+          });
+        } else if (demoActive === 'location') {
+          toast({
+            title: "Location Shared",
+            description: "Your live location is now being shared with your emergency contacts.",
+          });
+        } else if (demoActive === 'services') {
+          toast({
+            title: "Emergency Services Connected",
+            description: "Your information has been shared with local emergency services.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'siren') {
+          toast({
+            title: "Police Siren Activated",
+            description: "High-volume police siren sound is now playing from your device.",
+          });
+        } else if (demoActive === 'health') {
+          toast({
+            title: "Health Alert",
+            description: "Unusual heart rate detected. Monitoring your vitals.",
+            variant: "destructive",
+          });
+        } else if (demoActive === 'stealth') {
+          toast({
+            title: "Stealth Mode Activated",
+            description: "Soteria is now running in the background, invisible to others.",
+          });
+        }
+        
+        // Reset demo state
+        setDemoActive(null);
+        setCountdown(3);
+      }, 500);
+    }
+    
+    return () => clearTimeout(timer);
+  }, [demoActive, countdown]);
+  
+  const startDemo = (demo: string) => {
+    setDemoActive(demo);
+    setCountdown(3);
+  };
   
   return (
     <div className="container pb-10 animate-fade-in">
@@ -239,6 +377,163 @@ const Subscription = () => {
         </div>
       </div>
 
+      {/* Feature demo section */}
+      <div className="mt-12 max-w-3xl mx-auto">
+        <h2 className="text-xl font-semibold text-center mb-2">Try Premium Features</h2>
+        <p className="text-center text-muted-foreground mb-8">Click on any feature to see a simulation of how it works</p>
+        
+        {demoActive ? (
+          <Card className="animate-pulse">
+            <CardContent className="p-6 text-center">
+              <div className="mb-4">
+                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                  {demoActive === 'emergency' && <Bell className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'disaster' && <AlertTriangle className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'incident' && <Camera className="h-8 w-8 text-primary animate-pulse" />}
+                  {demoActive === 'police' && <Volume2 className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'threat' && <AlertTriangle className="h-8 w-8 text-threat-medium animate-pulse" />}
+                  {demoActive === 'radius' && <MapPin className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'cyber' && <Shield className="h-8 w-8 text-primary animate-pulse" />}
+                  {demoActive === 'smartwatch' && <Smartphone className="h-8 w-8 text-primary animate-pulse" />}
+                  {demoActive === 'ai' && <Zap className="h-8 w-8 text-primary animate-pulse" />}
+                  {demoActive === 'location' && <MapPin className="h-8 w-8 text-primary animate-pulse" />}
+                  {demoActive === 'services' && <Bell className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'siren' && <Volume2 className="h-8 w-8 text-threat-high animate-pulse" />}
+                  {demoActive === 'health' && <AlertTriangle className="h-8 w-8 text-threat-medium animate-pulse" />}
+                  {demoActive === 'stealth' && <Shield className="h-8 w-8 text-primary animate-pulse" />}
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold mb-3">
+                {demoActive === 'emergency' && "AI Emergency Alert"}
+                {demoActive === 'disaster' && "Natural Disaster Detection"}
+                {demoActive === 'incident' && "Live Incident Capturing"}
+                {demoActive === 'police' && "Instant Police Voice Call"}
+                {demoActive === 'threat' && "AI Threat Detection"}
+                {demoActive === 'radius' && "200m Radius Alert"}
+                {demoActive === 'cyber' && "Cyber Threat Detection"}
+                {demoActive === 'smartwatch' && "Smartwatch Integration"}
+                {demoActive === 'ai' && "Personalized Safety AI"}
+                {demoActive === 'location' && "Live Location Sharing"}
+                {demoActive === 'services' && "Emergency Services Integration"}
+                {demoActive === 'siren' && "Police Siren Mode"}
+                {demoActive === 'health' && "Health Monitoring"}
+                {demoActive === 'stealth' && "Stealth Mode"}
+              </h3>
+              <p className="mb-4">Simulating feature... {countdown}</p>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setDemoActive(null);
+                  setCountdown(3);
+                }}
+              >
+                Cancel Demo
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FeatureDemo 
+              title="AI Emergency Alert" 
+              icon={Bell}
+              description="Instantly notifies family, law enforcement and emergency responders when a threat is detected."
+              onClick={() => startDemo('emergency')}
+            />
+            
+            <FeatureDemo 
+              title="Natural Disaster Detection" 
+              icon={AlertTriangle}
+              description="Detects natural disasters and provides safe evacuation routes."
+              onClick={() => startDemo('disaster')}
+            />
+            
+            <FeatureDemo 
+              title="Live Incident Capturing" 
+              icon={Camera}
+              description="Uses your phone to capture evidence of incidents for sharing with authorities."
+              onClick={() => startDemo('incident')}
+            />
+            
+            <FeatureDemo 
+              title="Instant Police Call" 
+              icon={Smartphone}
+              description="Activates an instant police voice call to deter attackers."
+              onClick={() => startDemo('police')}
+            />
+            
+            <FeatureDemo 
+              title="AI Threat Detection" 
+              icon={Mic}
+              description="Recognizes gunshots, screams, and violent incidents."
+              onClick={() => startDemo('threat')}
+            />
+            
+            <FeatureDemo 
+              title="200m Radius Alert" 
+              icon={MapPin}
+              description="Sends SOS alerts to nearby mobile users for community response."
+              onClick={() => startDemo('radius')}
+            />
+            
+            <FeatureDemo 
+              title="Cyber Threat Detection" 
+              icon={Shield}
+              description="AI-driven monitoring detects suspicious online activity."
+              onClick={() => startDemo('cyber')}
+            />
+            
+            <FeatureDemo 
+              title="Smartwatch Integration" 
+              icon={Clock}
+              description="Smartwatch vibration alerts for potential threats."
+              onClick={() => startDemo('smartwatch')}
+            />
+            
+            <FeatureDemo 
+              title="Personalized Safety AI" 
+              icon={Zap}
+              description="Learns your routines to provide tailored safety assistance."
+              onClick={() => startDemo('ai')}
+            />
+            
+            <FeatureDemo 
+              title="Live Location Sharing" 
+              icon={MapPin}
+              description="Real-time location sharing with trusted contacts."
+              onClick={() => startDemo('location')}
+            />
+            
+            <FeatureDemo 
+              title="Emergency Services" 
+              icon={Bell}
+              description="Works with emergency service APIs for direct dispatch."
+              onClick={() => startDemo('services')}
+            />
+            
+            <FeatureDemo 
+              title="Police Siren Mode" 
+              icon={Volume2}
+              description="Plays convincing police siren sounds to deter attackers."
+              onClick={() => startDemo('siren')}
+            />
+            
+            <FeatureDemo 
+              title="Health Monitor" 
+              icon={AlertTriangle}
+              description="Monitors health status and alerts contacts in emergencies."
+              onClick={() => startDemo('health')}
+            />
+            
+            <FeatureDemo 
+              title="Stealth Mode" 
+              icon={Shield}
+              description="Works in the background undetected by attackers."
+              onClick={() => startDemo('stealth')}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Feature descriptions */}
       <div className="mt-12 max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold text-center mb-8">Premium Features</h2>
@@ -342,7 +637,14 @@ const Subscription = () => {
                   Get comprehensive protection for just $4.99/month and secure your digital life.
                 </p>
               </div>
-              <Button className="bg-white text-primary hover:bg-white/90 px-6">
+              <Button className="bg-white text-primary hover:bg-white/90 px-6"
+                onClick={() => {
+                  toast({
+                    title: "Premium Subscription",
+                    description: "You're being redirected to complete your premium subscription.",
+                  });
+                }}
+              >
                 <span>Get Started</span>
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

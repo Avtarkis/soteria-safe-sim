@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle, Phone, UserCircle, MapPin, Plus, MessageSquare, Clock, X, Check, LifeBuoy, Mic, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 const EmergencyContacts = [
   { name: 'John Smith', relationship: 'Brother', phone: '+1 (555) 123-4567' },
