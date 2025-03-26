@@ -2,7 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Map as MapIcon, Navigation, AlertTriangle, Info, Shield, Eye, EyeOff, Layers, ArrowRight } from 'lucide-react';
+import { 
+  Map as MapIcon, 
+  Navigation, 
+  AlertTriangle, 
+  Info, 
+  Shield, 
+  Eye, 
+  EyeOff, 
+  Layers, 
+  ArrowRight 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const mapImage = "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1474&auto=format&fit=crop";
