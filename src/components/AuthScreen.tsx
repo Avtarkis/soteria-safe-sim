@@ -33,7 +33,7 @@ const AuthScreen = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center">
-            <img src="/logo.svg" alt="Soteria Logo" className="h-16 w-16 animate-float" />
+            <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-20 w-20 animate-float" />
           </div>
           <h1 className="mt-4 text-2xl font-semibold text-gradient">SOTERIA</h1>
           <p className="mt-2 text-muted-foreground text-sm">

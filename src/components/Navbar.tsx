@@ -47,7 +47,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
-              <img src="/logo.svg" alt="Soteria Logo" className="h-10 w-10" />
+              <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-10 w-10" />
               <span className="text-xl font-semibold text-gradient">Soteria</span>
             </Link>
           </div>
