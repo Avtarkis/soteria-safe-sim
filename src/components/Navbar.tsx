@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, User, Bell, Shield, Map, Lock, LifeBuoy, CreditCard, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NavItem {
   label: string;
@@ -21,6 +22,7 @@ const navItems: NavItem[] = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,18 +44,18 @@ const Navbar = () => {
         isScrolled ? "bg-background/80 shadow-sm" : "bg-transparent"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center py-4 md:space-x-10">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
+        <div className="flex justify-between items-center py-2 sm:py-4">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
-              <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-10 w-10" />
-              <span className="text-xl font-semibold text-gradient">Soteria</span>
+              <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+              <span className="text-lg sm:text-xl font-semibold text-gradient">Soteria</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex space-x-4 lg:space-x-8">
             {navItems.map((item) => (
               <Link
                 key={item.label}
@@ -80,9 +82,9 @@ const Navbar = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-foreground"
+              className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-foreground"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
             </button>
           </div>
         </div>
@@ -96,25 +98,25 @@ const Navbar = () => {
               <Link
                 key={item.label}
                 to={item.href}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-accent"
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm sm:text-base font-medium text-foreground hover:bg-accent"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>{item.label}</span>
               </Link>
             ))}
           </div>
-          <div className="pt-4 pb-3 border-t border-border">
-            <div className="flex items-center px-5">
+          <div className="pt-3 pb-2 sm:pt-4 sm:pb-3 border-t border-border">
+            <div className="flex items-center px-4 sm:px-5">
               <div className="flex-shrink-0">
-                <User className="h-10 w-10 rounded-full bg-accent p-2" />
+                <User className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-accent p-2" />
               </div>
               <div className="ml-3">
-                <div className="text-base font-medium">User</div>
-                <div className="text-sm text-muted-foreground">user@example.com</div>
+                <div className="text-sm sm:text-base font-medium">User</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">user@example.com</div>
               </div>
-              <button className="ml-auto p-2 rounded-full text-foreground hover:text-primary transition-colors">
-                <Settings className="h-5 w-5" />
+              <button className="ml-auto p-1.5 sm:p-2 rounded-full text-foreground hover:text-primary transition-colors">
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>

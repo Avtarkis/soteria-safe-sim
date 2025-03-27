@@ -18,13 +18,13 @@ const ThreatsCard = ({ title, description, level, time, action }: ThreatCardProp
   const getIcon = () => {
     switch (level) {
       case 'high':
-        return <AlertTriangle className="h-5 w-5 text-threat-high animate-pulse" />;
+        return <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-threat-high animate-pulse" />;
       case 'medium':
-        return <AlertTriangle className="h-5 w-5 text-threat-medium" />;
+        return <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-threat-medium" />;
       case 'low':
-        return <Info className="h-5 w-5 text-threat-low" />;
+        return <Info className="h-4 w-4 sm:h-5 sm:w-5 text-threat-low" />;
       default:
-        return <Shield className="h-5 w-5 text-primary" />;
+        return <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />;
     }
   };
 
@@ -46,24 +46,24 @@ const ThreatsCard = ({ title, description, level, time, action }: ThreatCardProp
       level === 'high' ? "border-threat-high/20" : 
       level === 'medium' ? "border-threat-medium/20" : 
       "border-threat-low/20")}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
+      <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
+        <div className="flex items-center gap-1 sm:gap-2">
           {getIcon()}
-          <CardTitle className="text-base">{title}</CardTitle>
+          <CardTitle className="text-sm sm:text-base">{title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{description}</p>
+      <CardContent className="p-3 sm:p-4 pt-0">
+        <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
         <div className="mt-2 flex items-center justify-between">
-          <span className={cn("text-xs px-2.5 py-1 rounded-full", getLevelStyles())}>
+          <span className={cn("text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full", getLevelStyles())}>
             {level.charAt(0).toUpperCase() + level.slice(1)} Threat
           </span>
           <span className="text-xs text-muted-foreground">{time}</span>
         </div>
       </CardContent>
       {action && (
-        <CardFooter>
-          <button className="w-full text-xs py-1.5 font-medium text-primary hover:underline transition-all">
+        <CardFooter className="p-3 sm:p-4 pt-0">
+          <button className="w-full text-xs py-1 sm:py-1.5 font-medium text-primary hover:underline transition-all">
             {action}
           </button>
         </CardFooter>

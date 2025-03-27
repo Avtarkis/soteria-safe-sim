@@ -1,5 +1,5 @@
 
-/* Mobile-first styles */
+/* Mobile-first responsive styles */
 #root {
   width: 100%;
   margin: 0 auto;
@@ -18,5 +18,28 @@
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .text-xs-mobile {
+    font-size: 0.75rem;
+  }
+  
+  .text-sm-mobile {
+    font-size: 0.875rem;
+  }
+  
+  .text-base-mobile {
+    font-size: 1rem;
+  }
+  
+  .p-mobile {
+    padding: 0.75rem;
+  }
+  
+  .m-mobile {
+    margin: 0.75rem;
   }
 }
