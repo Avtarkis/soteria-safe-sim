@@ -8,11 +8,13 @@ import {
   CardContent as ShadcnCardContent
 } from "@/components/ui/card";
 
-export {
-  ShadcnCard as Card,
-  ShadcnCardHeader as CardHeader,
-  ShadcnCardFooter as CardFooter,
-  ShadcnCardTitle as CardTitle,
-  ShadcnCardDescription as CardDescription,
-  ShadcnCardContent as CardContent
-};
+// Re-export with more mobile-friendly default styling
+export const Card = ({ className, ...props }: React.ComponentProps<typeof ShadcnCard>) => (
+  <ShadcnCard className={`w-full ${className || ''}`} {...props} />
+);
+
+export const CardHeader = ShadcnCardHeader;
+export const CardFooter = ShadcnCardFooter;
+export const CardTitle = ShadcnCardTitle;
+export const CardDescription = ShadcnCardDescription;
+export const CardContent = ShadcnCardContent;

@@ -12,7 +12,7 @@ const Layout = ({ children, className }: LayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className={cn("flex-1 animate-fade-in px-4 sm:px-6 py-8", className)}>
+      <main className={cn("flex-1 animate-fade-in px-3 py-4 max-w-md mx-auto w-full", className)}>
         {children}
       </main>
     </div>
