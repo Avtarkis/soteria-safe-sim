@@ -12,7 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-const Button = ({
+const ButtonWrapper = ({
   variant = "default",
   size = "default",
   isLoading = false,
@@ -36,4 +36,4 @@ const Button = ({
   );
 };
 
-export default Button;
+export default ButtonWrapper;
