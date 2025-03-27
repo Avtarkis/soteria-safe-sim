@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import Button from './ui/Button';
+import ButtonWrapper from './ui/ButtonWrapper';
 import { Shield, Mail, Key, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -189,7 +188,7 @@ const AuthScreen = () => {
               </div>
             )}
 
-            <Button 
+            <ButtonWrapper 
               type="submit" 
               className="w-full mt-6 py-2 rounded-lg flex items-center justify-center"
               isLoading={loading}
@@ -200,7 +199,7 @@ const AuthScreen = () => {
                   : "Sign In"}
               </span>
               <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            </ButtonWrapper>
           </form>
         </div>
 
