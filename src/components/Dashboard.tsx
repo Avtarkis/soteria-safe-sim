@@ -6,52 +6,119 @@ import ThreatsCard from '@/components/ui/ThreatsCard';
 import { Button } from '@/components/ui/button';
 import { Shield, Bell, ArrowRight, Globe, FileText, Lock, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ThreatAlert {
-  id: string;
-  title: string;
-  description: string;
-  level: 'low' | 'medium' | 'high';
-  time: string;
-  action?: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { threatService } from '@/services/threatService';
+import { useThreatNotifications } from '@/hooks/use-threat-notifications';
+import { ThreatAlert } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const [threatAlerts, setThreatAlerts] = useState<ThreatAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, profile } = useAuth();
+  const { addThreat } = useThreatNotifications();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate loading threat data
-    setTimeout(() => {
-      setThreatAlerts([
-        {
-          id: '1',
-          title: 'Suspicious Login Attempt',
-          description: 'Someone tried to log into your account from an unrecognized device in Moscow, Russia.',
-          level: 'high',
-          time: 'Just now',
-          action: 'Secure Account'
-        },
-        {
-          id: '2',
-          title: 'High Crime Area Alert',
-          description: 'You are entering an area with recent reports of mugging incidents.',
-          level: 'medium',
-          time: '5 min ago',
-          action: 'View Safe Routes'
-        },
-        {
-          id: '3',
-          title: 'Weather Advisory',
-          description: 'Flash flood warning in your current location for the next 24 hours.',
-          level: 'low',
-          time: '1 hour ago',
-          action: 'See Details'
+    // Fetch real threat data if user is authenticated
+    const fetchThreats = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const threats = await threatService.getRecentThreats(user.id);
+        setThreatAlerts(threats);
+      } catch (error) {
+        console.error('Failed to fetch threats:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load threat data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThreats();
+    
+    // If no threats exist yet, create some sample threats for new users
+    const createSampleThreats = async () => {
+      if (!user || !loading || threatAlerts.length > 0) return;
+      
+      // Wait a bit to simulate real data loading
+      setTimeout(async () => {
+        if (threatAlerts.length === 0) {
+          try {
+            // Create sample threats
+            await addThreat({
+              title: 'Suspicious Login Attempt',
+              description: 'Someone tried to log into your account from an unrecognized device in Moscow, Russia.',
+              level: 'high',
+              action: 'Secure Account'
+            });
+            
+            await addThreat({
+              title: 'High Crime Area Alert',
+              description: 'You are entering an area with recent reports of mugging incidents.',
+              level: 'medium',
+              action: 'View Safe Routes'
+            });
+            
+            await addThreat({
+              title: 'Weather Advisory',
+              description: 'Flash flood warning in your current location for the next 24 hours.',
+              level: 'low',
+              action: 'See Details'
+            });
+            
+            // Refresh the threats list
+            fetchThreats();
+          } catch (error) {
+            console.error('Error creating sample threats:', error);
+          }
         }
-      ]);
-      setLoading(false);
-    }, 1500);
-  }, []);
+      }, 2000);
+    };
+    
+    createSampleThreats();
+    
+  }, [user, loading]);
+
+  // Handle resolving a threat
+  const handleResolveThreat = async (threatId: string) => {
+    if (!user) return;
+    
+    try {
+      await threatService.resolveThreat(threatId, user.id);
+      // Remove the resolved threat from the UI
+      setThreatAlerts(prev => prev.filter(threat => threat.id !== threatId));
+      
+      toast({
+        title: "Threat Resolved",
+        description: "The security threat has been resolved.",
+      });
+    } catch (error) {
+      console.error('Failed to resolve threat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resolve the threat",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Calculate security score based on active threats
+  const calculateSecurityScore = () => {
+    if (threatAlerts.length === 0) return 100;
+    
+    const threatWeights = { high: 10, medium: 5, low: 2 };
+    const totalThreats = threatAlerts.length;
+    const threatScore = threatAlerts.reduce((score, threat) => 
+      score + (threatWeights[threat.level] || 0), 0);
+    
+    return Math.max(0, 100 - threatScore);
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
@@ -66,9 +133,33 @@ const Dashboard = () => {
       {/* Stats overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {[
-          { title: 'Security Score', value: '92', icon: Shield, color: 'text-primary', description: 'Your protection status is excellent' },
-          { title: 'Active Alerts', value: '3', icon: Bell, color: 'text-threat-medium', description: '1 high, 1 medium, 1 low threat' },
-          { title: 'Protected Days', value: '64', icon: Globe, color: 'text-green-500', description: 'Continuous protection streak' },
+          { 
+            title: 'Security Score', 
+            value: `${calculateSecurityScore()}`, 
+            icon: Shield, 
+            color: 'text-primary', 
+            description: calculateSecurityScore() > 90 
+              ? 'Your protection status is excellent' 
+              : calculateSecurityScore() > 70 
+                ? 'Your protection status is good' 
+                : 'Your protection needs attention'
+          },
+          { 
+            title: 'Active Alerts', 
+            value: `${threatAlerts.length}`, 
+            icon: Bell, 
+            color: 'text-threat-medium', 
+            description: threatAlerts.length === 0 
+              ? 'No active threats' 
+              : `${threatAlerts.filter(t => t.level === 'high').length} high, ${threatAlerts.filter(t => t.level === 'medium').length} medium, ${threatAlerts.filter(t => t.level === 'low').length} low`
+          },
+          { 
+            title: 'Protected Days', 
+            value: user ? '1' : '0', 
+            icon: Globe, 
+            color: 'text-green-500', 
+            description: 'Continuous protection streak' 
+          },
         ].map((stat, index) => (
           <Card key={index} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
             <CardHeader className="pb-2">
@@ -120,19 +211,25 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
-        ) : (
+        ) : threatAlerts.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {threatAlerts.map((alert, index) => (
+            {threatAlerts.map((alert) => (
               <ThreatsCard
                 key={alert.id}
                 title={alert.title}
                 description={alert.description}
                 level={alert.level}
-                time={alert.time}
-                action={alert.action}
+                time={new Date(alert.created_at).toLocaleString()}
+                action={alert.action || undefined}
+                onAction={() => handleResolveThreat(alert.id)}
               />
             ))}
           </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <p className="text-muted-foreground">No active threats detected</p>
+            <p className="text-sm text-muted-foreground mt-2">Your security status is currently clear</p>
+          </Card>
         )}
       </div>
 

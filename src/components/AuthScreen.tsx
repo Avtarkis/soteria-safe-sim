@@ -1,30 +1,72 @@
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ButtonWrapper from './ui/ButtonWrapper';
 import { Shield, Mail, Key, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthScreen = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [threatTypes, setThreatTypes] = useState(['Cyber', 'Physical', 'Environmental']);
+  
+  const { signIn, signUp, session } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if already logged in
+  if (session) {
+    navigate('/dashboard');
+    return null;
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (isSignUp && step < 2) {
-        setStep(step + 1);
+    
+    try {
+      if (isSignUp) {
+        if (step < 2) {
+          // Move to next step in signup process
+          setStep(step + 1);
+          setLoading(false);
+        } else {
+          // Complete signup
+          const { error } = await signUp(email, password);
+          if (!error) {
+            // Successfully signed up, user will be redirected via the auth state change
+          }
+        }
       } else {
-        window.location.href = '/dashboard';
+        // Handle sign in
+        const { error } = await signIn(email, password);
+        if (!error) {
+          // Successfully signed in, user will be redirected via the auth state change
+        }
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Authentication error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
     setStep(1);
+  };
+  
+  const toggleThreatType = (type: string) => {
+    setThreatTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type) 
+        : [...prev, type]
+    );
   };
 
   return (
@@ -63,6 +105,8 @@ const AuthScreen = () => {
                           type="email"
                           className="w-full pl-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
                           placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required
                         />
                       </div>
@@ -79,6 +123,8 @@ const AuthScreen = () => {
                           type={showPassword ? "text" : "password"}
                           className="w-full pl-10 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
                           placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                           required
                         />
                         <button
@@ -108,6 +154,8 @@ const AuthScreen = () => {
                           type="text"
                           className="w-full pl-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
                           placeholder="John Doe"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
                           required
                         />
                       </div>
@@ -121,12 +169,16 @@ const AuthScreen = () => {
                         {['Cyber', 'Physical', 'Environmental'].map((type) => (
                           <label 
                             key={type}
-                            className="flex items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                            className={cn(
+                              "flex items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-accent transition-colors",
+                              threatTypes.includes(type) && "bg-primary/10 border-primary"
+                            )}
                           >
                             <input 
                               type="checkbox" 
                               className="sr-only" 
-                              defaultChecked 
+                              checked={threatTypes.includes(type)}
+                              onChange={() => toggleThreatType(type)}
                             />
                             <span className="text-sm">{type}</span>
                           </label>
@@ -149,6 +201,8 @@ const AuthScreen = () => {
                       type="email"
                       className="w-full pl-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -170,6 +224,8 @@ const AuthScreen = () => {
                       type={showPassword ? "text" : "password"}
                       className="w-full pl-10 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                     <button
