@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Shield, AlertTriangle, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/CardWrapper';
@@ -12,9 +11,10 @@ interface ThreatCardProps {
   level: ThreatLevel;
   time: string;
   action?: string;
+  onAction?: () => void;
 }
 
-const ThreatsCard = ({ title, description, level, time, action }: ThreatCardProps) => {
+const ThreatsCard = ({ title, description, level, time, action, onAction }: ThreatCardProps) => {
   const getIcon = () => {
     switch (level) {
       case 'high':
@@ -63,7 +63,10 @@ const ThreatsCard = ({ title, description, level, time, action }: ThreatCardProp
       </CardContent>
       {action && (
         <CardFooter className="p-3 sm:p-4 pt-0">
-          <button className="w-full text-xs py-1 sm:py-1.5 font-medium text-primary hover:underline transition-all">
+          <button 
+            className="w-full text-xs py-1 sm:py-1.5 font-medium text-primary hover:underline transition-all"
+            onClick={onAction}
+          >
             {action}
           </button>
         </CardFooter>
