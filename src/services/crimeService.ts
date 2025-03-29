@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { ThreatMarker } from '@/types/threats';
 
@@ -118,4 +119,9 @@ export const getCrimeThreats = async (
     console.error('Error processing crime threats:', error);
     return [];
   }
+};
+
+// Export the crime service as an object to match import in ThreatsMap.tsx
+export const crimeService = {
+  getCrimeThreats
 };
