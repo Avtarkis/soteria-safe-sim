@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, Profile } from '@/lib/supabase';
@@ -24,7 +23,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch the user's profile when session changes
   useEffect(() => {
     const getProfile = async () => {
       if (!user) return;
@@ -50,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getProfile();
   }, [user]);
 
-  // Check for session on load
   useEffect(() => {
     const setData = async () => {
       try {
@@ -64,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -94,16 +90,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
       
-      // Create a profile for the new user
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          email: email,
-          preferences: {
-            threatTypes: ['Cyber', 'Physical', 'Environmental'],
-            notifications: true,
-          },
+      if (supabase.getUrl().includes('placeholder-url')) {
+        toast({
+          title: "Development Mode",
+          description: "Running in development mode without Supabase connection. Authentication simulated.",
         });
+        
+        setUser({ id: 'dev-user-id', email } as User);
+        return { error: null };
+      }
+      
+      if (data.user) {
+        try {
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            email: email,
+            preferences: {
+              threatTypes: ['Cyber', 'Physical', 'Environmental'],
+              notifications: true,
+            },
+          });
+        } catch (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
         
         toast({
           title: "Sign Up Successful",
@@ -114,6 +123,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
     } catch (error) {
       console.error('Error during sign up:', error);
+      
+      toast({
+        title: "Sign Up Failed",
+        description: "Unable to connect to authentication service. Please try again later.",
+        variant: "destructive",
+      });
+      
       return { error: 'An unexpected error occurred' };
     }
   };
@@ -134,6 +150,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
       
+      if (supabase.getUrl().includes('placeholder-url')) {
+        toast({
+          title: "Development Mode",
+          description: "Running in development mode without Supabase connection. Authentication simulated.",
+        });
+        
+        setUser({ id: 'dev-user-id', email } as User);
+        setSession({ user: { id: 'dev-user-id', email } as User } as Session);
+      }
+      
       toast({
         title: "Sign In Successful",
         description: "Welcome back!",
@@ -142,6 +168,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
     } catch (error) {
       console.error('Error during sign in:', error);
+      
+      toast({
+        title: "Sign In Failed",
+        description: "Unable to connect to authentication service. Please try again later.",
+        variant: "destructive",
+      });
+      
       return { error: 'An unexpected error occurred' };
     }
   };
@@ -174,7 +207,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Update local state
       setProfile(prev => prev ? { ...prev, ...data } : null);
       
       toast({

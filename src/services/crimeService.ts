@@ -77,8 +77,8 @@ const getArrestData = async (
 
 // Convert crime data to threat markers for the map
 export const getCrimeThreats = async (
-  state: string,
-  county: string,
+  state: string = 'CA',
+  county: string = 'Los Angeles',
   offense: string = 'all-crimes',
   startYear: number = 2020,
   endYear: number = 2020

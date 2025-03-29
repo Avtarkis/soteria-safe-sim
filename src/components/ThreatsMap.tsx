@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
@@ -54,14 +53,11 @@ const ThreatsMap = () => {
   const loadThreatData = async () => {
     setLoading(true);
     try {
-      // Fetch crime data from FBI API
       const crimeThreats = await crimeService.getCrimeThreats();
       
-      // Fetch weather alerts for major US cities
       const majorCities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Miami'];
       const weatherThreats = await weatherService.getWeatherThreats(majorCities);
       
-      // Add some sample cyber threats (since we don't have a real API for these)
       const cyberThreats: ThreatMarker[] = [
         {
           id: 'cyber-1',
@@ -89,7 +85,6 @@ const ThreatsMap = () => {
         }
       ];
       
-      // Combine all threats
       const allThreats = [...crimeThreats, ...weatherThreats, ...cyberThreats];
       
       setThreatMarkers(allThreats);
@@ -101,7 +96,6 @@ const ThreatsMap = () => {
         variant: 'destructive',
       });
       
-      // Load fallback data
       setThreatMarkers([
         {
           id: '1',
@@ -134,7 +128,6 @@ const ThreatsMap = () => {
     }
   };
 
-  // Initial data load
   useEffect(() => {
     loadThreatData();
   }, []);
@@ -151,7 +144,6 @@ const ThreatsMap = () => {
   };
 
   const handleThreatClick = (threat: ThreatMarker) => {
-    // Convert ThreatMarker to ThreatZone format for the selected display
     setSelectedThreat({
       id: threat.id,
       lat: threat.position[0],
@@ -168,17 +160,15 @@ const ThreatsMap = () => {
     setSelectedThreat(null);
   };
 
-  // Filter markers based on active filters
   const getFilteredMarkers = () => {
     if (filters.every(f => f.active)) return threatMarkers;
     
     return threatMarkers.filter(marker => {
-      if (!marker.type) return true; // Include markers without a type
+      if (!marker.type) return true;
       return filters.find(f => f.id === marker.type)?.active;
     });
   };
 
-  // Get nearby alerts for side panel
   const getNearbyAlerts = () => {
     return threatMarkers
       .sort((a, b) => {
@@ -201,7 +191,6 @@ const ThreatsMap = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Map container */}
         <div className="lg:col-span-3 relative">
           <Card className="overflow-hidden h-[70vh]">
             <div className="absolute top-4 left-4 z-10 space-y-2">
@@ -289,12 +278,11 @@ const ThreatsMap = () => {
                   <LeafletMap 
                     markers={getFilteredMarkers()}
                     onMarkerClick={handleThreatClick}
-                    center={[30, 0]} // Center on the world map
+                    center={[30, 0]}
                     zoom={2}
                   />
                 </div>
 
-                {/* Selected threat info overlay */}
                 {selectedThreat && (
                   <div className="absolute bottom-16 left-4 right-4 z-20 animate-fade-in">
                     <Card className="bg-background/95 backdrop-blur-md border shadow-lg">
@@ -344,7 +332,6 @@ const ThreatsMap = () => {
           </Card>
         </div>
 
-        {/* Side panel */}
         <div className="lg:col-span-1">
           <div className="space-y-4">
             <Card>
