@@ -11,10 +11,14 @@ import {
   Eye, 
   EyeOff, 
   Layers, 
-  ArrowRight 
+  ArrowRight, 
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LeafletMap, { ThreatMarker } from '@/components/ui/LeafletMap';
+import { weatherService } from '@/services/weatherService';
+import { crimeService } from '@/services/crimeService';
+import { useToast } from '@/hooks/use-toast';
 
 interface ThreatZone {
   id: string;
@@ -24,6 +28,7 @@ interface ThreatZone {
   level: 'low' | 'medium' | 'high';
   title: string;
   details: string;
+  type?: 'cyber' | 'physical' | 'environmental';
 }
 
 interface FilterOption {
@@ -43,36 +48,101 @@ const ThreatsMap = () => {
     { id: 'environmental', label: 'Environmental', active: true, color: 'bg-green-500' },
   ]);
   const [threatMarkers, setThreatMarkers] = useState<ThreatMarker[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-      // Add sample threat markers
+  const loadThreatData = async () => {
+    setLoading(true);
+    try {
+      // Fetch crime data from FBI API
+      const crimeThreats = await crimeService.getCrimeThreats();
+      
+      // Fetch weather alerts for major US cities
+      const majorCities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Miami'];
+      const weatherThreats = await weatherService.getWeatherThreats(majorCities);
+      
+      // Add some sample cyber threats (since we don't have a real API for these)
+      const cyberThreats: ThreatMarker[] = [
+        {
+          id: 'cyber-1',
+          position: [37.7749, -122.4194], // San Francisco
+          level: 'high',
+          title: 'DDoS Attack',
+          details: 'Major distributed denial of service attack targeting tech companies in this region.',
+          type: 'cyber'
+        },
+        {
+          id: 'cyber-2',
+          position: [40.7128, -74.006], // New York
+          level: 'medium',
+          title: 'Ransomware Alert',
+          details: 'Financial institutions reporting ransomware attempts. Implement security protocols.',
+          type: 'cyber'
+        },
+        {
+          id: 'cyber-3',
+          position: [51.5074, -0.1278], // London
+          level: 'low',
+          title: 'Phishing Campaign',
+          details: 'Increased phishing emails reported targeting users in this area.',
+          type: 'cyber'
+        }
+      ];
+      
+      // Combine all threats
+      const allThreats = [...crimeThreats, ...weatherThreats, ...cyberThreats];
+      
+      setThreatMarkers(allThreats);
+    } catch (error) {
+      console.error('Error loading threat data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load some threat data. Please try again later.',
+        variant: 'destructive',
+      });
+      
+      // Load fallback data
       setThreatMarkers([
         {
           id: '1',
           position: [40.7128, -74.006], // New York
           level: 'high',
           title: 'Data Breach Alert',
-          details: 'Major data breach reported in this area affecting financial institutions.'
+          details: 'Major data breach reported in this area affecting financial institutions.',
+          type: 'cyber'
         },
         {
           id: '2',
           position: [34.0522, -118.2437], // Los Angeles
           level: 'medium',
           title: 'Street Crime Warning',
-          details: 'Recent increase in street theft and muggings reported in this neighborhood.'
+          details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+          type: 'physical'
         },
         {
           id: '3',
           position: [51.5074, -0.1278], // London
           level: 'low',
           title: 'Weather Advisory',
-          details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.'
+          details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',
+          type: 'environmental'
         }
       ]);
-    }, 1500);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    loadThreatData();
   }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadThreatData();
+  };
 
   const toggleFilter = (id: string) => {
     setFilters(filters.map(filter => 
@@ -89,7 +159,8 @@ const ThreatsMap = () => {
       radius: threat.level === 'high' ? 20 : threat.level === 'medium' ? 15 : 10,
       level: threat.level,
       title: threat.title,
-      details: threat.details
+      details: threat.details,
+      type: threat.type
     });
   };
 
@@ -99,16 +170,25 @@ const ThreatsMap = () => {
 
   // Filter markers based on active filters
   const getFilteredMarkers = () => {
-    // This is just a simple example. In a real app, you'd filter based on threat types
     if (filters.every(f => f.active)) return threatMarkers;
     
     return threatMarkers.filter(marker => {
-      // This is a simplified example matching threat level to filter
-      if (marker.level === 'high' && filters.find(f => f.id === 'physical')?.active) return true;
-      if (marker.level === 'medium' && filters.find(f => f.id === 'cyber')?.active) return true;
-      if (marker.level === 'low' && filters.find(f => f.id === 'environmental')?.active) return true;
-      return false;
+      if (!marker.type) return true; // Include markers without a type
+      return filters.find(f => f.id === marker.type)?.active;
     });
+  };
+
+  // Get nearby alerts for side panel
+  const getNearbyAlerts = () => {
+    return threatMarkers
+      .sort((a, b) => {
+        if (a.level === 'high' && b.level !== 'high') return -1;
+        if (a.level !== 'high' && b.level === 'high') return 1;
+        if (a.level === 'medium' && b.level === 'low') return -1;
+        if (a.level === 'low' && b.level === 'medium') return 1;
+        return 0;
+      })
+      .slice(0, 3);
   };
 
   return (
@@ -137,6 +217,16 @@ const ThreatsMap = () => {
               >
                 {showLegend ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
                 <span>{showLegend ? "Hide Legend" : "Show Legend"}</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="shadow-sm bg-background/80 backdrop-blur-sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-1", refreshing && "animate-spin")} />
+                <span>Refresh Data</span>
               </Button>
             </div>
 
@@ -292,35 +382,37 @@ const ThreatsMap = () => {
                       </div>
                     ))
                   ) : (
-                    <>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-threat-medium/20 flex items-center justify-center">
-                          <AlertTriangle className="h-4 w-4 text-threat-medium" />
+                    getNearbyAlerts().map((alert, index) => (
+                      <div key={alert.id} className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center",
+                          alert.level === 'high' 
+                            ? "bg-threat-high/20" 
+                            : alert.level === 'medium'
+                              ? "bg-threat-medium/20"
+                              : "bg-threat-low/20"
+                        )}>
+                          {alert.level === 'high' || alert.level === 'medium' ? (
+                            <AlertTriangle className={cn(
+                              "h-4 w-4",
+                              alert.level === 'high' ? "text-threat-high" : "text-threat-medium"
+                            )} />
+                          ) : (
+                            <Info className="h-4 w-4 text-threat-low" />
+                          )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium">Identity Theft Report</p>
-                          <p className="text-xs text-muted-foreground">2.3 miles away • 30 min ago</p>
+                          <p className="text-sm font-medium">{alert.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {alert.type === 'physical' 
+                              ? '2.3 miles away' 
+                              : alert.type === 'cyber' 
+                                ? 'Regional' 
+                                : 'Weather alert'} • {index * 15 + 5} min ago
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-threat-low/20 flex items-center justify-center">
-                          <Info className="h-4 w-4 text-threat-low" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Phishing Campaign</p>
-                          <p className="text-xs text-muted-foreground">Regional • 2 hours ago</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-threat-low/20 flex items-center justify-center">
-                          <Info className="h-4 w-4 text-threat-low" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Traffic Incident</p>
-                          <p className="text-xs text-muted-foreground">1.5 miles away • 15 min ago</p>
-                        </div>
-                      </div>
-                    </>
+                    ))
                   )}
                 </div>
               </CardContent>

@@ -24,6 +24,7 @@ export interface ThreatMarker {
   level: 'low' | 'medium' | 'high';
   title: string;
   details: string;
+  type?: 'cyber' | 'physical' | 'environmental'; // Add type to categorize threats
 }
 
 interface LeafletMapProps {
@@ -83,8 +84,21 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
     // Add new markers
     markers.forEach(marker => {
-      const markerColor = marker.level === 'high' ? 'red' : 
-                         marker.level === 'medium' ? 'orange' : 'blue';
+      // Set marker color based on threat level and type
+      let markerColor = marker.level === 'high' ? 'red' : 
+                        marker.level === 'medium' ? 'orange' : 'blue';
+      
+      // Adjust color based on threat type if specified
+      if (marker.type) {
+        if (marker.type === 'cyber') {
+          markerColor = marker.level === 'high' ? '#ff3399' : 
+                        marker.level === 'medium' ? '#ff66b2' : '#ff99cc';
+        } else if (marker.type === 'environmental') {
+          markerColor = marker.level === 'high' ? '#33cc33' : 
+                        marker.level === 'medium' ? '#66cc66' : '#99cc99';
+        }
+        // physical threats use the default red/orange/blue scheme
+      }
       
       // Create circle marker with appropriate styling based on threat level
       const circleRadius = marker.level === 'high' ? 20 : 
@@ -109,7 +123,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       const mapMarker = L.marker(marker.position, { icon }).addTo(markersLayerRef.current);
       
       // Add popup with basic info
-      mapMarker.bindPopup(`<b>${marker.title}</b><br>${marker.level.toUpperCase()} threat level`);
+      const threatType = marker.type ? `<br>${marker.type.toUpperCase()} threat` : '';
+      mapMarker.bindPopup(`<b>${marker.title}</b><br>${marker.level.toUpperCase()} threat level${threatType}`);
       
       // Add click handler
       if (onMarkerClick) {
