@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { ThreatMarker } from '@/types/threats';
 
 const WEATHER_API_KEY = '46d2a8c903cd4739b4373344252903';
 const WEATHER_BASE_URL = 'https://api.weatherapi.com/v1';
