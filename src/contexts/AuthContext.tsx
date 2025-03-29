@@ -90,7 +90,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
       
-      if (supabase.getUrl().includes('placeholder-url')) {
+      const isDevEnvironment = import.meta.env.DEV && 
+        (!import.meta.env.VITE_SUPABASE_URL || 
+         import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
+      
+      if (isDevEnvironment) {
         toast({
           title: "Development Mode",
           description: "Running in development mode without Supabase connection. Authentication simulated.",
@@ -150,7 +154,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
       
-      if (supabase.getUrl().includes('placeholder-url')) {
+      const isDevEnvironment = import.meta.env.DEV && 
+        (!import.meta.env.VITE_SUPABASE_URL || 
+         import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
+      
+      if (isDevEnvironment) {
         toast({
           title: "Development Mode",
           description: "Running in development mode without Supabase connection. Authentication simulated.",
