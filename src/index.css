@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +97,24 @@
   .glass-morphism {
     @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg;
   }
+}
+
+/* Leaflet-specific styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.leaflet-marker-icon {
+  border: none;
+  background: none;
+}
+
+/* Fix for marker icon displays */
+.threat-marker-high,
+.threat-marker-medium,
+.threat-marker-low {
+  background: transparent;
+  border: none;
 }

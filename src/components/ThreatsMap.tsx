@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const mapImage = "https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1474&auto=format&fit=crop";
+import LeafletMap, { ThreatMarker } from '@/components/ui/LeafletMap';
 
 interface ThreatZone {
   id: string;
@@ -42,10 +42,35 @@ const ThreatsMap = () => {
     { id: 'physical', label: 'Physical', active: true, color: 'bg-red-500' },
     { id: 'environmental', label: 'Environmental', active: true, color: 'bg-green-500' },
   ]);
+  const [threatMarkers, setThreatMarkers] = useState<ThreatMarker[]>([]);
 
   useEffect(() => {
     setTimeout(() => {
       setLoading(false);
+      // Add sample threat markers
+      setThreatMarkers([
+        {
+          id: '1',
+          position: [40.7128, -74.006], // New York
+          level: 'high',
+          title: 'Data Breach Alert',
+          details: 'Major data breach reported in this area affecting financial institutions.'
+        },
+        {
+          id: '2',
+          position: [34.0522, -118.2437], // Los Angeles
+          level: 'medium',
+          title: 'Street Crime Warning',
+          details: 'Recent increase in street theft and muggings reported in this neighborhood.'
+        },
+        {
+          id: '3',
+          position: [51.5074, -0.1278], // London
+          level: 'low',
+          title: 'Weather Advisory',
+          details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.'
+        }
+      ]);
     }, 1500);
   }, []);
 
@@ -55,12 +80,35 @@ const ThreatsMap = () => {
     ));
   };
 
-  const handleThreatClick = (threat: ThreatZone) => {
-    setSelectedThreat(threat);
+  const handleThreatClick = (threat: ThreatMarker) => {
+    // Convert ThreatMarker to ThreatZone format for the selected display
+    setSelectedThreat({
+      id: threat.id,
+      lat: threat.position[0],
+      lng: threat.position[1],
+      radius: threat.level === 'high' ? 20 : threat.level === 'medium' ? 15 : 10,
+      level: threat.level,
+      title: threat.title,
+      details: threat.details
+    });
   };
 
   const clearSelectedThreat = () => {
     setSelectedThreat(null);
+  };
+
+  // Filter markers based on active filters
+  const getFilteredMarkers = () => {
+    // This is just a simple example. In a real app, you'd filter based on threat types
+    if (filters.every(f => f.active)) return threatMarkers;
+    
+    return threatMarkers.filter(marker => {
+      // This is a simplified example matching threat level to filter
+      if (marker.level === 'high' && filters.find(f => f.id === 'physical')?.active) return true;
+      if (marker.level === 'medium' && filters.find(f => f.id === 'cyber')?.active) return true;
+      if (marker.level === 'low' && filters.find(f => f.id === 'environmental')?.active) return true;
+      return false;
+    });
   };
 
   return (
@@ -147,58 +195,13 @@ const ThreatsMap = () => {
               </div>
             ) : (
               <>
-                <div className="h-full w-full bg-cover bg-center relative" style={{ backgroundImage: `url(${mapImage})` }}>
-                  {/* Simulated threat zones */}
-                  <div className="absolute top-[30%] left-[40%]" onClick={() => handleThreatClick({
-                    id: '1',
-                    lat: 40.7128,
-                    lng: -74.006,
-                    radius: 20,
-                    level: 'high',
-                    title: 'Data Breach Alert',
-                    details: 'Major data breach reported in this area affecting financial institutions.'
-                  })}>
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-threat-high opacity-20 absolute -top-10 -left-10"></div>
-                      <div className="w-6 h-6 rounded-full bg-threat-high shadow-lg flex items-center justify-center cursor-pointer">
-                        <AlertTriangle className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="absolute top-[60%] left-[60%]" onClick={() => handleThreatClick({
-                    id: '2',
-                    lat: 34.0522,
-                    lng: -118.2437,
-                    radius: 15,
-                    level: 'medium',
-                    title: 'Street Crime Warning',
-                    details: 'Recent increase in street theft and muggings reported in this neighborhood.'
-                  })}>
-                    <div className="relative">
-                      <div className="w-16 h-16 rounded-full bg-threat-medium opacity-20 absolute -top-8 -left-8"></div>
-                      <div className="w-6 h-6 rounded-full bg-threat-medium shadow-lg flex items-center justify-center cursor-pointer">
-                        <AlertTriangle className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="absolute top-[45%] left-[70%]" onClick={() => handleThreatClick({
-                    id: '3',
-                    lat: 51.5074,
-                    lng: -0.1278,
-                    radius: 10,
-                    level: 'low',
-                    title: 'Weather Advisory',
-                    details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.'
-                  })}>
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-threat-low opacity-20 absolute -top-6 -left-6"></div>
-                      <div className="w-6 h-6 rounded-full bg-threat-low shadow-lg flex items-center justify-center cursor-pointer">
-                        <Info className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-                  </div>
+                <div className="h-full w-full relative">
+                  <LeafletMap 
+                    markers={getFilteredMarkers()}
+                    onMarkerClick={handleThreatClick}
+                    center={[30, 0]} // Center on the world map
+                    zoom={2}
+                  />
                 </div>
 
                 {/* Selected threat info overlay */}
