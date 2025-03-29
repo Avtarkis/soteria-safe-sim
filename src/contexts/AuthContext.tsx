@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, Profile } from '@/lib/supabase';
@@ -16,6 +17,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper to determine if we're in dev mode with no valid Supabase connection
+const isDevEnvironment = () => {
+  return import.meta.env.DEV && 
+    (!import.meta.env.VITE_SUPABASE_URL || 
+     import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -26,6 +34,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const getProfile = async () => {
       if (!user) return;
+      
+      // Skip profile fetching in dev mode without Supabase
+      if (isDevEnvironment()) {
+        setProfile({
+          id: user.id,
+          created_at: new Date().toISOString(),
+          email: user.email || '',
+          full_name: 'Dev User',
+          avatar_url: null,
+          preferences: {
+            threatTypes: ['Cyber', 'Physical', 'Environmental'],
+            notifications: true,
+          }
+        });
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -51,15 +75,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const setData = async () => {
       try {
+        // In development mode without Supabase, skip the real auth check
+        if (isDevEnvironment()) {
+          console.log('Running in development mode without Supabase connection');
+          setLoading(false);
+          return;
+        }
+        
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       } catch (error) {
-        console.error(error);
+        console.error('Error getting session:', error);
         setLoading(false);
       }
     };
+    
+    // In dev mode, we can skip the subscription to auth changes
+    if (isDevEnvironment()) {
+      setData();
+      return;
+    }
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -70,12 +107,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setData();
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
   const signUp = async (email: string, password: string) => {
     try {
+      // In development mode, simulate successful signup
+      if (isDevEnvironment()) {
+        console.log('Development mode: Simulating sign up for', email);
+        
+        // Create a simulated user
+        const devUser = { 
+          id: 'dev-user-id',
+          email,
+          created_at: new Date().toISOString(),
+        } as User;
+        
+        setUser(devUser);
+        
+        // Create a simulated session
+        const devSession = { 
+          user: devUser,
+          access_token: 'dev-token',
+          refresh_token: 'dev-refresh-token',
+          expires_at: Date.now() + 3600,
+        } as Session;
+        
+        setSession(devSession);
+        
+        // Create a simulated profile
+        setProfile({
+          id: devUser.id,
+          created_at: new Date().toISOString(),
+          email: email,
+          full_name: null,
+          avatar_url: null,
+          preferences: {
+            threatTypes: ['Cyber', 'Physical', 'Environmental'],
+            notifications: true,
+          }
+        });
+        
+        toast({
+          title: "Development Mode",
+          description: "Sign up simulated successfully. You're now logged in.",
+        });
+        
+        return { error: null };
+      }
+      
+      // Actual Supabase signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -88,20 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "destructive",
         });
         return { error: error.message };
-      }
-      
-      const isDevEnvironment = import.meta.env.DEV && 
-        (!import.meta.env.VITE_SUPABASE_URL || 
-         import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
-      
-      if (isDevEnvironment) {
-        toast({
-          title: "Development Mode",
-          description: "Running in development mode without Supabase connection. Authentication simulated.",
-        });
-        
-        setUser({ id: 'dev-user-id', email } as User);
-        return { error: null };
       }
       
       if (data.user) {
@@ -140,6 +208,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      // In development mode, simulate successful login
+      if (isDevEnvironment()) {
+        console.log('Development mode: Simulating sign in for', email);
+        
+        // Create a simulated user
+        const devUser = { 
+          id: 'dev-user-id',
+          email,
+          created_at: new Date().toISOString(),
+        } as User;
+        
+        setUser(devUser);
+        
+        // Create a simulated session
+        const devSession = { 
+          user: devUser,
+          access_token: 'dev-token',
+          refresh_token: 'dev-refresh-token',
+          expires_at: Date.now() + 3600,
+        } as Session;
+        
+        setSession(devSession);
+        
+        // Create a simulated profile
+        setProfile({
+          id: devUser.id,
+          created_at: new Date().toISOString(),
+          email: email,
+          full_name: null,
+          avatar_url: null,
+          preferences: {
+            threatTypes: ['Cyber', 'Physical', 'Environmental'],
+            notifications: true,
+          }
+        });
+        
+        toast({
+          title: "Development Mode",
+          description: "Sign in simulated successfully. You're now logged in.",
+        });
+        
+        return { error: null };
+      }
+      
+      // Actual Supabase login
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -152,20 +265,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "destructive",
         });
         return { error: error.message };
-      }
-      
-      const isDevEnvironment = import.meta.env.DEV && 
-        (!import.meta.env.VITE_SUPABASE_URL || 
-         import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
-      
-      if (isDevEnvironment) {
-        toast({
-          title: "Development Mode",
-          description: "Running in development mode without Supabase connection. Authentication simulated.",
-        });
-        
-        setUser({ id: 'dev-user-id', email } as User);
-        setSession({ user: { id: 'dev-user-id', email } as User } as Session);
       }
       
       toast({
@@ -189,6 +288,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      // In development mode, simulate sign out
+      if (isDevEnvironment()) {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        
+        toast({
+          title: "Development Mode",
+          description: "Sign out simulated successfully.",
+        });
+        
+        return;
+      }
+      
+      // Actual Supabase sign out
       await supabase.auth.signOut();
       toast({
         title: "Sign Out Successful",
@@ -208,6 +322,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user) throw new Error('No user logged in');
       
+      // In development mode, simulate profile update
+      if (isDevEnvironment()) {
+        setProfile(prev => prev ? { ...prev, ...data } : null);
+        
+        toast({
+          title: "Development Mode",
+          description: "Profile update simulated successfully.",
+        });
+        
+        return;
+      }
+      
+      // Actual Supabase profile update
       const { error } = await supabase
         .from('profiles')
         .update(data)

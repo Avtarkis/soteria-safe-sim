@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ButtonWrapper from './ui/ButtonWrapper';
 import { Shield, Mail, Key, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
@@ -19,11 +18,11 @@ const AuthScreen = () => {
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
   
-  // Redirect if already logged in
-  if (session) {
-    navigate('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (session) {
+      navigate('/dashboard');
+    }
+  }, [session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,21 +31,18 @@ const AuthScreen = () => {
     try {
       if (isSignUp) {
         if (step < 2) {
-          // Move to next step in signup process
           setStep(step + 1);
           setLoading(false);
         } else {
-          // Complete signup
           const { error } = await signUp(email, password);
           if (!error) {
-            // Successfully signed up, user will be redirected via the auth state change
+            navigate('/dashboard');
           }
         }
       } else {
-        // Handle sign in
         const { error } = await signIn(email, password);
         if (!error) {
-          // Successfully signed in, user will be redirected via the auth state change
+          navigate('/dashboard');
         }
       }
     } catch (error) {
@@ -55,6 +51,10 @@ const AuthScreen = () => {
       setLoading(false);
     }
   };
+
+  if (session) {
+    return null;
+  }
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
