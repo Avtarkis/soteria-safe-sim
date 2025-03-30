@@ -1,5 +1,5 @@
-
 import { supabase, ThreatAlert } from '@/lib/supabase';
+import axios from 'axios';
 
 // Helper to determine if we're in dev mode with no valid Supabase connection
 const isDevEnvironment = () => {
@@ -8,7 +8,64 @@ const isDevEnvironment = () => {
      import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
 };
 
-// Generate sample threats for development
+// Fetch real-time data from the USGS Earthquake API
+const fetchEarthquakeThreats = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
+    return response.data.features.map((feature: any) => {
+      const magnitude = feature.properties.mag;
+      let level: 'low' | 'medium' | 'high' = 'low';
+      
+      if (magnitude >= 4.5) level = 'high';
+      else if (magnitude >= 3) level = 'medium';
+      
+      return {
+        id: feature.id,
+        user_id: 'system',
+        title: `M${magnitude.toFixed(1)} Earthquake`,
+        description: `${feature.properties.place}. Depth: ${feature.geometry.coordinates[2]} km`,
+        level,
+        action: 'View Details',
+        resolved: false,
+        created_at: new Date(feature.properties.time).toISOString()
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching earthquake data:', error);
+    return [];
+  }
+};
+
+// Fetch weather alerts from NWS API
+const fetchWeatherAlerts = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get('https://api.weather.gov/alerts/active?status=actual&message_type=alert');
+    
+    return response.data.features.slice(0, 10).map((feature: any, index: number) => {
+      const severity = feature.properties.severity;
+      let level: 'low' | 'medium' | 'high' = 'low';
+      
+      if (severity === 'Extreme' || severity === 'Severe') level = 'high';
+      else if (severity === 'Moderate') level = 'medium';
+      
+      return {
+        id: `weather-${index}-${Date.now()}`,
+        user_id: 'system',
+        title: feature.properties.event,
+        description: feature.properties.headline || 'Weather alert in your area',
+        level,
+        action: 'See Weather Alert',
+        resolved: false,
+        created_at: new Date().toISOString()
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching weather alerts:', error);
+    return [];
+  }
+};
+
+// Generate sample threats for development or fallback
 const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
   const threats = [
     {
@@ -59,48 +116,92 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
 export const threatService = {
   // Get all threats for a user
   getUserThreats: async (userId: string) => {
-    // In development mode, return mock data
-    if (isDevEnvironment()) {
-      console.log('Development mode: Returning mock threat data');
+    try {
+      // First try to get real data from public APIs
+      let realThreats: ThreatAlert[] = [];
+      
+      // Combine earthquake and weather data
+      const earthquakeThreats = await fetchEarthquakeThreats();
+      const weatherAlerts = await fetchWeatherAlerts();
+      
+      realThreats = [...earthquakeThreats, ...weatherAlerts];
+      
+      // If we have real threats, return them
+      if (realThreats.length > 0) {
+        return realThreats;
+      }
+      
+      // If no real data or in development mode, use mock data
+      if (isDevEnvironment()) {
+        console.log('Development mode or no real data available: Returning mock threat data');
+        return generateSampleThreats(userId, 4);
+      }
+      
+      // Try to get data from Supabase
+      const { data, error } = await supabase
+        .from('threat_alerts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching threats:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUserThreats:', error);
+      // Fallback to sample data on error
       return generateSampleThreats(userId, 4);
     }
-    
-    const { data, error } = await supabase
-      .from('threat_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching threats:', error);
-      throw error;
-    }
-    
-    return data || [];
   },
   
   // Get recent threats for a user
   getRecentThreats: async (userId: string, limit = 5) => {
-    // In development mode, return mock data
-    if (isDevEnvironment()) {
-      console.log('Development mode: Returning mock recent threats');
+    try {
+      // First try to get real data from public APIs
+      let realThreats: ThreatAlert[] = [];
+      
+      // Combine earthquake and weather data
+      const earthquakeThreats = await fetchEarthquakeThreats();
+      const weatherAlerts = await fetchWeatherAlerts();
+      
+      realThreats = [...earthquakeThreats, ...weatherAlerts]
+        .filter(threat => !threat.resolved)
+        .slice(0, limit);
+      
+      // If we have real threats, return them
+      if (realThreats.length > 0) {
+        return realThreats;
+      }
+      
+      // If no real data or in development mode, use mock data
+      if (isDevEnvironment()) {
+        console.log('Development mode or no real data available: Returning mock recent threats');
+        return generateSampleThreats(userId, limit).filter(threat => !threat.resolved);
+      }
+      
+      // Try to get data from Supabase
+      const { data, error } = await supabase
+        .from('threat_alerts')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error fetching recent threats:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error in getRecentThreats:', error);
+      // Fallback to sample data on error
       return generateSampleThreats(userId, limit).filter(threat => !threat.resolved);
     }
-    
-    const { data, error } = await supabase
-      .from('threat_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('resolved', false)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    
-    if (error) {
-      console.error('Error fetching recent threats:', error);
-      throw error;
-    }
-    
-    return data || [];
   },
   
   // Add a new threat

@@ -18,6 +18,7 @@ import LeafletMap, { ThreatMarker } from '@/components/ui/LeafletMap';
 import { weatherService } from '@/services/weatherService';
 import { crimeService } from '@/services/crimeService';
 import { useToast } from '@/hooks/use-toast';
+import { threatService } from '@/services/threatService';
 
 interface ThreatZone {
   id: string;
@@ -48,20 +49,79 @@ const ThreatsMap = () => {
   ]);
   const [threatMarkers, setThreatMarkers] = useState<ThreatMarker[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast({
+            title: 'Location Error',
+            description: 'Could not access your location. Using default view.',
+            variant: 'destructive',
+          });
+          setUserLocation([37.0902, -95.7129]);
+        }
+      );
+    } else {
+      toast({
+        title: 'Location Not Supported',
+        description: 'Geolocation is not supported by this browser. Using default view.',
+        variant: 'destructive',
+      });
+      setUserLocation([37.0902, -95.7129]);
+    }
+  }, [toast]);
 
   const loadThreatData = async () => {
     setLoading(true);
     try {
-      const crimeThreats = await crimeService.getCrimeThreats();
+      const threatAlerts = await threatService.getUserThreats('system');
       
-      const majorCities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Miami'];
-      const weatherThreats = await weatherService.getWeatherThreats(majorCities);
+      const earthquakeMarkers = threatAlerts
+        .filter(threat => threat.title.includes('Earthquake'))
+        .map(threat => {
+          const descParts = threat.description.split('.');
+          const locationPart = descParts[0];
+          
+          const lat = userLocation ? userLocation[0] + (Math.random() - 0.5) * 5 : 34.0522;
+          const lng = userLocation ? userLocation[1] + (Math.random() - 0.5) * 5 : -118.2437;
+          
+          return {
+            id: threat.id,
+            position: [lat, lng] as [number, number],
+            level: threat.level,
+            title: threat.title,
+            details: threat.description,
+            type: 'environmental'
+          };
+        });
+      
+      const weatherMarkers = threatAlerts
+        .filter(threat => !threat.title.includes('Earthquake'))
+        .map(threat => {
+          const lat = userLocation ? userLocation[0] + (Math.random() - 0.5) * 3 : 34.0522;
+          const lng = userLocation ? userLocation[1] + (Math.random() - 0.5) * 3 : -118.2437;
+          
+          return {
+            id: threat.id,
+            position: [lat, lng] as [number, number],
+            level: threat.level,
+            title: threat.title,
+            details: threat.description,
+            type: 'environmental'
+          };
+        });
       
       const cyberThreats: ThreatMarker[] = [
         {
           id: 'cyber-1',
-          position: [37.7749, -122.4194], // San Francisco
+          position: userLocation ? [userLocation[0] + 0.2, userLocation[1] + 0.3] : [37.7749, -122.4194],
           level: 'high',
           title: 'DDoS Attack',
           details: 'Major distributed denial of service attack targeting tech companies in this region.',
@@ -69,23 +129,34 @@ const ThreatsMap = () => {
         },
         {
           id: 'cyber-2',
-          position: [40.7128, -74.006], // New York
+          position: userLocation ? [userLocation[0] - 0.1, userLocation[1] - 0.2] : [40.7128, -74.006],
           level: 'medium',
           title: 'Ransomware Alert',
           details: 'Financial institutions reporting ransomware attempts. Implement security protocols.',
           type: 'cyber'
-        },
-        {
-          id: 'cyber-3',
-          position: [51.5074, -0.1278], // London
-          level: 'low',
-          title: 'Phishing Campaign',
-          details: 'Increased phishing emails reported targeting users in this area.',
-          type: 'cyber'
         }
       ];
       
-      const allThreats = [...crimeThreats, ...weatherThreats, ...cyberThreats];
+      const physicalThreats: ThreatMarker[] = [
+        {
+          id: 'physical-1',
+          position: userLocation ? [userLocation[0] + 0.05, userLocation[1] - 0.15] : [34.0522, -118.2437],
+          level: 'medium',
+          title: 'Street Crime Warning',
+          details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+          type: 'physical'
+        },
+        {
+          id: 'physical-2',
+          position: userLocation ? [userLocation[0] - 0.08, userLocation[1] + 0.18] : [41.8781, -87.6298],
+          level: 'low',
+          title: 'Traffic Incident',
+          details: 'Multiple car accident reported. Expect delays and emergency vehicles in the area.',
+          type: 'physical'
+        }
+      ];
+      
+      const allThreats = [...earthquakeMarkers, ...weatherMarkers, ...cyberThreats, ...physicalThreats];
       
       setThreatMarkers(allThreats);
     } catch (error) {
@@ -96,32 +167,61 @@ const ThreatsMap = () => {
         variant: 'destructive',
       });
       
-      setThreatMarkers([
-        {
-          id: '1',
-          position: [40.7128, -74.006], // New York
-          level: 'high',
-          title: 'Data Breach Alert',
-          details: 'Major data breach reported in this area affecting financial institutions.',
-          type: 'cyber'
-        },
-        {
-          id: '2',
-          position: [34.0522, -118.2437], // Los Angeles
-          level: 'medium',
-          title: 'Street Crime Warning',
-          details: 'Recent increase in street theft and muggings reported in this neighborhood.',
-          type: 'physical'
-        },
-        {
-          id: '3',
-          position: [51.5074, -0.1278], // London
-          level: 'low',
-          title: 'Weather Advisory',
-          details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',
-          type: 'environmental'
-        }
-      ]);
+      if (userLocation) {
+        setThreatMarkers([
+          {
+            id: '1',
+            position: [userLocation[0] + 0.1, userLocation[1] - 0.1],
+            level: 'high',
+            title: 'Data Breach Alert',
+            details: 'Major data breach reported in this area affecting financial institutions.',
+            type: 'cyber'
+          },
+          {
+            id: '2',
+            position: [userLocation[0] - 0.05, userLocation[1] + 0.05],
+            level: 'medium',
+            title: 'Street Crime Warning',
+            details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+            type: 'physical'
+          },
+          {
+            id: '3',
+            position: [userLocation[0], userLocation[1] + 0.2],
+            level: 'low',
+            title: 'Weather Advisory',
+            details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',
+            type: 'environmental'
+          }
+        ]);
+      } else {
+        setThreatMarkers([
+          {
+            id: '1',
+            position: [40.7128, -74.006],
+            level: 'high',
+            title: 'Data Breach Alert',
+            details: 'Major data breach reported in this area affecting financial institutions.',
+            type: 'cyber'
+          },
+          {
+            id: '2',
+            position: [34.0522, -118.2437],
+            level: 'medium',
+            title: 'Street Crime Warning',
+            details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+            type: 'physical'
+          },
+          {
+            id: '3',
+            position: [51.5074, -0.1278],
+            level: 'low',
+            title: 'Weather Advisory',
+            details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',
+            type: 'environmental'
+          }
+        ]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,8 +229,10 @@ const ThreatsMap = () => {
   };
 
   useEffect(() => {
-    loadThreatData();
-  }, []);
+    if (userLocation) {
+      loadThreatData();
+    }
+  }, [userLocation]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -194,7 +296,19 @@ const ThreatsMap = () => {
         <div className="lg:col-span-3 relative">
           <Card className="overflow-hidden h-[70vh]">
             <div className="absolute top-4 left-4 z-10 space-y-2">
-              <Button variant="outline" size="sm" className="shadow-sm bg-background/80 backdrop-blur-sm">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="shadow-sm bg-background/80 backdrop-blur-sm"
+                onClick={() => {
+                  if (userLocation && !loading) {
+                    toast({
+                      title: "Location Updated",
+                      description: "Map centered on your current location.",
+                    });
+                  }
+                }}
+              >
                 <Navigation className="h-4 w-4 mr-1" />
                 <span>My Location</span>
               </Button>
@@ -278,8 +392,8 @@ const ThreatsMap = () => {
                   <LeafletMap 
                     markers={getFilteredMarkers()}
                     onMarkerClick={handleThreatClick}
-                    center={[30, 0]}
-                    zoom={2}
+                    center={userLocation || [37.0902, -95.7129]}
+                    zoom={userLocation ? 8 : 4}
                   />
                 </div>
 
