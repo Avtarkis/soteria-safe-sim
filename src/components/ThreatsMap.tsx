@@ -14,9 +14,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import LeafletMap, { ThreatMarker } from '@/components/ui/LeafletMap';
-import { weatherService } from '@/services/weatherService';
-import { crimeService } from '@/services/crimeService';
+import LeafletMap from '@/components/ui/LeafletMap';
+import { ThreatMarker } from '@/types/threats';
 import { useToast } from '@/hooks/use-toast';
 import { threatService } from '@/services/threatService';
 
@@ -81,84 +80,8 @@ const ThreatsMap = () => {
   const loadThreatData = async () => {
     setLoading(true);
     try {
-      const threatAlerts = await threatService.getUserThreats('system');
-      
-      const earthquakeMarkers = threatAlerts
-        .filter(threat => threat.title.includes('Earthquake'))
-        .map(threat => {
-          const descParts = threat.description.split('.');
-          const locationPart = descParts[0];
-          
-          const lat = userLocation ? userLocation[0] + (Math.random() - 0.5) * 5 : 34.0522;
-          const lng = userLocation ? userLocation[1] + (Math.random() - 0.5) * 5 : -118.2437;
-          
-          return {
-            id: threat.id,
-            position: [lat, lng] as [number, number],
-            level: threat.level,
-            title: threat.title,
-            details: threat.description,
-            type: 'environmental'
-          };
-        });
-      
-      const weatherMarkers = threatAlerts
-        .filter(threat => !threat.title.includes('Earthquake'))
-        .map(threat => {
-          const lat = userLocation ? userLocation[0] + (Math.random() - 0.5) * 3 : 34.0522;
-          const lng = userLocation ? userLocation[1] + (Math.random() - 0.5) * 3 : -118.2437;
-          
-          return {
-            id: threat.id,
-            position: [lat, lng] as [number, number],
-            level: threat.level,
-            title: threat.title,
-            details: threat.description,
-            type: 'environmental'
-          };
-        });
-      
-      const cyberThreats: ThreatMarker[] = [
-        {
-          id: 'cyber-1',
-          position: userLocation ? [userLocation[0] + 0.2, userLocation[1] + 0.3] : [37.7749, -122.4194],
-          level: 'high',
-          title: 'DDoS Attack',
-          details: 'Major distributed denial of service attack targeting tech companies in this region.',
-          type: 'cyber'
-        },
-        {
-          id: 'cyber-2',
-          position: userLocation ? [userLocation[0] - 0.1, userLocation[1] - 0.2] : [40.7128, -74.006],
-          level: 'medium',
-          title: 'Ransomware Alert',
-          details: 'Financial institutions reporting ransomware attempts. Implement security protocols.',
-          type: 'cyber'
-        }
-      ];
-      
-      const physicalThreats: ThreatMarker[] = [
-        {
-          id: 'physical-1',
-          position: userLocation ? [userLocation[0] + 0.05, userLocation[1] - 0.15] : [34.0522, -118.2437],
-          level: 'medium',
-          title: 'Street Crime Warning',
-          details: 'Recent increase in street theft and muggings reported in this neighborhood.',
-          type: 'physical'
-        },
-        {
-          id: 'physical-2',
-          position: userLocation ? [userLocation[0] - 0.08, userLocation[1] + 0.18] : [41.8781, -87.6298],
-          level: 'low',
-          title: 'Traffic Incident',
-          details: 'Multiple car accident reported. Expect delays and emergency vehicles in the area.',
-          type: 'physical'
-        }
-      ];
-      
-      const allThreats = [...earthquakeMarkers, ...weatherMarkers, ...cyberThreats, ...physicalThreats];
-      
-      setThreatMarkers(allThreats);
+      const markers = await threatService.getGlobalThreatMarkers(userLocation || undefined);
+      setThreatMarkers(markers);
     } catch (error) {
       console.error('Error loading threat data:', error);
       toast({

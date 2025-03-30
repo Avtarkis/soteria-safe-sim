@@ -1,5 +1,6 @@
 import { supabase, ThreatAlert } from '@/lib/supabase';
 import axios from 'axios';
+import { GlobalThreatData, ThreatMarker } from '@/types/threats';
 
 // Helper to determine if we're in dev mode with no valid Supabase connection
 const isDevEnvironment = () => {
@@ -9,7 +10,7 @@ const isDevEnvironment = () => {
 };
 
 // Fetch real-time data from the USGS Earthquake API
-const fetchEarthquakeThreats = async (): Promise<any[]> => {
+const fetchEarthquakeThreats = async (): Promise<ThreatAlert[]> => {
   try {
     const response = await axios.get('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
     return response.data.features.map((feature: any) => {
@@ -27,7 +28,9 @@ const fetchEarthquakeThreats = async (): Promise<any[]> => {
         level,
         action: 'View Details',
         resolved: false,
-        created_at: new Date(feature.properties.time).toISOString()
+        created_at: new Date(feature.properties.time).toISOString(),
+        latitude: feature.geometry.coordinates[1],
+        longitude: feature.geometry.coordinates[0]
       };
     });
   } catch (error) {
@@ -37,7 +40,7 @@ const fetchEarthquakeThreats = async (): Promise<any[]> => {
 };
 
 // Fetch weather alerts from NWS API
-const fetchWeatherAlerts = async (): Promise<any[]> => {
+const fetchWeatherAlerts = async (): Promise<ThreatAlert[]> => {
   try {
     const response = await axios.get('https://api.weather.gov/alerts/active?status=actual&message_type=alert');
     
@@ -48,6 +51,17 @@ const fetchWeatherAlerts = async (): Promise<any[]> => {
       if (severity === 'Extreme' || severity === 'Severe') level = 'high';
       else if (severity === 'Moderate') level = 'medium';
       
+      let latitude = null;
+      let longitude = null;
+      
+      if (feature.geometry && feature.geometry.coordinates && feature.geometry.coordinates.length > 0) {
+        if (feature.geometry.type === 'Point') {
+          [longitude, latitude] = feature.geometry.coordinates;
+        } else if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates[0].length > 0) {
+          [longitude, latitude] = feature.geometry.coordinates[0][0];
+        }
+      }
+      
       return {
         id: `weather-${index}-${Date.now()}`,
         user_id: 'system',
@@ -56,7 +70,9 @@ const fetchWeatherAlerts = async (): Promise<any[]> => {
         level,
         action: 'See Weather Alert',
         resolved: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        latitude: latitude || (feature.properties.geocode?.UGC?.[0] ? null : null),
+        longitude: longitude || (feature.properties.geocode?.UGC?.[0] ? null : null)
       };
     });
   } catch (error) {
@@ -76,7 +92,7 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'high' as const,
       action: 'Secure Account',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
     },
     {
       id: '2',
@@ -86,7 +102,7 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'medium' as const,
       action: 'View Safe Routes',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() // 2 hours ago
+      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString()
     },
     {
       id: '3',
@@ -96,7 +112,7 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'low' as const,
       action: 'See Details',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString() // 4 hours ago
+      created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString()
     },
     {
       id: '4',
@@ -106,38 +122,69 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'high' as const,
       action: 'Change Passwords',
       resolved: true,
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
     }
   ];
   
   return threats.slice(0, count);
 };
 
+// Convert a ThreatAlert to a ThreatMarker for map display
+const threatAlertToMarker = (threat: ThreatAlert, userLocation?: [number, number]): ThreatMarker => {
+  if (threat.latitude && threat.longitude) {
+    return {
+      id: threat.id,
+      position: [threat.latitude, threat.longitude] as [number, number],
+      level: threat.level as 'low' | 'medium' | 'high',
+      title: threat.title,
+      details: threat.description,
+      type: 'environmental'
+    };
+  }
+  
+  const baseLocation: [number, number] = userLocation || [37.7749, -122.4194];
+  const randomOffset = () => (Math.random() - 0.5) * 5;
+  
+  let type: 'cyber' | 'physical' | 'environmental' = 'environmental';
+  
+  const threatText = (threat.title + ' ' + threat.description).toLowerCase();
+  if (threatText.includes('hack') || threatText.includes('breach') || threatText.includes('cyber') || 
+      threatText.includes('ransomware') || threatText.includes('data') || threatText.includes('password')) {
+    type = 'cyber';
+  } else if (threatText.includes('crime') || threatText.includes('theft') || threatText.includes('robbery') || 
+             threatText.includes('assault') || threatText.includes('traffic') || threatText.includes('incident')) {
+    type = 'physical';
+  }
+  
+  return {
+    id: threat.id,
+    position: [baseLocation[0] + randomOffset(), baseLocation[1] + randomOffset()] as [number, number],
+    level: threat.level as 'low' | 'medium' | 'high',
+    title: threat.title,
+    details: threat.description,
+    type
+  };
+};
+
 export const threatService = {
-  // Get all threats for a user
-  getUserThreats: async (userId: string) => {
+  getUserThreats: async (userId: string, userLocation?: [number, number]) => {
     try {
-      // First try to get real data from public APIs
-      let realThreats: ThreatAlert[] = [];
+      let threatAlerts: ThreatAlert[] = [];
       
-      // Combine earthquake and weather data
       const earthquakeThreats = await fetchEarthquakeThreats();
       const weatherAlerts = await fetchWeatherAlerts();
       
-      realThreats = [...earthquakeThreats, ...weatherAlerts];
+      threatAlerts = [...earthquakeThreats, ...weatherAlerts];
       
-      // If we have real threats, return them
-      if (realThreats.length > 0) {
-        return realThreats;
+      if (threatAlerts.length > 0) {
+        return threatAlerts;
       }
       
-      // If no real data or in development mode, use mock data
       if (isDevEnvironment()) {
         console.log('Development mode or no real data available: Returning mock threat data');
         return generateSampleThreats(userId, 4);
       }
       
-      // Try to get data from Supabase
       const { data, error } = await supabase
         .from('threat_alerts')
         .select('*')
@@ -152,18 +199,86 @@ export const threatService = {
       return data || [];
     } catch (error) {
       console.error('Error in getUserThreats:', error);
-      // Fallback to sample data on error
       return generateSampleThreats(userId, 4);
     }
   },
   
-  // Get recent threats for a user
+  getGlobalThreatMarkers: async (userLocation?: [number, number]): Promise<ThreatMarker[]> => {
+    try {
+      const threatAlerts = await threatService.getUserThreats('system');
+      
+      const threatMarkers: ThreatMarker[] = threatAlerts.map(threat => 
+        threatAlertToMarker(threat, userLocation)
+      );
+      
+      if (threatMarkers.length < 5) {
+        const additionalThreats: ThreatMarker[] = [
+          {
+            id: 'cyber-1',
+            position: userLocation ? [userLocation[0] + 0.2, userLocation[1] + 0.3] : [37.7749, -122.4194],
+            level: 'high',
+            title: 'DDoS Attack',
+            details: 'Major distributed denial of service attack targeting tech companies in this region.',
+            type: 'cyber'
+          },
+          {
+            id: 'cyber-2',
+            position: userLocation ? [userLocation[0] - 0.1, userLocation[1] - 0.2] : [40.7128, -74.006],
+            level: 'medium',
+            title: 'Ransomware Alert',
+            details: 'Financial institutions reporting ransomware attempts. Implement security protocols.',
+            type: 'cyber'
+          },
+          {
+            id: 'physical-1',
+            position: userLocation ? [userLocation[0] + 0.05, userLocation[1] - 0.15] : [34.0522, -118.2437],
+            level: 'medium',
+            title: 'Street Crime Warning',
+            details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+            type: 'physical'
+          }
+        ];
+        
+        threatMarkers.push(...additionalThreats);
+      }
+      
+      return threatMarkers;
+    } catch (error) {
+      console.error('Error getting global threat markers:', error);
+      
+      return [
+        {
+          id: '1',
+          position: userLocation ? [userLocation[0] + 0.1, userLocation[1] - 0.1] : [37.7749, -122.4194],
+          level: 'high',
+          title: 'Data Breach Alert',
+          details: 'Major data breach reported in this area affecting financial institutions.',
+          type: 'cyber'
+        },
+        {
+          id: '2',
+          position: userLocation ? [userLocation[0] - 0.05, userLocation[1] + 0.05] : [34.0522, -118.2437],
+          level: 'medium',
+          title: 'Street Crime Warning',
+          details: 'Recent increase in street theft and muggings reported in this neighborhood.',
+          type: 'physical'
+        },
+        {
+          id: '3',
+          position: userLocation ? [userLocation[0], userLocation[1] + 0.2] : [51.5074, -0.1278],
+          level: 'low',
+          title: 'Weather Advisory',
+          details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',
+          type: 'environmental'
+        }
+      ];
+    }
+  },
+  
   getRecentThreats: async (userId: string, limit = 5) => {
     try {
-      // First try to get real data from public APIs
       let realThreats: ThreatAlert[] = [];
       
-      // Combine earthquake and weather data
       const earthquakeThreats = await fetchEarthquakeThreats();
       const weatherAlerts = await fetchWeatherAlerts();
       
@@ -171,18 +286,15 @@ export const threatService = {
         .filter(threat => !threat.resolved)
         .slice(0, limit);
       
-      // If we have real threats, return them
       if (realThreats.length > 0) {
         return realThreats;
       }
       
-      // If no real data or in development mode, use mock data
       if (isDevEnvironment()) {
         console.log('Development mode or no real data available: Returning mock recent threats');
         return generateSampleThreats(userId, limit).filter(threat => !threat.resolved);
       }
       
-      // Try to get data from Supabase
       const { data, error } = await supabase
         .from('threat_alerts')
         .select('*')
@@ -199,14 +311,11 @@ export const threatService = {
       return data || [];
     } catch (error) {
       console.error('Error in getRecentThreats:', error);
-      // Fallback to sample data on error
       return generateSampleThreats(userId, limit).filter(threat => !threat.resolved);
     }
   },
   
-  // Add a new threat
   addThreat: async (threat: Omit<ThreatAlert, 'id' | 'created_at'>) => {
-    // In development mode, return mock data
     if (isDevEnvironment()) {
       console.log('Development mode: Simulating adding a threat');
       const newThreat = {
@@ -231,9 +340,7 @@ export const threatService = {
     return data;
   },
   
-  // Mark a threat as resolved
   resolveThreat: async (threatId: string, userId: string) => {
-    // In development mode, return mock data
     if (isDevEnvironment()) {
       console.log('Development mode: Simulating resolving a threat');
       const resolvedThreat = {
@@ -264,12 +371,9 @@ export const threatService = {
     return data;
   },
   
-  // Subscribe to real-time threat updates
   subscribeToThreats: (userId: string, callback: (threat: ThreatAlert) => void) => {
-    // In development mode, simulate subscription
     if (isDevEnvironment()) {
       console.log('Development mode: Simulating threat subscription');
-      // Return an empty unsubscribe function
       return () => {};
     }
     
