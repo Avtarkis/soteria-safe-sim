@@ -1,9 +1,70 @@
 
 import { supabase, ThreatAlert } from '@/lib/supabase';
 
+// Helper to determine if we're in dev mode with no valid Supabase connection
+const isDevEnvironment = () => {
+  return import.meta.env.DEV && 
+    (!import.meta.env.VITE_SUPABASE_URL || 
+     import.meta.env.VITE_SUPABASE_URL.includes('placeholder-url'));
+};
+
+// Generate sample threats for development
+const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
+  const threats = [
+    {
+      id: '1',
+      user_id: userId,
+      title: 'Suspicious Login Attempt',
+      description: 'Someone tried to log into your account from an unrecognized device in Moscow, Russia.',
+      level: 'high' as const,
+      action: 'Secure Account',
+      resolved: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
+    },
+    {
+      id: '2',
+      user_id: userId,
+      title: 'High Crime Area Alert',
+      description: 'You are entering an area with recent reports of mugging incidents.',
+      level: 'medium' as const,
+      action: 'View Safe Routes',
+      resolved: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() // 2 hours ago
+    },
+    {
+      id: '3',
+      user_id: userId,
+      title: 'Weather Advisory',
+      description: 'Flash flood warning in your current location for the next 24 hours.',
+      level: 'low' as const,
+      action: 'See Details',
+      resolved: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString() // 4 hours ago
+    },
+    {
+      id: '4',
+      user_id: userId,
+      title: 'Data Breach Detected',
+      description: 'Your email was found in a recent data breach. Change your passwords immediately.',
+      level: 'high' as const,
+      action: 'Change Passwords',
+      resolved: true,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+    }
+  ];
+  
+  return threats.slice(0, count);
+};
+
 export const threatService = {
   // Get all threats for a user
   getUserThreats: async (userId: string) => {
+    // In development mode, return mock data
+    if (isDevEnvironment()) {
+      console.log('Development mode: Returning mock threat data');
+      return generateSampleThreats(userId, 4);
+    }
+    
     const { data, error } = await supabase
       .from('threat_alerts')
       .select('*')
@@ -20,6 +81,12 @@ export const threatService = {
   
   // Get recent threats for a user
   getRecentThreats: async (userId: string, limit = 5) => {
+    // In development mode, return mock data
+    if (isDevEnvironment()) {
+      console.log('Development mode: Returning mock recent threats');
+      return generateSampleThreats(userId, limit).filter(threat => !threat.resolved);
+    }
+    
     const { data, error } = await supabase
       .from('threat_alerts')
       .select('*')
@@ -38,6 +105,17 @@ export const threatService = {
   
   // Add a new threat
   addThreat: async (threat: Omit<ThreatAlert, 'id' | 'created_at'>) => {
+    // In development mode, return mock data
+    if (isDevEnvironment()) {
+      console.log('Development mode: Simulating adding a threat');
+      const newThreat = {
+        ...threat,
+        id: Date.now().toString(),
+        created_at: new Date().toISOString()
+      };
+      return newThreat;
+    }
+    
     const { data, error } = await supabase
       .from('threat_alerts')
       .insert(threat)
@@ -54,6 +132,21 @@ export const threatService = {
   
   // Mark a threat as resolved
   resolveThreat: async (threatId: string, userId: string) => {
+    // In development mode, return mock data
+    if (isDevEnvironment()) {
+      console.log('Development mode: Simulating resolving a threat');
+      const resolvedThreat = {
+        id: threatId,
+        user_id: userId,
+        title: 'Resolved Threat',
+        description: 'This threat has been resolved',
+        level: 'low' as const,
+        resolved: true,
+        created_at: new Date().toISOString()
+      };
+      return resolvedThreat;
+    }
+    
     const { data, error } = await supabase
       .from('threat_alerts')
       .update({ resolved: true })
@@ -72,6 +165,13 @@ export const threatService = {
   
   // Subscribe to real-time threat updates
   subscribeToThreats: (userId: string, callback: (threat: ThreatAlert) => void) => {
+    // In development mode, simulate subscription
+    if (isDevEnvironment()) {
+      console.log('Development mode: Simulating threat subscription');
+      // Return an empty unsubscribe function
+      return () => {};
+    }
+    
     const subscription = supabase
       .channel('threat_alerts')
       .on(
