@@ -20,3 +20,17 @@ export interface GlobalThreatData {
   source: string;
   timestamp: string;
 }
+
+// Emergency response interfaces
+export interface EmergencyFeatures {
+  sirenActive: boolean;
+  recordingMode: 'off' | 'video' | 'audio' | 'photo';
+  alertSent: boolean;
+  policeNotified: boolean;
+}
+
+export interface EmergencyNeighbor {
+  id: string;
+  distance: number; // in meters
+  notified: boolean;
+}

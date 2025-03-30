@@ -1,3 +1,4 @@
+
 import { supabase, ThreatAlert } from '@/lib/supabase';
 import axios from 'axios';
 import { GlobalThreatData, ThreatMarker } from '@/types/threats';
@@ -71,8 +72,8 @@ const fetchWeatherAlerts = async (): Promise<ThreatAlert[]> => {
         action: 'See Weather Alert',
         resolved: false,
         created_at: new Date().toISOString(),
-        latitude: latitude || (feature.properties.geocode?.UGC?.[0] ? null : null),
-        longitude: longitude || (feature.properties.geocode?.UGC?.[0] ? null : null)
+        latitude: latitude || (Math.random() * 180 - 90),
+        longitude: longitude || (Math.random() * 360 - 180)
       };
     });
   } catch (error) {
@@ -92,7 +93,9 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'high' as const,
       action: 'Secure Account',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      latitude: 55.7558, // Moscow
+      longitude: 37.6173
     },
     {
       id: '2',
@@ -102,7 +105,9 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'medium' as const,
       action: 'View Safe Routes',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString()
+      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      latitude: 40.7128, // New York
+      longitude: -74.0060
     },
     {
       id: '3',
@@ -112,7 +117,9 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'low' as const,
       action: 'See Details',
       resolved: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString()
+      created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+      latitude: 34.0522, // Los Angeles
+      longitude: -118.2437
     },
     {
       id: '4',
@@ -122,7 +129,9 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
       level: 'high' as const,
       action: 'Change Passwords',
       resolved: true,
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      latitude: 51.5074, // London
+      longitude: -0.1278
     }
   ];
   
@@ -131,7 +140,7 @@ const generateSampleThreats = (userId: string, count = 3): ThreatAlert[] => {
 
 // Convert a ThreatAlert to a ThreatMarker for map display
 const threatAlertToMarker = (threat: ThreatAlert, userLocation?: [number, number]): ThreatMarker => {
-  if (threat.latitude && threat.longitude) {
+  if (threat.latitude !== undefined && threat.longitude !== undefined) {
     return {
       id: threat.id,
       position: [threat.latitude, threat.longitude] as [number, number],

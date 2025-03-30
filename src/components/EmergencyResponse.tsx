@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { 
@@ -14,10 +13,18 @@ import {
   Check, 
   LifeBuoy, 
   Mic, 
-  Loader2 
+  Loader2,
+  Camera,
+  Bell,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import EmergencySiren from './emergency/EmergencySiren';
+import EmergencyRecorder from './emergency/EmergencyRecorder';
+import EmergencyBroadcaster from './emergency/EmergencyBroadcaster';
+import PoliceNotifier from './emergency/PoliceNotifier';
+import { useVolumeButtonDoubleTap } from '@/hooks/use-double-tap';
 
 const EmergencyContacts = [
   { name: 'John Smith', relationship: 'Brother', phone: '+1 (555) 123-4567' },
@@ -30,6 +37,21 @@ const EmergencyResponse = () => {
   const [countdown, setCountdown] = useState(5);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [listening, setListening] = useState(false);
+  
+  const [sirenActive, setSirenActive] = useState(false);
+  const [recordingMode, setRecordingMode] = useState<'off' | 'video' | 'audio' | 'photo'>('off');
+  const [neighborAlertSent, setNeighborAlertSent] = useState(false);
+  const [policeNotified, setPoliceNotified] = useState(false);
+  
+  useVolumeButtonDoubleTap(() => {
+    if (!sirenActive) {
+      toast({
+        title: "Police Siren Activated",
+        description: "Emergency siren activated by double-tap of volume buttons."
+      });
+      setSirenActive(true);
+    }
+  });
   
   const startEmergency = () => {
     setShowConfirmation(true);
@@ -49,6 +71,9 @@ const EmergencyResponse = () => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval);
+          if (recordingMode === 'off') {
+            setRecordingMode('video');
+          }
           return 0;
         }
         return prev - 1;
@@ -69,6 +94,13 @@ const EmergencyResponse = () => {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      setSirenActive(false);
+      setRecordingMode('off');
+    };
+  }, []);
+
   return (
     <div className="container pb-10 animate-fade-in">
       <div className="space-y-2 mb-6">
@@ -78,7 +110,6 @@ const EmergencyResponse = () => {
         </p>
       </div>
 
-      {/* SOS Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="md:col-span-2">
           <Card className={cn(
@@ -254,7 +285,22 @@ const EmergencyResponse = () => {
         </div>
       </div>
 
-      {/* Emergency Contacts Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Emergency Features</h2>
+          <div className="text-xs text-muted-foreground bg-secondary/60 px-3 py-1 rounded-full">
+            Double-tap volume buttons to activate siren
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <EmergencySiren isActive={sirenActive} onToggle={() => setSirenActive(!sirenActive)} />
+          <EmergencyRecorder mode={recordingMode} onModeChange={setRecordingMode} />
+          <EmergencyBroadcaster hasBeenSent={neighborAlertSent} onSendAlert={() => setNeighborAlertSent(true)} />
+          <PoliceNotifier hasBeenCalled={policeNotified} onCallPolice={() => setPoliceNotified(true)} />
+        </div>
+      </div>
+
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Emergency Contacts</h2>
@@ -293,7 +339,6 @@ const EmergencyResponse = () => {
         </div>
       </div>
 
-      {/* Emergency Plan Section */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Your Safety Plan</h2>
         
