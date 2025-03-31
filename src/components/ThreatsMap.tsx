@@ -11,7 +11,8 @@ import {
   EyeOff, 
   Layers, 
   ArrowRight, 
-  RefreshCw
+  RefreshCw,
+  Crosshair
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LeafletMap from '@/components/ui/LeafletMap';
@@ -41,6 +42,7 @@ const ThreatsMap = () => {
   const [loading, setLoading] = useState(true);
   const [selectedThreat, setSelectedThreat] = useState<ThreatZone | null>(null);
   const [showLegend, setShowLegend] = useState(true);
+  const [showUserLocation, setShowUserLocation] = useState(false);
   const [filters, setFilters] = useState<FilterOption[]>([
     { id: 'cyber', label: 'Cyber', active: true, color: 'bg-blue-500' },
     { id: 'physical', label: 'Physical', active: true, color: 'bg-red-500' },
@@ -56,6 +58,10 @@ const ThreatsMap = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
+          toast({
+            title: "Location Detected",
+            description: "Your current location has been detected and is now displayed on the map.",
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -162,6 +168,16 @@ const ThreatsMap = () => {
     loadThreatData();
   };
 
+  const toggleUserLocation = () => {
+    setShowUserLocation(!showUserLocation);
+    if (!showUserLocation) {
+      toast({
+        title: "Live Location Tracking",
+        description: "Your exact location is now being tracked and displayed on the map in real-time.",
+      });
+    }
+  };
+
   const toggleFilter = (id: string) => {
     setFilters(filters.map(filter => 
       filter.id === id ? { ...filter, active: !filter.active } : filter
@@ -223,8 +239,17 @@ const ThreatsMap = () => {
                 variant="outline" 
                 size="sm" 
                 className="shadow-sm bg-background/80 backdrop-blur-sm"
+                onClick={toggleUserLocation}
+              >
+                <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-primary")} />
+                <span>{showUserLocation ? "Tracking On" : "Track My Location"}</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="shadow-sm bg-background/80 backdrop-blur-sm"
                 onClick={() => {
-                  if (userLocation && !loading) {
+                  if (userLocation) {
                     toast({
                       title: "Location Updated",
                       description: "Map centered on your current location.",
@@ -233,7 +258,7 @@ const ThreatsMap = () => {
                 }}
               >
                 <Navigation className="h-4 w-4 mr-1" />
-                <span>My Location</span>
+                <span>Center Map</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -316,7 +341,8 @@ const ThreatsMap = () => {
                     markers={getFilteredMarkers()}
                     onMarkerClick={handleThreatClick}
                     center={userLocation || [37.0902, -95.7129]}
-                    zoom={userLocation ? 8 : 4}
+                    zoom={userLocation ? 12 : 4}
+                    showUserLocation={showUserLocation}
                   />
                 </div>
 
@@ -371,6 +397,32 @@ const ThreatsMap = () => {
 
         <div className="lg:col-span-1">
           <div className="space-y-4">
+            {userLocation && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Your Current Location</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    <p className="font-medium text-foreground">Coordinates:</p>
+                    <p>Lat: {userLocation[0].toFixed(6)}</p>
+                    <p>Lng: {userLocation[1].toFixed(6)}</p>
+                  </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={toggleUserLocation}
+                      className={cn(showUserLocation ? "bg-primary" : "bg-muted")}
+                    >
+                      <Crosshair className="h-4 w-4 mr-1" />
+                      {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Your Current Risk Assessment</CardTitle>

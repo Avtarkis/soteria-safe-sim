@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -20,7 +19,6 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Fetch real threat data if user is authenticated
     const fetchThreats = async () => {
       if (!user) return;
       
@@ -42,15 +40,12 @@ const Dashboard = () => {
 
     fetchThreats();
     
-    // If no threats exist yet, create some sample threats for new users
     const createSampleThreats = async () => {
       if (!user || !loading || threatAlerts.length > 0) return;
       
-      // Wait a bit to simulate real data loading
       setTimeout(async () => {
         if (threatAlerts.length === 0) {
           try {
-            // Create sample threats
             await addThreat({
               title: 'Suspicious Login Attempt',
               description: 'Someone tried to log into your account from an unrecognized device in Moscow, Russia.',
@@ -72,7 +67,6 @@ const Dashboard = () => {
               action: 'See Details'
             });
             
-            // Refresh the threats list
             fetchThreats();
           } catch (error) {
             console.error('Error creating sample threats:', error);
@@ -82,16 +76,13 @@ const Dashboard = () => {
     };
     
     createSampleThreats();
-    
   }, [user, loading]);
 
-  // Handle resolving a threat
   const handleResolveThreat = async (threatId: string) => {
     if (!user) return;
     
     try {
       await threatService.resolveThreat(threatId, user.id);
-      // Remove the resolved threat from the UI
       setThreatAlerts(prev => prev.filter(threat => threat.id !== threatId));
       
       toast({
@@ -108,7 +99,6 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate security score based on active threats
   const calculateSecurityScore = () => {
     if (threatAlerts.length === 0) return 100;
     
@@ -122,10 +112,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
-      {/* Header section */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <img src="/lovable-uploads/127b347e-c137-4920-85d5-153221ef3927.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Security Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -133,7 +122,6 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Stats overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {[
           { 
@@ -181,7 +169,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Threat alerts section */}
       <div>
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl font-semibold">Recent Threats</h2>
@@ -236,7 +223,6 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Quick actions */}
       <div>
         <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 gap-3 sm:gap-4">

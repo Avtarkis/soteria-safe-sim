@@ -33,6 +33,7 @@ interface LeafletMapProps {
   onMarkerClick?: (marker: ThreatMarker) => void;
   center?: [number, number]; // [latitude, longitude]
   zoom?: number;
+  showUserLocation?: boolean;
 }
 
 const LeafletMap: React.FC<LeafletMapProps> = ({
@@ -40,11 +41,14 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   markers = [],
   onMarkerClick,
   center = [40.7128, -74.006], // Default to New York City
-  zoom = 13
+  zoom = 13,
+  showUserLocation = false
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
+  const userLocationCircleRef = useRef<L.Circle | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -61,19 +65,74 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
       // Create a layer group for the markers
       markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
+
+      // Add user location functionality if requested
+      if (showUserLocation) {
+        mapRef.current.on('locationfound', (e: L.LocationEvent) => {
+          const radius = e.accuracy;
+          
+          // Remove previous markers if they exist
+          if (userLocationMarkerRef.current) {
+            mapRef.current?.removeLayer(userLocationMarkerRef.current);
+          }
+          if (userLocationCircleRef.current) {
+            mapRef.current?.removeLayer(userLocationCircleRef.current);
+          }
+
+          // Create a custom icon for user location
+          const userIcon = L.divIcon({
+            className: 'user-location-marker',
+            html: `<div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          });
+          
+          // Add marker for user location
+          userLocationMarkerRef.current = L.marker(e.latlng, { icon: userIcon })
+            .addTo(mapRef.current!)
+            .bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+          // Add circle showing accuracy radius
+          userLocationCircleRef.current = L.circle(e.latlng, {
+            radius: radius,
+            color: '#4F46E5',
+            fillColor: '#4F46E5',
+            fillOpacity: 0.1,
+            weight: 1
+          }).addTo(mapRef.current!);
+        });
+
+        mapRef.current.on('locationerror', (e: L.ErrorEvent) => {
+          console.error('Location error:', e.message);
+        });
+      }
     } else {
       // Update the map view if center or zoom changed
       mapRef.current.setView(center, zoom);
+      
+      // Locate user if requested and map already exists
+      if (showUserLocation) {
+        mapRef.current.locate({ setView: true, maxZoom: 16 });
+      }
+    }
+
+    // Start location tracking if showUserLocation is true
+    if (showUserLocation && mapRef.current) {
+      mapRef.current.locate({ setView: true, maxZoom: 16, watch: true });
     }
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markersLayerRef.current = null;
+        mapRef.current.stopLocate(); // Stop watching location when component unmounts
+        if (userLocationMarkerRef.current) {
+          mapRef.current.removeLayer(userLocationMarkerRef.current);
+        }
+        if (userLocationCircleRef.current) {
+          mapRef.current.removeLayer(userLocationCircleRef.current);
+        }
       }
     };
-  }, []);
+  }, [center, zoom, showUserLocation]);
 
   // Update markers when they change
   useEffect(() => {
@@ -110,7 +169,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         fillColor: markerColor,
         fillOpacity: 0.2,
         radius: circleRadius * 50 // Scaled for visibility
-      }).addTo(markersLayerRef.current);
+      }).addTo(markersLayerRef.current!);
       
       // Add marker at the center of threat zone
       const icon = L.divIcon({
@@ -120,7 +179,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         iconAnchor: [8, 8]
       });
       
-      const mapMarker = L.marker(marker.position, { icon }).addTo(markersLayerRef.current);
+      const mapMarker = L.marker(marker.position, { icon }).addTo(markersLayerRef.current!);
       
       // Add popup with basic info
       const threatType = marker.type ? `<br>${marker.type.toUpperCase()} threat` : '';
