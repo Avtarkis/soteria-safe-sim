@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ButtonWrapper from './ui/ButtonWrapper';
 import { Shield, Mail, Key, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import ForgotPasswordDialog from './auth/ForgotPasswordDialog';
 
 const AuthScreen = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,6 +16,7 @@ const AuthScreen = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [threatTypes, setThreatTypes] = useState(['Cyber', 'Physical', 'Environmental']);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
@@ -67,6 +70,14 @@ const AuthScreen = () => {
         ? prev.filter(t => t !== type) 
         : [...prev, type]
     );
+  };
+
+  const openForgotPassword = () => {
+    setIsForgotPasswordOpen(true);
+  };
+
+  const closeForgotPassword = () => {
+    setIsForgotPasswordOpen(false);
   };
 
   return (
@@ -213,7 +224,11 @@ const AuthScreen = () => {
                     <label className="text-sm font-medium" htmlFor="loginPassword">
                       Password
                     </label>
-                    <button type="button" className="text-xs text-primary hover:underline">
+                    <button 
+                      type="button" 
+                      className="text-xs text-primary hover:underline"
+                      onClick={openForgotPassword}
+                    >
                       Forgot password?
                     </button>
                   </div>
@@ -272,6 +287,11 @@ const AuthScreen = () => {
           </p>
         </div>
       </div>
+      
+      <ForgotPasswordDialog 
+        isOpen={isForgotPasswordOpen} 
+        onClose={closeForgotPassword} 
+      />
     </div>
   );
 };

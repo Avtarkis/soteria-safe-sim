@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, Profile } from '@/lib/supabase';
@@ -13,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -358,6 +358,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      // In development mode, simulate successful reset
+      if (isDevEnvironment()) {
+        console.log('Development mode: Simulating password reset for', email);
+        
+        toast({
+          title: "Development Mode",
+          description: "Password reset simulated successfully. Check your email.",
+        });
+        
+        return { error: null };
+      }
+      
+      // Actual Supabase reset password
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast({
+          title: "Reset Password Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error: error.message };
+      }
+      
+      toast({
+        title: "Reset Email Sent",
+        description: "Check your email for the password reset link.",
+      });
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Error during password reset:', error);
+      
+      toast({
+        title: "Reset Failed",
+        description: "Unable to connect to authentication service. Please try again later.",
+        variant: "destructive",
+      });
+      
+      return { error: 'An unexpected error occurred' };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -367,6 +414,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     updateProfile,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

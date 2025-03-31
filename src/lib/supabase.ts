@@ -63,6 +63,8 @@ export type Database = {
           user_id: string;
           action: string | null;
           resolved: boolean;
+          latitude?: number;
+          longitude?: number;
         };
         Insert: {
           id?: string;
@@ -73,6 +75,8 @@ export type Database = {
           user_id: string;
           action?: string | null;
           resolved?: boolean;
+          latitude?: number;
+          longitude?: number;
         };
         Update: {
           id?: string;
@@ -83,6 +87,8 @@ export type Database = {
           user_id?: string;
           action?: string | null;
           resolved?: boolean;
+          latitude?: number;
+          longitude?: number;
         };
       };
       security_logs: {
