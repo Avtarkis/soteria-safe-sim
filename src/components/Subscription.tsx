@@ -1,15 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, XCircle, CreditCard, Shield, ArrowRight, Zap, BadgeCheck, Clock, Smartphone, Bell, AlertTriangle, MapPin, Camera, Mic, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const features = {
   free: [
     "Basic threat alerts",
-    "Standard emergency response",
+    "Standard emergency response", 
     "Cybersecurity monitoring (limited)",
     "Global threat map (limited)",
     "Email support"
@@ -49,6 +50,8 @@ interface PricingCardProps {
   features: string[];
   buttonText: string;
   popular?: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
 }
 
 const PricingCard = ({ 
@@ -59,12 +62,15 @@ const PricingCard = ({
   description, 
   features, 
   buttonText, 
-  popular 
+  popular,
+  isSelected,
+  onSelect
 }: PricingCardProps) => {
   return (
     <Card className={cn(
       "flex flex-col h-full transition-all duration-300",
-      popular && "border-2 border-primary shadow-lg scale-105"
+      popular && "border-2 border-primary shadow-lg scale-105",
+      isSelected && "ring-2 ring-primary"
     )}>
       <CardHeader>
         {popular && (
@@ -80,6 +86,17 @@ const PricingCard = ({
         <CardDescription className="mt-2">{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
+        <RadioGroup className="mb-4">
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem 
+              id={`plan-${type}`} 
+              value={type} 
+              checked={isSelected}
+              onClick={onSelect}
+            />
+            <Label htmlFor={`plan-${type}`}>Select {title}</Label>
+          </div>
+        </RadioGroup>
         <ul className="space-y-3">
           {features.map((feature, i) => (
             <li key={i} className="flex items-baseline gap-2">
@@ -113,6 +130,7 @@ const PricingCard = ({
           )}
           variant={type === 'free' ? 'secondary' : 'default'}
           onClick={() => {
+            onSelect();
             if (type === 'premium') {
               toast({
                 title: "Premium Plan Selected",
@@ -155,8 +173,8 @@ const Subscription = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [demoActive, setDemoActive] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium'>('free');
   
-  // Simulate demo countdown and completion
   useEffect(() => {
     if (!demoActive) return;
     
@@ -164,7 +182,6 @@ const Subscription = () => {
     if (countdown > 0) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else {
-      // Demo completion actions
       setTimeout(() => {
         if (demoActive === 'emergency') {
           toast({
@@ -245,7 +262,6 @@ const Subscription = () => {
           });
         }
         
-        // Reset demo state
         setDemoActive(null);
         setCountdown(3);
       }, 500);
@@ -268,7 +284,6 @@ const Subscription = () => {
         </p>
       </div>
 
-      {/* Pricing toggle */}
       <div className="flex justify-center mb-8">
         <div className="bg-secondary p-1 rounded-full flex items-center">
           <button
@@ -299,7 +314,6 @@ const Subscription = () => {
         </div>
       </div>
 
-      {/* Pricing cards */}
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         <PricingCard 
           type="free"
@@ -309,6 +323,8 @@ const Subscription = () => {
           description="Basic protection for personal use"
           features={features.free}
           buttonText="Get Started"
+          isSelected={selectedPlan === 'free'}
+          onSelect={() => setSelectedPlan('free')}
         />
         
         <PricingCard 
@@ -320,10 +336,11 @@ const Subscription = () => {
           features={features.premium}
           buttonText="Upgrade Now"
           popular
+          isSelected={selectedPlan === 'premium'}
+          onSelect={() => setSelectedPlan('premium')}
         />
       </div>
 
-      {/* Feature comparison */}
       <div className="mt-12 max-w-4xl mx-auto">
         <h2 className="text-xl font-semibold text-center mb-8">Compare Features</h2>
         
@@ -377,7 +394,6 @@ const Subscription = () => {
         </div>
       </div>
 
-      {/* Feature demo section */}
       <div className="mt-12 max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold text-center mb-2">Try Premium Features</h2>
         <p className="text-center text-muted-foreground mb-8">Click on any feature to see a simulation of how it works</p>
@@ -534,7 +550,6 @@ const Subscription = () => {
         )}
       </div>
 
-      {/* Feature descriptions */}
       <div className="mt-12 max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold text-center mb-8">Premium Features</h2>
         
@@ -591,7 +606,6 @@ const Subscription = () => {
         </div>
       </div>
 
-      {/* FAQ Section */}
       <div className="mt-12 max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold text-center mb-8">Frequently Asked Questions</h2>
         
@@ -626,7 +640,6 @@ const Subscription = () => {
         </div>
       </div>
 
-      {/* CTA Section */}
       <div className="mt-16">
         <Card className="bg-primary text-primary-foreground">
           <CardContent className="p-8">

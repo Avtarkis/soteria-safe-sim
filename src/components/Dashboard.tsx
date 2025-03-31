@@ -124,7 +124,10 @@ const Dashboard = () => {
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       {/* Header section */}
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Security Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Security Dashboard</h1>
+        </div>
         <p className="text-sm sm:text-base text-muted-foreground">
           AI-powered protection is actively monitoring your digital and physical safety.
         </p>

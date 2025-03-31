@@ -6,6 +6,15 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from '@/hooks/use-toast';
 
 interface NavItem {
   label: string;
@@ -46,6 +55,13 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const handleNotificationClick = () => {
+    toast({
+      title: "Notifications",
+      description: "You have no new notifications at this time.",
+    });
+  };
+
   return (
     <nav
       className={cn(
@@ -59,7 +75,7 @@ const Navbar = () => {
           <div className="flex items-center flex-shrink-0">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
               <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
-                <img src="/logo.svg" alt="Soteria Logo" className="h-full w-full object-contain" />
+                <img src="/logo.png" alt="Soteria Logo" className="h-full w-full object-contain" />
               </div>
               <span className="text-lg sm:text-xl font-semibold text-gradient">Soteria</span>
             </Link>
@@ -82,25 +98,47 @@ const Navbar = () => {
           {/* Right side icons */}
           {user && (
             <div className="hidden md:flex items-center space-x-4">
-              <button className="rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleNotificationClick}
+              >
                 <Bell className="h-5 w-5" />
-              </button>
-              <div className="flex items-center space-x-2">
-                <button className="rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <User className="h-5 w-5" />
-                </button>
-                <div className="text-sm font-medium hidden lg:block">
-                  {profile?.full_name || 'User'}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={handleSignOut}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span>{profile?.full_name || 'User'}</span>
+                      <span className="text-xs text-muted-foreground">{profile?.email || user.email}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Subscription</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast({ title: "Settings", description: "Settings page will be available soon." })}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
@@ -144,15 +182,22 @@ const Navbar = () => {
                 <div className="text-xs sm:text-sm text-muted-foreground">{profile?.email || user.email}</div>
               </div>
               <div className="ml-auto flex items-center">
-                <button className="p-1.5 sm:p-2 rounded-full text-foreground hover:text-primary transition-colors">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="p-1.5 sm:p-2 rounded-full text-foreground hover:text-primary transition-colors"
+                  onClick={() => toast({ title: "Settings", description: "Settings page will be available soon." })}
+                >
                   <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-                <button 
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
                   className="p-1.5 sm:p-2 rounded-full text-foreground hover:text-primary transition-colors ml-1"
                   onClick={handleSignOut}
                 >
                   <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
