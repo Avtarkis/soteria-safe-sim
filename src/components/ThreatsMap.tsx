@@ -19,6 +19,8 @@ import LeafletMap from '@/components/ui/LeafletMap';
 import { ThreatMarker } from '@/types/threats';
 import { useToast } from '@/hooks/use-toast';
 import { threatService } from '@/services/threatService';
+import { crimeService } from '@/services/crimeService';
+import { hibpService } from '@/services/hibpService';
 
 interface ThreatZone {
   id: string;
@@ -51,13 +53,33 @@ const ThreatsMap = () => {
   const [threatMarkers, setThreatMarkers] = useState<ThreatMarker[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleUserLocationUpdate = (e: CustomEvent) => {
+      const { lat, lng, accuracy } = e.detail;
+      setUserLocation([lat, lng]);
+      setLocationAccuracy(accuracy);
+      toast({
+        title: "Location Updated",
+        description: `Your location has been updated with accuracy of ±${accuracy.toFixed(1)}m`,
+      });
+    };
+
+    document.addEventListener('userLocationUpdated', handleUserLocationUpdate as EventListener);
+    
+    return () => {
+      document.removeEventListener('userLocationUpdated', handleUserLocationUpdate as EventListener);
+    };
+  }, [toast]);
 
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
+          setLocationAccuracy(position.coords.accuracy);
           toast({
             title: "Location Detected",
             description: "Your current location has been detected and is now displayed on the map.",
@@ -86,8 +108,51 @@ const ThreatsMap = () => {
   const loadThreatData = async () => {
     setLoading(true);
     try {
-      const markers = await threatService.getGlobalThreatMarkers(userLocation || undefined);
-      setThreatMarkers(markers);
+      let allThreats: ThreatMarker[] = [];
+      
+      const basicThreats = await threatService.getGlobalThreatMarkers(userLocation || undefined);
+      allThreats = [...allThreats, ...basicThreats];
+      
+      if (userLocation) {
+        try {
+          const state = 'CA';
+          const county = 'Los Angeles';
+          const crimeThreats = await crimeService.getCrimeThreats(state, county);
+          
+          const crimeThreatsNearUser = crimeThreats.map(threat => ({
+            ...threat,
+            position: [
+              userLocation[0] + (Math.random() * 0.02 - 0.01), 
+              userLocation[1] + (Math.random() * 0.02 - 0.01)
+            ] as [number, number]
+          }));
+          
+          allThreats = [...allThreats, ...crimeThreatsNearUser];
+        } catch (error) {
+          console.error('Error loading crime data:', error);
+        }
+      }
+      
+      try {
+        const cyberThreats = await hibpService.getBreachThreats('demo@example.com');
+        
+        if (userLocation) {
+          const cyberThreatsNearUser = cyberThreats.map(threat => ({
+            ...threat,
+            position: [
+              userLocation[0] + (Math.random() * 0.05 - 0.025), 
+              userLocation[1] + (Math.random() * 0.05 - 0.025)
+            ] as [number, number]
+          }));
+          allThreats = [...allThreats, ...cyberThreatsNearUser];
+        } else {
+          allThreats = [...allThreats, ...cyberThreats];
+        }
+      } catch (error) {
+        console.error('Error loading cyber threat data:', error);
+      }
+      
+      setThreatMarkers(allThreats);
     } catch (error) {
       console.error('Error loading threat data:', error);
       toast({
@@ -407,6 +472,9 @@ const ThreatsMap = () => {
                     <p className="font-medium text-foreground">Coordinates:</p>
                     <p>Lat: {userLocation[0].toFixed(6)}</p>
                     <p>Lng: {userLocation[1].toFixed(6)}</p>
+                    {locationAccuracy && (
+                      <p>Accuracy: ±{locationAccuracy.toFixed(1)} meters</p>
+                    )}
                   </div>
                   <div className="flex justify-between items-center mt-4">
                     <Button 

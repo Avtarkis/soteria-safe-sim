@@ -50,6 +50,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const userLocationCircleRef = useRef<L.Circle | null>(null);
   const userLocationAccuracyRef = useRef<number>(0);
+  const userLocationLatLngRef = useRef<L.LatLng | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -72,6 +73,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         mapRef.current.on('locationfound', (e: L.LocationEvent) => {
           const radius = e.accuracy;
           userLocationAccuracyRef.current = radius;
+          userLocationLatLngRef.current = e.latlng;
           
           // Remove previous markers if they exist
           if (userLocationMarkerRef.current) {
@@ -121,6 +123,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
           
           // Automatically open the popup when first locating
           userLocationMarkerRef.current.openPopup();
+
+          // Custom event that components can listen to
+          const customEvent = new CustomEvent('userLocationUpdated', {
+            detail: {
+              lat: e.latlng.lat,
+              lng: e.latlng.lng,
+              accuracy: radius
+            }
+          });
+          document.dispatchEvent(customEvent);
         });
 
         mapRef.current.on('locationerror', (e: L.ErrorEvent) => {
@@ -143,7 +155,9 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         setView: true, 
         maxZoom: 16, 
         watch: true,
-        enableHighAccuracy: true 
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
       });
     }
 
@@ -219,10 +233,19 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     });
   }, [markers, onMarkerClick]);
 
+  // Method to get current user location (can be exposed if needed)
+  const getUserLocation = (): [number, number] | null => {
+    if (userLocationLatLngRef.current) {
+      return [userLocationLatLngRef.current.lat, userLocationLatLngRef.current.lng];
+    }
+    return null;
+  };
+
   return (
     <div 
       ref={mapContainerRef} 
       className={cn("h-full w-full min-h-[300px]", className)}
+      id="leaflet-map-container"
     />
   );
 };

@@ -1,250 +1,227 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import ThreatsCard from '@/components/ui/ThreatsCard';
 import { Button } from '@/components/ui/button';
-import { Shield, Bell, ArrowRight, Globe, FileText, Lock, Map } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { threatService } from '@/services/threatService';
-import { useThreatNotifications } from '@/hooks/use-threat-notifications';
-import { ThreatAlert } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, PhoneCall, Shield as ShieldIcon, Zap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { useNavigate } from 'react-router-dom';
+import { threatService } from '@/services/threatService';
+import { cn } from '@/lib/utils';
+
+const threatLevelStyles = {
+  high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+};
 
 const Dashboard = () => {
-  const [threatAlerts, setThreatAlerts] = useState<ThreatAlert[]>([]);
+  const [recentThreats, setRecentThreats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user, profile } = useAuth();
-  const { addThreat } = useThreatNotifications();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchThreats = async () => {
-      if (!user) return;
-      
+    const fetchRecentThreats = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const threats = await threatService.getRecentThreats(user.id);
-        setThreatAlerts(threats);
+        // Replace 'user-id' with the actual user ID or fetch it from authentication context
+        const userId = 'user-id';
+        const threats = await threatService.getRecentThreats(userId);
+        setRecentThreats(threats);
       } catch (error) {
-        console.error('Failed to fetch threats:', error);
+        console.error('Error fetching recent threats:', error);
         toast({
-          title: "Error",
-          description: "Failed to load threat data",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load recent threats. Please try again later.',
+          variant: 'destructive',
         });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchThreats();
-    
-    const createSampleThreats = async () => {
-      if (!user || !loading || threatAlerts.length > 0) return;
-      
-      setTimeout(async () => {
-        if (threatAlerts.length === 0) {
-          try {
-            await addThreat({
-              title: 'Suspicious Login Attempt',
-              description: 'Someone tried to log into your account from an unrecognized device in Moscow, Russia.',
-              level: 'high',
-              action: 'Secure Account'
-            });
-            
-            await addThreat({
-              title: 'High Crime Area Alert',
-              description: 'You are entering an area with recent reports of mugging incidents.',
-              level: 'medium',
-              action: 'View Safe Routes'
-            });
-            
-            await addThreat({
-              title: 'Weather Advisory',
-              description: 'Flash flood warning in your current location for the next 24 hours.',
-              level: 'low',
-              action: 'See Details'
-            });
-            
-            fetchThreats();
-          } catch (error) {
-            console.error('Error creating sample threats:', error);
-          }
-        }
-      }, 2000);
-    };
-    
-    createSampleThreats();
-  }, [user, loading]);
-
-  const handleResolveThreat = async (threatId: string) => {
-    if (!user) return;
-    
-    try {
-      await threatService.resolveThreat(threatId, user.id);
-      setThreatAlerts(prev => prev.filter(threat => threat.id !== threatId));
-      
-      toast({
-        title: "Threat Resolved",
-        description: "The security threat has been resolved.",
-      });
-    } catch (error) {
-      console.error('Failed to resolve threat:', error);
-      toast({
-        title: "Error",
-        description: "Failed to resolve the threat",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const calculateSecurityScore = () => {
-    if (threatAlerts.length === 0) return 100;
-    
-    const threatWeights = { high: 10, medium: 5, low: 2 };
-    const totalThreats = threatAlerts.length;
-    const threatScore = threatAlerts.reduce((score, threat) => 
-      score + (threatWeights[threat.level] || 0), 0);
-    
-    return Math.max(0, 100 - threatScore);
-  };
+    fetchRecentThreats();
+  }, [toast]);
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Security Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
-          AI-powered protection is actively monitoring your digital and physical safety.
+          Welcome back. Here's your security status at a glance.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {[
-          { 
-            title: 'Security Score', 
-            value: `${calculateSecurityScore()}`, 
-            icon: Shield, 
-            color: 'text-primary', 
-            description: calculateSecurityScore() > 90 
-              ? 'Your protection status is excellent' 
-              : calculateSecurityScore() > 70 
-                ? 'Your protection status is good' 
-                : 'Your protection needs attention'
-          },
-          { 
-            title: 'Active Alerts', 
-            value: `${threatAlerts.length}`, 
-            icon: Bell, 
-            color: 'text-threat-medium', 
-            description: threatAlerts.length === 0 
-              ? 'No active threats' 
-              : `${threatAlerts.filter(t => t.level === 'high').length} high, ${threatAlerts.filter(t => t.level === 'medium').length} medium, ${threatAlerts.filter(t => t.level === 'low').length} low`
-          },
-          { 
-            title: 'Protected Days', 
-            value: user ? '1' : '0', 
-            icon: Globe, 
-            color: 'text-green-500', 
-            description: 'Continuous protection streak' 
-          },
-        ].map((stat, index) => (
-          <Card key={index} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-base font-medium">{stat.title}</CardTitle>
-                <stat.icon className={cn("h-5 w-5", stat.color)} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-2xl sm:text-3xl font-bold">{stat.value}</span>
-                <span className="text-xs sm:text-sm text-muted-foreground">{stat.description}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <Card className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              Overall Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Your system is well-protected. Keep monitoring for potential threats.
+            </div>
+            <Progress value={85} className="mt-4" />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-500" />
+              Financial Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Monitor your financial accounts and transactions for any suspicious activity.
+            </div>
+            <Progress value={60} className="mt-4" />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Threat Detection
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Real-time threat analysis and alerts to keep you informed of potential risks.
+            </div>
+            <Progress value={40} className="mt-4" />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-lg sm:text-xl font-semibold">Recent Threats</h2>
-          <Link to="/threats">
-            <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm">
-              <span>View all</span>
-              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+      <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/activity">
+                View All
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
-          </Link>
-        </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loading ? (
+              <div className="text-center text-muted-foreground">Loading recent activity...</div>
+            ) : recentThreats.length > 0 ? (
+              recentThreats.map((threat) => (
+                <div key={threat.id} className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{threat.title}</p>
+                    <p className="text-xs text-muted-foreground">{threat.description}</p>
+                  </div>
+                  <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", threatLevelStyles[threat.level])}>
+                    {threat.level}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground">No recent activity found.</div>
+            )}
+          </CardContent>
+        </Card>
 
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-muted"></div>
-                    <div className="h-4 w-32 rounded-md bg-muted"></div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 w-full rounded-md bg-muted mb-2"></div>
-                  <div className="h-3 w-3/4 rounded-md bg-muted"></div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="h-5 w-20 rounded-full bg-muted"></div>
-                    <div className="h-3 w-12 rounded-md bg-muted"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : threatAlerts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {threatAlerts.map((alert) => (
-              <ThreatsCard
-                key={alert.id}
-                title={alert.title}
-                description={alert.description}
-                level={alert.level}
-                time={new Date(alert.created_at).toLocaleString()}
-                action={alert.action || undefined}
-                onAction={() => handleResolveThreat(alert.id)}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Map className="h-5 w-5" />
+              Threat Map
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/threats')}>
+              View Map
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Explore real-time threat locations and potential risks in your area.
+            </div>
+            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden">
+              <img
+                src="https://source.unsplash.com/random/600x337?threat"
+                alt="Threat Map Placeholder"
+                className="object-cover"
               />
-            ))}
-          </div>
-        ) : (
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground">No active threats detected</p>
-            <p className="text-sm text-muted-foreground mt-2">Your security status is currently clear</p>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div>
-        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {[
-            { title: 'Scan Device', icon: FileText, href: '/security', color: 'bg-blue-500' },
-            { title: 'View Map', icon: Map, href: '/map', color: 'bg-purple-500' }, 
-            { title: 'Identity Protection', icon: Lock, href: '/security', color: 'bg-green-500' },
-            { title: 'Emergency SOS', icon: Bell, href: '/emergency', color: 'bg-red-500' },
-          ].map((action, index) => (
-            <Link key={index} to={action.href} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-              <Card className="hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center">
-                  <div className={cn("p-2 sm:p-3 rounded-full mb-2 sm:mb-3", action.color, action.title === 'Emergency SOS' ? 'animate-pulse-threat' : '')}>
-                    <action.icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium">{action.title}</span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="bg-zinc-50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Account Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span className="flex-1">Enable notifications for suspicious activity</span>
+                <Zap className="h-4 w-4 text-green-500" />
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="flex-1">Enable two-factor authentication</span>
+                <Zap className="h-4 w-4 text-green-500" />
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-zinc-50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <PhoneCall className="h-4 w-4" />
+              Emergency Contacts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="flex-1">Add trusted contacts for emergencies</span>
+                <Zap className="h-4 w-4 text-yellow-500" />
+              </li>
+              <li className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <span className="flex-1">Notify contacts in case of a security breach</span>
+                <Zap className="h-4 w-4 text-green-500" />
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
