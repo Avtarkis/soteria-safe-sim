@@ -49,6 +49,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const userLocationCircleRef = useRef<L.Circle | null>(null);
+  const userLocationAccuracyRef = useRef<number>(0);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -70,6 +71,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       if (showUserLocation) {
         mapRef.current.on('locationfound', (e: L.LocationEvent) => {
           const radius = e.accuracy;
+          userLocationAccuracyRef.current = radius;
           
           // Remove previous markers if they exist
           if (userLocationMarkerRef.current) {
@@ -79,18 +81,34 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             mapRef.current?.removeLayer(userLocationCircleRef.current);
           }
 
-          // Create a custom icon for user location
+          // Create a custom icon for user location with pulsing effect
           const userIcon = L.divIcon({
             className: 'user-location-marker',
-            html: `<div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
+            html: `
+              <div style="position: relative;">
+                <div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: absolute; top: -8px; left: -8px; z-index: 2;"></div>
+                <div style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: -20px; left: -20px; z-index: 1; animation: pulse 1.5s infinite ease-out;"></div>
+              </div>
+              <style>
+                @keyframes pulse {
+                  0% { transform: scale(0.5); opacity: 1; }
+                  100% { transform: scale(1.5); opacity: 0; }
+                }
+              </style>
+            `,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0]
           });
           
           // Add marker for user location
           userLocationMarkerRef.current = L.marker(e.latlng, { icon: userIcon })
             .addTo(mapRef.current!)
-            .bindPopup("You are within " + radius + " meters from this point").openPopup();
+            .bindPopup(`
+              <b>Your Current Location</b><br>
+              Lat: ${e.latlng.lat.toFixed(6)}<br>
+              Lng: ${e.latlng.lng.toFixed(6)}<br>
+              Accuracy: ±${radius.toFixed(1)} meters
+            `);
 
           // Add circle showing accuracy radius
           userLocationCircleRef.current = L.circle(e.latlng, {
@@ -100,6 +118,9 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             fillOpacity: 0.1,
             weight: 1
           }).addTo(mapRef.current!);
+          
+          // Automatically open the popup when first locating
+          userLocationMarkerRef.current.openPopup();
         });
 
         mapRef.current.on('locationerror', (e: L.ErrorEvent) => {
@@ -118,7 +139,12 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
     // Start location tracking if showUserLocation is true
     if (showUserLocation && mapRef.current) {
-      mapRef.current.locate({ setView: true, maxZoom: 16, watch: true });
+      mapRef.current.locate({ 
+        setView: true, 
+        maxZoom: 16, 
+        watch: true,
+        enableHighAccuracy: true 
+      });
     }
 
     return () => {
