@@ -75,7 +75,7 @@ const Navbar = () => {
           <div className="flex items-center flex-shrink-0">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
               <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
-                <img src="/logo.png" alt="Soteria Logo" className="h-full w-full object-contain" />
+                <img src="/logo.svg" alt="Soteria Logo" className="h-full w-full object-contain" />
               </div>
               <span className="text-lg sm:text-xl font-semibold text-gradient">Soteria</span>
             </Link>

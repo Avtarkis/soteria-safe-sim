@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 interface EmergencyNumber {
@@ -28,14 +27,21 @@ export const emergencyService = {
    */
   getEmergencyNumbers: async (countryCode: string): Promise<EmergencyNumber | null> => {
     try {
+      console.log("Getting emergency numbers for country code:", countryCode);
       const response = await axios.get(`https://emergencynumberapi.com/api/country/${countryCode}`);
-      return {
-        country: response.data.name || '',
-        countryCode: response.data.code || countryCode,
-        police: response.data.police || '911',
-        ambulance: response.data.ambulance || '911',
-        fire: response.data.fire || '911'
-      };
+      
+      if (response.data && response.data.data) {
+        const data = response.data.data;
+        return {
+          country: data.name || '',
+          countryCode: data.code || countryCode,
+          police: data.police || '911',
+          ambulance: data.ambulance || '911',
+          fire: data.fire || '911'
+        };
+      }
+      
+      throw new Error("Invalid response format from emergencynumberapi");
     } catch (error) {
       console.error('Error fetching emergency numbers:', error);
       
@@ -43,12 +49,41 @@ export const emergencyService = {
       const fallbackNumbers: Record<string, EmergencyNumber> = {
         'US': { country: 'United States', countryCode: 'US', police: '911', ambulance: '911', fire: '911' },
         'GB': { country: 'United Kingdom', countryCode: 'GB', police: '999', ambulance: '999', fire: '999' },
-        'EU': { country: 'Europe', countryCode: 'EU', police: '112', ambulance: '112', fire: '112' },
         'AU': { country: 'Australia', countryCode: 'AU', police: '000', ambulance: '000', fire: '000' },
+        'NZ': { country: 'New Zealand', countryCode: 'NZ', police: '111', ambulance: '111', fire: '111' },
+        'IN': { country: 'India', countryCode: 'IN', police: '100', ambulance: '102', fire: '101' },
+        'CA': { country: 'Canada', countryCode: 'CA', police: '911', ambulance: '911', fire: '911' },
+        'CN': { country: 'China', countryCode: 'CN', police: '110', ambulance: '120', fire: '119' },
+        'JP': { country: 'Japan', countryCode: 'JP', police: '110', ambulance: '119', fire: '119' },
+        'DE': { country: 'Germany', countryCode: 'DE', police: '110', ambulance: '112', fire: '112' },
+        'FR': { country: 'France', countryCode: 'FR', police: '17', ambulance: '15', fire: '18' },
       };
       
-      // Return fallback or null
-      return fallbackNumbers[countryCode] || fallbackNumbers['US'] || null;
+      // Use country-specific fallback or European standard 112 for any European country
+      if (fallbackNumbers[countryCode]) {
+        return fallbackNumbers[countryCode];
+      }
+      
+      // For European countries, default to 112
+      const europeanCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+      if (europeanCountries.includes(countryCode)) {
+        return {
+          country: 'Europe',
+          countryCode: countryCode,
+          police: '112',
+          ambulance: '112',
+          fire: '112'
+        };
+      }
+      
+      // Final fallback
+      return {
+        country: 'International',
+        countryCode: countryCode || 'INTL',
+        police: '112',
+        ambulance: '112',
+        fire: '112'
+      };
     }
   },
   
@@ -58,25 +93,45 @@ export const emergencyService = {
    */
   getEmergencyNumbersByLocation: async (latitude: number, longitude: number): Promise<EmergencyNumber | null> => {
     try {
+      console.log(`Getting emergency numbers for location: ${latitude}, ${longitude}`);
       // First, get the country code from coordinates using reverse geocoding
       const reverseGeoResponse = await axios.get(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`
       );
       
-      const countryCode = reverseGeoResponse.data.address.country_code.toUpperCase();
+      console.log("Reverse geocoding response:", reverseGeoResponse.data);
+      
+      let countryCode = '';
+      if (reverseGeoResponse.data && reverseGeoResponse.data.address) {
+        countryCode = reverseGeoResponse.data.address.country_code?.toUpperCase();
+      }
+      
+      if (!countryCode) {
+        throw new Error("Could not determine country code from coordinates");
+      }
+      
+      console.log("Detected country code:", countryCode);
       
       // Then get emergency numbers for that country
       return await emergencyService.getEmergencyNumbers(countryCode);
     } catch (error) {
       console.error('Error getting emergency numbers by location:', error);
-      // Return US emergency numbers as fallback
-      return {
-        country: 'United States',
-        countryCode: 'US',
-        police: '911',
-        ambulance: '911',
-        fire: '911'
-      };
+      
+      // Try to make a best guess based on the coordinates
+      let guessedCountryCode = 'US'; // Default
+      
+      // Very rough estimation based on latitude/longitude
+      if (latitude > 24 && latitude < 50 && longitude > -125 && longitude < -66) {
+        guessedCountryCode = 'US'; // United States
+      } else if (latitude > 49 && latitude < 60 && longitude > -125 && longitude < -55) {
+        guessedCountryCode = 'CA'; // Canada
+      } else if (latitude > 35 && latitude < 60 && longitude > -10 && longitude < 40) {
+        guessedCountryCode = 'EU'; // Europe (general)
+      } else if (latitude > -40 && latitude < -10 && longitude > 110 && longitude < 155) {
+        guessedCountryCode = 'AU'; // Australia
+      }
+      
+      return emergencyService.getEmergencyNumbers(guessedCountryCode);
     }
   },
   

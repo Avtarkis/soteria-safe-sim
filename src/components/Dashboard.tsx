@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -47,7 +48,7 @@ const Dashboard = () => {
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <img src="/lovable-uploads/127b347e-c137-4920-85d5-153221ef3927.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <img src="/logo.svg" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -155,7 +156,7 @@ const Dashboard = () => {
               <Map className="h-5 w-5" />
               Threat Map
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/threats')}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/map')}>
               View Map
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
@@ -164,11 +165,14 @@ const Dashboard = () => {
             <div className="text-sm text-muted-foreground">
               Explore real-time threat locations and potential risks in your area.
             </div>
-            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden">
+            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
               <img
-                src="https://source.unsplash.com/random/600x337?threat"
-                alt="Threat Map Placeholder"
-                className="object-cover"
+                src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png"
+                alt="Threat Map Preview"
+                className="object-cover w-full h-full"
+                onError={(e) => {
+                  e.currentTarget.src = "https://source.unsplash.com/random/600x337?map";
+                }}
               />
             </div>
           </CardContent>

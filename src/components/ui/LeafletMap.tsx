@@ -1,11 +1,10 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
 
 // Import marker icon images (Leaflet requires these)
-// We need to manually set these because of how bundlers work with Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -51,12 +50,15 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const userLocationCircleRef = useRef<L.Circle | null>(null);
   const userLocationAccuracyRef = useRef<number>(0);
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
+  const [mapCreated, setMapCreated] = useState(false);
 
+  // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     // Initialize map if it doesn't exist
     if (!mapRef.current) {
+      console.log("Initializing map...");
       mapRef.current = L.map(mapContainerRef.current).setView(center, zoom);
       
       // Add the tile layer (OpenStreetMap)
@@ -67,119 +69,138 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
       // Create a layer group for the markers
       markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
-
-      // Add user location functionality if requested
-      if (showUserLocation) {
-        mapRef.current.on('locationfound', (e: L.LocationEvent) => {
-          const radius = e.accuracy;
-          userLocationAccuracyRef.current = radius;
-          userLocationLatLngRef.current = e.latlng;
-          
-          // Remove previous markers if they exist
-          if (userLocationMarkerRef.current) {
-            mapRef.current?.removeLayer(userLocationMarkerRef.current);
-          }
-          if (userLocationCircleRef.current) {
-            mapRef.current?.removeLayer(userLocationCircleRef.current);
-          }
-
-          // Create a custom icon for user location with pulsing effect
-          const userIcon = L.divIcon({
-            className: 'user-location-marker',
-            html: `
-              <div style="position: relative;">
-                <div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: absolute; top: -8px; left: -8px; z-index: 2;"></div>
-                <div style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: -20px; left: -20px; z-index: 1; animation: pulse 1.5s infinite ease-out;"></div>
-              </div>
-              <style>
-                @keyframes pulse {
-                  0% { transform: scale(0.5); opacity: 1; }
-                  100% { transform: scale(1.5); opacity: 0; }
-                }
-              </style>
-            `,
-            iconSize: [0, 0],
-            iconAnchor: [0, 0]
-          });
-          
-          // Add marker for user location
-          userLocationMarkerRef.current = L.marker(e.latlng, { icon: userIcon })
-            .addTo(mapRef.current!)
-            .bindPopup(`
-              <b>Your Current Location</b><br>
-              Lat: ${e.latlng.lat.toFixed(6)}<br>
-              Lng: ${e.latlng.lng.toFixed(6)}<br>
-              Accuracy: ±${radius.toFixed(1)} meters
-            `);
-
-          // Add circle showing accuracy radius
-          userLocationCircleRef.current = L.circle(e.latlng, {
-            radius: radius,
-            color: '#4F46E5',
-            fillColor: '#4F46E5',
-            fillOpacity: 0.1,
-            weight: 1
-          }).addTo(mapRef.current!);
-          
-          // Automatically open the popup when first locating
-          userLocationMarkerRef.current.openPopup();
-
-          // Custom event that components can listen to
-          const customEvent = new CustomEvent('userLocationUpdated', {
-            detail: {
-              lat: e.latlng.lat,
-              lng: e.latlng.lng,
-              accuracy: radius
-            }
-          });
-          document.dispatchEvent(customEvent);
-        });
-
-        mapRef.current.on('locationerror', (e: L.ErrorEvent) => {
-          console.error('Location error:', e.message);
-          
-          // Try to use navigator.geolocation as a fallback
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                if (!mapRef.current) return;
-                
-                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
-                const accuracy = position.coords.accuracy;
-                
-                // Manually create a locationfound event
-                const locationEvent = {
-                  latlng,
-                  accuracy,
-                  timestamp: position.timestamp,
-                  bounds: L.latLngBounds(
-                    [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
-                    [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
-                  )
-                } as L.LocationEvent;
-                
-                // Trigger the locationfound event handler
-                mapRef.current.fireEvent('locationfound', locationEvent);
-              },
-              (error) => {
-                console.error('Geolocation error:', error.message);
-              }
-            );
-          }
-        });
-      }
+      
+      setMapCreated(true);
     } else {
       // Update the map view if center or zoom changed
       mapRef.current.setView(center, zoom);
-      
-      // Locate user if requested and map already exists
-      if (showUserLocation) {
-        mapRef.current.locate({ setView: true, maxZoom: 16 });
-      }
     }
 
-    // Start location tracking if showUserLocation is true
-    if (showUserLocation && mapRef.current) {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.stopLocate(); // Stop watching location
+      }
+    };
+  }, [center, zoom]);
+
+  // Handle user location tracking separately
+  useEffect(() => {
+    if (!mapRef.current || !mapCreated) return;
+    
+    // Define user location icon with pulsing effect
+    const createPulsingIcon = () => {
+      const customIcon = L.divIcon({
+        className: 'user-location-marker',
+        html: `
+          <div style="position: relative; width: 40px; height: 40px;">
+            <div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: absolute; top: 12px; left: 12px; z-index: 2;"></div>
+            <div style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: 0; left: 0; z-index: 1; animation: pulse 1.5s infinite ease-out;"></div>
+          </div>
+          <style>
+            @keyframes pulse {
+              0% { transform: scale(0.5); opacity: 1; }
+              100% { transform: scale(1.5); opacity: 0; }
+            }
+          </style>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+      return customIcon;
+    };
+
+    // Handle location found event
+    const handleLocationFound = (e: L.LocationEvent) => {
+      console.log("Location found:", e);
+      const radius = e.accuracy;
+      userLocationAccuracyRef.current = radius;
+      userLocationLatLngRef.current = e.latlng;
+      
+      // Remove previous markers if they exist
+      if (userLocationMarkerRef.current) {
+        mapRef.current?.removeLayer(userLocationMarkerRef.current);
+      }
+      if (userLocationCircleRef.current) {
+        mapRef.current?.removeLayer(userLocationCircleRef.current);
+      }
+      
+      // Add marker for user location
+      const pulsingIcon = createPulsingIcon();
+      userLocationMarkerRef.current = L.marker(e.latlng, { icon: pulsingIcon })
+        .addTo(mapRef.current!)
+        .bindPopup(`
+          <b>Your Current Location</b><br>
+          Lat: ${e.latlng.lat.toFixed(6)}<br>
+          Lng: ${e.latlng.lng.toFixed(6)}<br>
+          Accuracy: ±${radius.toFixed(1)} meters
+        `);
+
+      // Add circle showing accuracy radius
+      userLocationCircleRef.current = L.circle(e.latlng, {
+        radius: radius,
+        color: '#4F46E5',
+        fillColor: '#4F46E5',
+        fillOpacity: 0.1,
+        weight: 1
+      }).addTo(mapRef.current!);
+      
+      // Automatically open the popup when first locating
+      userLocationMarkerRef.current.openPopup();
+
+      // Custom event that components can listen to
+      const customEvent = new CustomEvent('userLocationUpdated', {
+        detail: {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          accuracy: radius
+        }
+      });
+      document.dispatchEvent(customEvent);
+    };
+
+    // Handle location error
+    const handleLocationError = (e: L.ErrorEvent) => {
+      console.error('Location error:', e.message);
+      
+      // Try to use navigator.geolocation as a fallback
+      if (navigator.geolocation) {
+        console.log("Trying fallback geolocation");
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            if (!mapRef.current) return;
+            
+            const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+            const accuracy = position.coords.accuracy;
+            
+            // Manually create a locationfound event
+            const locationEvent = {
+              latlng,
+              accuracy,
+              timestamp: position.timestamp,
+              bounds: L.latLngBounds(
+                [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
+                [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
+              )
+            } as L.LocationEvent;
+            
+            // Trigger the locationfound event handler
+            handleLocationFound(locationEvent);
+          },
+          (error) => {
+            console.error('Geolocation error:', error.message);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+      }
+    };
+
+    // Set up event handlers
+    mapRef.current.on('locationfound', handleLocationFound);
+    mapRef.current.on('locationerror', handleLocationError);
+
+    // Start location tracking if requested
+    if (showUserLocation) {
+      console.log("Starting location tracking");
       mapRef.current.locate({ 
         setView: true, 
         maxZoom: 16, 
@@ -192,20 +213,16 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.stopLocate(); // Stop watching location when component unmounts
-        if (userLocationMarkerRef.current) {
-          mapRef.current.removeLayer(userLocationMarkerRef.current);
-        }
-        if (userLocationCircleRef.current) {
-          mapRef.current.removeLayer(userLocationCircleRef.current);
-        }
+        // Clean up event handlers when component unmounts
+        mapRef.current.off('locationfound', handleLocationFound);
+        mapRef.current.off('locationerror', handleLocationError);
       }
     };
-  }, [center, zoom, showUserLocation]);
+  }, [mapCreated, showUserLocation]);
 
   // Update markers when they change
   useEffect(() => {
-    if (!mapRef.current || !markersLayerRef.current) return;
+    if (!mapRef.current || !markersLayerRef.current || !mapCreated) return;
 
     // Clear existing markers
     markersLayerRef.current.clearLayers();
@@ -260,7 +277,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         circle.on('click', () => onMarkerClick(marker));
       }
     });
-  }, [markers, onMarkerClick]);
+  }, [markers, onMarkerClick, mapCreated]);
 
   // Method to get current user location (can be exposed if needed)
   const getUserLocation = (): [number, number] | null => {
