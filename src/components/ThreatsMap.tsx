@@ -12,7 +12,10 @@ import {
   Layers, 
   ArrowRight, 
   RefreshCw,
-  Crosshair
+  Crosshair,
+  PhoneCall,
+  Ambulance,
+  'alert-triangle' as AlertTriangleIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LeafletMap from '@/components/ui/LeafletMap';
@@ -21,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { threatService } from '@/services/threatService';
 import { crimeService } from '@/services/crimeService';
 import { hibpService } from '@/services/hibpService';
+import { emergencyService } from '@/services/emergencyService';
 
 interface ThreatZone {
   id: string;
@@ -54,6 +58,8 @@ const ThreatsMap = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [emergencyNumbers, setEmergencyNumbers] = useState<any>(null);
+  const [disasterAlerts, setDisasterAlerts] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -78,8 +84,28 @@ const ThreatsMap = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
+          const newLocation: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setUserLocation(newLocation);
           setLocationAccuracy(position.coords.accuracy);
+          
+          emergencyService.getEmergencyNumbersByLocation(position.coords.latitude, position.coords.longitude)
+            .then(numbers => {
+              if (numbers) {
+                setEmergencyNumbers(numbers);
+                toast({
+                  title: "Emergency Services",
+                  description: `Loaded emergency numbers for ${numbers.country}`,
+                });
+              }
+            })
+            .catch(err => console.error("Failed to load emergency numbers:", err));
+            
+          emergencyService.getDisasterAlertsNearLocation(position.coords.latitude, position.coords.longitude)
+            .then(alerts => {
+              setDisasterAlerts(alerts);
+            })
+            .catch(err => console.error("Failed to load disaster alerts:", err));
+            
           toast({
             title: "Location Detected",
             description: "Your current location has been detected and is now displayed on the map.",
@@ -117,6 +143,7 @@ const ThreatsMap = () => {
         try {
           const state = 'CA';
           const county = 'Los Angeles';
+          
           const crimeThreats = await crimeService.getCrimeThreats(state, county);
           
           const crimeThreatsNearUser = crimeThreats.map(threat => ({
@@ -128,8 +155,25 @@ const ThreatsMap = () => {
           }));
           
           allThreats = [...allThreats, ...crimeThreatsNearUser];
+          
+          if (disasterAlerts.length > 0) {
+            const disasterMarkers: ThreatMarker[] = disasterAlerts.map((alert, index) => ({
+              id: `disaster-${alert.id || index}`,
+              position: [
+                userLocation[0] + (Math.random() * 0.05 - 0.025), 
+                userLocation[1] + (Math.random() * 0.05 - 0.025)
+              ] as [number, number],
+              level: alert.severity === 'alert' ? 'high' : 
+                    alert.severity === 'warning' ? 'medium' : 'low',
+              title: alert.title,
+              details: alert.description || `${alert.type} alert in ${alert.country}`,
+              type: 'environmental'
+            }));
+            
+            allThreats = [...allThreats, ...disasterMarkers];
+          }
         } catch (error) {
-          console.error('Error loading crime data:', error);
+          console.error('Error loading crime/disaster data:', error);
         }
       }
       
@@ -509,6 +553,51 @@ const ThreatsMap = () => {
               </CardContent>
             </Card>
 
+            {emergencyNumbers && (
+              <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <PhoneCall className="h-4 w-4 text-red-500" />
+                    Emergency Services
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-medium mb-3">
+                    {emergencyNumbers.country} Emergency Numbers:
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center pb-2 border-b border-muted">
+                      <span className="flex items-center gap-1.5">
+                        <Ambulance className="h-4 w-4 text-red-500" />
+                        Ambulance
+                      </span>
+                      <Button variant="destructive" size="sm" className="h-7 px-2">
+                        {emergencyNumbers.ambulance}
+                      </Button>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-muted">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        Police
+                      </span>
+                      <Button variant="destructive" size="sm" className="h-7 px-2">
+                        {emergencyNumbers.police}
+                      </Button>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        Fire
+                      </span>
+                      <Button variant="destructive" size="sm" className="h-7 px-2">
+                        {emergencyNumbers.fire}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Nearby Alerts</CardTitle>
@@ -561,6 +650,34 @@ const ThreatsMap = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {disasterAlerts.length > 0 && (
+              <Card className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    Disaster Alerts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {disasterAlerts.slice(0, 3).map((alert, index) => (
+                      <div key={`disaster-${index}`} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/30">
+                          <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{alert.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {alert.country} • {alert.type}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader className="pb-2">

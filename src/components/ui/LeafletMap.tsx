@@ -137,6 +137,35 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
         mapRef.current.on('locationerror', (e: L.ErrorEvent) => {
           console.error('Location error:', e.message);
+          
+          // Try to use navigator.geolocation as a fallback
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                if (!mapRef.current) return;
+                
+                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                const accuracy = position.coords.accuracy;
+                
+                // Manually create a locationfound event
+                const locationEvent = {
+                  latlng,
+                  accuracy,
+                  timestamp: position.timestamp,
+                  bounds: L.latLngBounds(
+                    [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
+                    [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
+                  )
+                } as L.LocationEvent;
+                
+                // Trigger the locationfound event handler
+                mapRef.current.fireEvent('locationfound', locationEvent);
+              },
+              (error) => {
+                console.error('Geolocation error:', error.message);
+              }
+            );
+          }
         });
       }
     } else {

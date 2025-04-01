@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, PhoneCall, Shield as ShieldIcon, Zap } from 'lucide-react';
+import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { threatService } from '@/services/threatService';
@@ -48,7 +48,7 @@ const Dashboard = () => {
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <img src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <img src="/lovable-uploads/127b347e-c137-4920-85d5-153221ef3927.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
