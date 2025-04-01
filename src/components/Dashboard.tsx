@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap } from 'lucide-react';
+import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap, Phone } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { threatService } from '@/services/threatService';
@@ -25,7 +25,6 @@ const Dashboard = () => {
     const fetchRecentThreats = async () => {
       setLoading(true);
       try {
-        // Replace 'user-id' with the actual user ID or fetch it from authentication context
         const userId = 'user-id';
         const threats = await threatService.getRecentThreats(userId);
         setRecentThreats(threats);
@@ -203,7 +202,7 @@ const Dashboard = () => {
         <Card className="bg-zinc-50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800">
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <PhoneCall className="h-4 w-4" />
+              <Phone className="h-4 w-4" />
               Emergency Contacts
             </CardTitle>
           </CardHeader>

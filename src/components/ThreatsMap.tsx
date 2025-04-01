@@ -13,9 +13,8 @@ import {
   ArrowRight, 
   RefreshCw,
   Crosshair,
-  PhoneCall,
-  Ambulance,
-  'alert-triangle' as AlertTriangleIcon
+  Phone,
+  Ambulance
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LeafletMap from '@/components/ui/LeafletMap';
@@ -557,7 +556,7 @@ const ThreatsMap = () => {
               <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <PhoneCall className="h-4 w-4 text-red-500" />
+                    <Phone className="h-4 w-4 text-red-500" />
                     Emergency Services
                   </CardTitle>
                 </CardHeader>
@@ -597,7 +596,7 @@ const ThreatsMap = () => {
                 </CardContent>
               </Card>
             )}
-
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Nearby Alerts</CardTitle>
