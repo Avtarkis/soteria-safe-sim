@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
@@ -35,14 +35,15 @@ interface LeafletMapProps {
   showUserLocation?: boolean;
 }
 
-const LeafletMap: React.FC<LeafletMapProps> = ({
+// Changed to use forwardRef to properly handle the ref
+const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   className,
   markers = [],
   onMarkerClick,
   center = [40.7128, -74.006], // Default to New York City
   zoom = 13,
   showUserLocation = false
-}) => {
+}, ref) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -51,6 +52,11 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const userLocationAccuracyRef = useRef<number>(0);
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
   const [mapCreated, setMapCreated] = useState(false);
+
+  // Expose the map instance via the ref
+  useImperativeHandle(ref, () => {
+    return mapRef.current as L.Map;
+  }, [mapRef.current]);
 
   // Initialize map
   useEffect(() => {
@@ -307,6 +313,8 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
       id="leaflet-map-container"
     />
   );
-};
+});
+
+LeafletMap.displayName = 'LeafletMap';
 
 export default LeafletMap;

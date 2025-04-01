@@ -24,6 +24,7 @@ import { threatService } from '@/services/threatService';
 import { crimeService } from '@/services/crimeService';
 import { hibpService } from '@/services/hibpService';
 import { emergencyService } from '@/services/emergencyService';
+import { useLocation } from 'react-router-dom';
 
 interface ThreatZone {
   id: string;
@@ -61,6 +62,20 @@ const ThreatsMap = () => {
   const [disasterAlerts, setDisasterAlerts] = useState<any[]>([]);
   const { toast } = useToast();
   const mapRef = useRef<L.Map | null>(null);
+  const location = useLocation();
+  const [destination, setDestination] = useState<string | null>(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const dest = searchParams.get('destination');
+    if (dest) {
+      setDestination(dest);
+      toast({
+        title: `Navigating to ${dest}`,
+        description: `Showing the safest route to your ${dest} location.`,
+      });
+    }
+  }, [location.search, toast]);
 
   useEffect(() => {
     const handleUserLocationUpdate = (e: CustomEvent) => {
@@ -334,10 +349,21 @@ const ThreatsMap = () => {
   return (
     <div className="container pb-10 animate-fade-in">
       <div className="space-y-2 mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Threat Map</h1>
+        <div className="flex items-center gap-3">
+          <img src="/soteria-logo.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <h1 className="text-3xl font-bold tracking-tight">Threat Map</h1>
+        </div>
         <p className="text-muted-foreground">
           Real-time global threat visualization with AI risk assessment.
         </p>
+        
+        {destination && (
+          <div className="mt-2 p-3 bg-primary/10 rounded-md">
+            <p className="text-sm font-medium">
+              Currently showing safest route to your {destination} location.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -687,11 +713,29 @@ const ThreatsMap = () => {
               <CardContent>
                 <p className="text-sm">Safest routes to your saved locations:</p>
                 <div className="mt-3 space-y-2">
-                  <button className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors">
+                  <button 
+                    className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                    onClick={() => {
+                      toast({
+                        title: "Calculating Route",
+                        description: "Finding the safest route to your home location...",
+                      });
+                      window.location.href = '/map?destination=home';
+                    }}
+                  >
                     <span className="text-sm">Home</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors">
+                  <button 
+                    className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                    onClick={() => {
+                      toast({
+                        title: "Calculating Route",
+                        description: "Finding the safest route to your work location...",
+                      });
+                      window.location.href = '/map?destination=work';
+                    }}
+                  >
                     <span className="text-sm">Work</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>

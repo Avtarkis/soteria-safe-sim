@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -43,11 +44,29 @@ const Dashboard = () => {
     fetchRecentThreats();
   }, [toast]);
 
+  const handleRouteClick = (destination: string) => {
+    toast({
+      title: `Safe Route to ${destination}`,
+      description: `Calculating the safest route to your ${destination.toLowerCase()} location...`,
+    });
+    
+    // Simulate route calculation
+    setTimeout(() => {
+      toast({
+        title: `Route Found`,
+        description: `The safest route to your ${destination.toLowerCase()} has been calculated. Redirecting to map view...`,
+      });
+      
+      // Navigate to map with predefined destination
+      navigate(`/map?destination=${destination.toLowerCase()}`);
+    }, 1500);
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <img src="/lovable-uploads/9daf588a-1d2e-48de-bc6b-39cec7926f8a.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <img src="/soteria-logo.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -175,6 +194,14 @@ const Dashboard = () => {
                   e.currentTarget.src = "https://source.unsplash.com/random/600x337?map";
                 }}
               />
+              {/* Smaller Soteria logo overlay */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <img 
+                  src="/soteria-logo.png" 
+                  alt="Soteria Logo" 
+                  className="h-6 w-6 opacity-80" 
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -224,6 +251,31 @@ const Dashboard = () => {
                 <Zap className="h-4 w-4 text-green-500" />
               </li>
             </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Travel Advisory</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm mb-3">Safest routes to your saved locations:</p>
+            <div className="mt-3 space-y-2">
+              <button 
+                className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                onClick={() => handleRouteClick('Home')}
+              >
+                <span className="text-sm">Home</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button 
+                className="w-full flex items-center justify-between p-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                onClick={() => handleRouteClick('Work')}
+              >
+                <span className="text-sm">Work</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
