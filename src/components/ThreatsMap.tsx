@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { 
@@ -60,6 +60,7 @@ const ThreatsMap = () => {
   const [emergencyNumbers, setEmergencyNumbers] = useState<any>(null);
   const [disasterAlerts, setDisasterAlerts] = useState<any[]>([]);
   const { toast } = useToast();
+  const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
     const handleUserLocationUpdate = (e: CustomEvent) => {
@@ -451,6 +452,7 @@ const ThreatsMap = () => {
                     center={userLocation || [37.0902, -95.7129]}
                     zoom={userLocation ? 12 : 4}
                     showUserLocation={showUserLocation}
+                    ref={mapRef}
                   />
                 </div>
 

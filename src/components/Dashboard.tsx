@@ -155,16 +155,18 @@ const Dashboard = () => {
               <Map className="h-5 w-5" />
               Threat Map
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/map')}>
-              View Map
-              <ChevronRight className="ml-2 h-4 w-4" />
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/map">
+                View Map
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground">
               Explore real-time threat locations and potential risks in your area.
             </div>
-            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800 relative">
+            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
               <img
                 src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png"
                 alt="Threat Map Preview"
@@ -173,13 +175,6 @@ const Dashboard = () => {
                   e.currentTarget.src = "https://source.unsplash.com/random/600x337?map";
                 }}
               />
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <img 
-                  src="/lovable-uploads/9daf588a-1d2e-48de-bc6b-39cec7926f8a.png" 
-                  alt="Soteria Logo" 
-                  className="h-8 w-8 opacity-80" 
-                />
-              </div>
             </div>
           </CardContent>
         </Card>

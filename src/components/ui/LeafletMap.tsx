@@ -89,19 +89,32 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     
     // Define user location icon with pulsing effect
     const createPulsingIcon = () => {
+      // Create styles for the pulsing effect
+      const pulsingCSS = `
+        @keyframes pulse {
+          0% { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        .pulse-circle {
+          animation: pulse 1.5s infinite ease-out;
+        }
+      `;
+      
+      // Add the CSS to the document if it doesn't exist
+      if (!document.getElementById('pulsing-marker-css')) {
+        const styleElement = document.createElement('style');
+        styleElement.id = 'pulsing-marker-css';
+        styleElement.textContent = pulsingCSS;
+        document.head.appendChild(styleElement);
+      }
+      
       const customIcon = L.divIcon({
         className: 'user-location-marker',
         html: `
           <div style="position: relative; width: 40px; height: 40px;">
             <div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: absolute; top: 12px; left: 12px; z-index: 2;"></div>
-            <div style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: 0; left: 0; z-index: 1; animation: pulse 1.5s infinite ease-out;"></div>
+            <div class="pulse-circle" style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
           </div>
-          <style>
-            @keyframes pulse {
-              0% { transform: scale(0.5); opacity: 1; }
-              100% { transform: scale(1.5); opacity: 0; }
-            }
-          </style>
         `,
         iconSize: [40, 40],
         iconAnchor: [20, 20]
