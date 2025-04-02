@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap, Phone, ArrowRight } from 'lucide-react';
+import { Shield, AlertTriangle, ChevronRight, CreditCard, ListChecks, User, Bell, Shield as ShieldIcon, Zap, Phone, ArrowRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { threatService } from '@/services/threatService';
 import { cn } from '@/lib/utils';
+import useAIMonitoring from '@/hooks/use-ai-monitoring';
 
 const threatLevelStyles = {
   high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -20,6 +22,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { detections } = useAIMonitoring();
 
   useEffect(() => {
     const fetchRecentThreats = async () => {
@@ -137,32 +140,36 @@ const Dashboard = () => {
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <ListChecks className="h-5 w-5" />
-              Recent Activity
+              Recent AI Detections
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/activity">
+              <Link to="/emergency">
                 View All
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {loading ? (
-              <div className="text-center text-muted-foreground">Loading recent activity...</div>
-            ) : recentThreats.length > 0 ? (
-              recentThreats.map((threat) => (
-                <div key={threat.id} className="flex items-center justify-between">
+            {detections.length > 0 ? (
+              detections.slice(0, 3).map((detection, index) => (
+                <div key={detection.id || index} className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <p className="text-sm font-medium">{threat.title}</p>
-                    <p className="text-xs text-muted-foreground">{threat.description}</p>
+                    <p className="text-sm font-medium">{detection.type} {detection.severity}</p>
+                    <p className="text-xs text-muted-foreground">{detection.description}</p>
                   </div>
-                  <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", threatLevelStyles[threat.level])}>
-                    {threat.level}
+                  <span className={cn(
+                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    detection.severity === 'critical' ? threatLevelStyles.high :
+                    detection.severity === 'high' ? threatLevelStyles.high : 
+                    detection.severity === 'medium' ? threatLevelStyles.medium : 
+                    threatLevelStyles.low
+                  )}>
+                    {detection.severity}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="text-center text-muted-foreground">No recent activity found.</div>
+              <div className="text-center text-muted-foreground">No AI detections found.</div>
             )}
           </CardContent>
         </Card>
@@ -170,36 +177,41 @@ const Dashboard = () => {
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Map className="h-5 w-5" />
-              Threat Map
+              <Zap className="h-5 w-5" />
+              Family Safety
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/map">
-                View Map
+              <Link to="/family">
+                Manage Family
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Explore real-time threat locations and potential risks in your area.
+            <div className="text-sm text-muted-foreground mb-4">
+              Monitor your family members' safety and receive real-time notifications.
             </div>
-            <div className="aspect-w-16 aspect-h-9 mt-4 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
-              <img
-                src="/lovable-uploads/fd116965-8e8a-49e6-8cd8-3c8032d4d789.png"
-                alt="Threat Map Preview"
-                className="object-cover w-full h-full"
-                onError={(e) => {
-                  e.currentTarget.src = "https://source.unsplash.com/random/600x337?map";
-                }}
-              />
-              {/* Smaller Soteria logo overlay */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <img 
-                  src="/soteria-logo.png" 
-                  alt="Soteria Logo" 
-                  className="h-6 w-6 opacity-80" 
-                />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Sarah (School)</span>
+                </div>
+                <span className="text-xs text-muted-foreground">Updated 2m ago</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">John (Work)</span>
+                </div>
+                <span className="text-xs text-muted-foreground">Updated 15m ago</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-sm">Grandma (Home)</span>
+                </div>
+                <span className="text-xs text-muted-foreground">2h inactive</span>
               </div>
             </div>
           </CardContent>

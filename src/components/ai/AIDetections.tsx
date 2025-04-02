@@ -1,91 +1,156 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { Heart, Thermometer, Shield, AlertTriangle, Activity, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import useAIMonitoring from '@/hooks/use-ai-monitoring';
+import { Shield, AlertTriangle, Zap, HeartPulse, LocateFixed } from 'lucide-react';
+import { useAIMonitoring } from '@/hooks/use-ai-monitoring';
+import { Button } from '@/components/ui/button';
 import { AIThreatDetection } from '@/types/ai-monitoring';
+import { cn } from '@/lib/utils';
 
-const AIDetections: React.FC = () => {
-  const { detections, isMonitoring } = useAIMonitoring();
+const AIDetections = () => {
+  const { detections } = useAIMonitoring();
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'health' | 'environment' | 'security'>('all');
 
+  // Filter detections by category
+  const filteredDetections = selectedCategory === 'all' 
+    ? detections 
+    : detections.filter(detection => detection.type === selectedCategory);
+
+  // Get icon based on detection type
   const getIcon = (detection: AIThreatDetection) => {
     switch (detection.type) {
       case 'health':
-        return <Heart className="h-4 w-4 text-rose-500" />;
+        return <HeartPulse className="h-4 w-4 text-red-500" />;
       case 'environment':
-        return <Thermometer className="h-4 w-4 text-amber-500" />;
-      case 'security':
         return <Shield className="h-4 w-4 text-blue-500" />;
+      case 'security':
+        return <Zap className="h-4 w-4 text-amber-500" />;
       default:
-        return <Activity className="h-4 w-4 text-primary" />;
+        return <AlertTriangle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  // Get severity style
+  const getSeverityStyle = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'text-red-600 bg-red-100 dark:bg-red-900/20 dark:text-red-400';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       case 'high':
-        return 'text-orange-600 bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       case 'medium':
-        return 'text-amber-600 bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400';
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      case 'low':
       default:
-        return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    }
+  };
+
+  // Format time as relative
+  const formatTimeSince = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) {
+      return 'just now';
+    } else if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else {
+      const diffHours = Math.floor(diffMins / 60);
+      return `${diffHours}h ago`;
     }
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-primary" />
-          <span>AI Detections</span>
-        </CardTitle>
+    <Card className="mb-6">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-semibold">AI Threat Detections</CardTitle>
+        <LocateFixed className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        {!isMonitoring ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>AI Monitoring is currently disabled</p>
-            <p className="text-sm mt-1">Enable monitoring to detect threats</p>
+        <div className="space-y-4">
+          <div className="flex space-x-2">
+            <Button 
+              variant={selectedCategory === 'all' ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setSelectedCategory('all')}
+            >
+              All
+            </Button>
+            <Button 
+              variant={selectedCategory === 'health' ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setSelectedCategory('health')}
+              className="flex items-center gap-1"
+            >
+              <HeartPulse className="h-3 w-3" />
+              Health
+            </Button>
+            <Button 
+              variant={selectedCategory === 'environment' ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setSelectedCategory('environment')}
+              className="flex items-center gap-1"
+            >
+              <Shield className="h-3 w-3" />
+              Environment
+            </Button>
+            <Button 
+              variant={selectedCategory === 'security' ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setSelectedCategory('security')}
+              className="flex items-center gap-1"
+            >
+              <Zap className="h-3 w-3" />
+              Security
+            </Button>
           </div>
-        ) : detections.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No threats detected yet</p>
-            <p className="text-sm mt-1">AI is actively monitoring</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {detections.slice(0, 5).map((detection) => (
-              <div 
-                key={detection.id} 
-                className="p-3 rounded-lg border bg-card"
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <div className="flex items-center gap-2">
-                    {getIcon(detection)}
-                    <span className="font-medium">{detection.type.charAt(0).toUpperCase() + detection.type.slice(1)} Alert</span>
+          
+          <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+            {filteredDetections.length > 0 ? (
+              filteredDetections.map((detection, index) => (
+                <div key={detection.id || index} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getIcon(detection)}
+                      <span className="font-medium text-sm capitalize">
+                        {detection.type} {detection.subtype.replace(/-/g, ' ')}
+                      </span>
+                    </div>
+                    <span className={cn(
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                      getSeverityStyle(detection.severity)
+                    )}>
+                      {detection.severity}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(detection.severity)}`}>
-                    {detection.severity.toUpperCase()}
-                  </span>
-                </div>
-                <p className="text-sm mb-2">{detection.description}</p>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{formatDistanceToNow(new Date(detection.timestamp), { addSuffix: true })}</span>
-                </div>
-                {detection.automaticResponseTaken && (
-                  <div className="mt-2 text-xs p-1.5 bg-secondary/50 rounded-md">
-                    <span className="font-medium">Automatic action:</span> {detection.automaticResponseTaken}
+                  
+                  <p className="text-sm text-muted-foreground">
+                    {detection.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="text-xs text-muted-foreground">
+                      {formatTimeSince(detection.timestamp)}
+                    </div>
+                    
+                    {detection.automaticResponseTaken && (
+                      <div className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                        Auto-response taken
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertTriangle className="h-10 w-10 mx-auto mb-2" />
+                <p>No {selectedCategory === 'all' ? '' : selectedCategory} threats detected.</p>
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

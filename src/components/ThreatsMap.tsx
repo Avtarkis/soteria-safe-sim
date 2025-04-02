@@ -1,6 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
-import { Map as MapIcon } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 // Import custom hooks
 import useUserLocation from '@/hooks/useUserLocation';
@@ -23,7 +22,7 @@ const ThreatsMap = () => {
   const { userLocation, locationAccuracy } = useUserLocation();
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   
-  // Get threat data
+  // Get threat data with memoization to prevent unnecessary rerenders
   const { 
     loading, 
     refreshing, 
@@ -52,15 +51,18 @@ const ThreatsMap = () => {
   // Get destination
   const { destination } = useDestination();
   
-  // Get filtered markers
-  const filteredMarkers = getFilteredMarkers(threatMarkers);
-
-  // Ensure map only initializes once
+  // Memoize the filtered markers to prevent unnecessary recalculations
+  const filteredMarkers = useCallback(() => 
+    getFilteredMarkers(threatMarkers), 
+    [threatMarkers, getFilteredMarkers]
+  )();
+  
+  // Only initialize map once
   useEffect(() => {
     if (!loading && !isMapInitialized) {
       setIsMapInitialized(true);
     }
-  }, [loading]);
+  }, [loading, isMapInitialized]);
 
   return (
     <div className="container pb-10 animate-fade-in">

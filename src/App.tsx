@@ -1,79 +1,43 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ResetPassword from "./pages/ResetPassword";
-import Layout from "./components/Layout";
-import Dashboard from "./components/Dashboard";
-import ThreatsMap from "./components/ThreatsMap";
-import CyberSecurity from "./components/CyberSecurity";
-import EmergencyResponse from "./components/EmergencyResponse";
-import Subscription from "./components/Subscription";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import AuthScreen from '@/components/AuthScreen';
+import Dashboard from '@/components/Dashboard';
+import ThreatsMap from '@/components/ThreatsMap';
+import EmergencyResponse from '@/components/EmergencyResponse';
+import CyberSecurity from '@/components/CyberSecurity';
+import Subscription from '@/components/Subscription';
+import FamilyMonitoring from '@/components/family/FamilyMonitoring';
+import NotFound from '@/pages/NotFound';
+import './App.css';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <Router>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Layout><Dashboard /></Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/map" 
-              element={
-                <ProtectedRoute>
-                  <Layout><ThreatsMap /></Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/security" 
-              element={
-                <ProtectedRoute>
-                  <Layout><CyberSecurity /></Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/emergency" 
-              element={
-                <ProtectedRoute>
-                  <Layout><EmergencyResponse /></Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/subscription" 
-              element={
-                <ProtectedRoute>
-                  <Layout><Subscription /></Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/auth" element={<AuthScreen />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
+              <Route path="emergency" element={<ProtectedRoute><EmergencyResponse /></ProtectedRoute>} />
+              <Route path="cyber" element={<ProtectedRoute><CyberSecurity /></ProtectedRoute>} />
+              <Route path="subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+              <Route path="family" element={<ProtectedRoute><FamilyMonitoring /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
-        </BrowserRouter>
+        </Router>
+        <Toaster />
       </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </ThemeProvider>
+  );
+}
 
 export default App;
