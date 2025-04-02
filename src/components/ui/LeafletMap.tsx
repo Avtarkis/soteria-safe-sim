@@ -143,7 +143,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         mapRef.current?.removeLayer(userLocationCircleRef.current);
       }
       
-      // Add marker for user location
+      // Add marker for user location with the pulsing icon
       const pulsingIcon = createPulsingIcon();
       userLocationMarkerRef.current = L.marker(e.latlng, { icon: pulsingIcon })
         .addTo(mapRef.current!)

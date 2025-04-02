@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap, Phone } from 'lucide-react';
+import { Shield, AlertTriangle, ChevronRight, CreditCard, Map, ListChecks, User, Bell, Shield as ShieldIcon, Zap, Phone, ArrowRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { threatService } from '@/services/threatService';

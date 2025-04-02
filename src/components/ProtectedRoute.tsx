@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,6 +17,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
+  }
+  
+  // In development mode, we bypass authentication as it's simulated
+  if (import.meta.env.DEV && !user) {
+    // Log the issue for easier debugging
+    console.log("Authentication bypassed in development mode");
+    return <>{children}</>;
   }
   
   // Redirect to login if not authenticated

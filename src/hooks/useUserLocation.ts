@@ -8,7 +8,9 @@ export const useUserLocation = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Listen for location updates from the map component
     const handleUserLocationUpdate = (e: CustomEvent) => {
+      console.log("User location update event received:", e.detail);
       const { lat, lng, accuracy } = e.detail;
       setUserLocation([lat, lng]);
       setLocationAccuracy(accuracy);
@@ -27,11 +29,23 @@ export const useUserLocation = () => {
 
   useEffect(() => {
     if (navigator.geolocation) {
+      console.log("Getting user location via navigator.geolocation");
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log("Position obtained:", position);
           const newLocation: [number, number] = [position.coords.latitude, position.coords.longitude];
           setUserLocation(newLocation);
           setLocationAccuracy(position.coords.accuracy);
+          
+          // Update real-time display by dispatching a custom event for the map
+          const customEvent = new CustomEvent('userLocationUpdated', {
+            detail: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            }
+          });
+          document.dispatchEvent(customEvent);
           
           toast({
             title: "Location Detected",
@@ -45,8 +59,10 @@ export const useUserLocation = () => {
             description: 'Could not access your location. Using default view.',
             variant: 'destructive',
           });
+          // Set a default location
           setUserLocation([37.0902, -95.7129]);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
       );
     } else {
       toast({
