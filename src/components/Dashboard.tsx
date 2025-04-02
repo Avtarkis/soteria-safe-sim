@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -66,7 +65,7 @@ const Dashboard = () => {
     <div className="space-y-6 sm:space-y-8 pb-10 animate-fade-in">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <img src="/soteria-logo.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <img src="/lovable-uploads/9daf588a-1d2e-48de-bc6b-39cec7926f8a.png" alt="Soteria Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground">

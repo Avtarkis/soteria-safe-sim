@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, XCircle, CreditCard, Shield, ArrowRight, Zap, BadgeCheck, Clock, Smartphone, Bell, AlertTriangle, MapPin, Camera, Mic, Volume2 } from 'lucide-react';
+import { Check, XCircle, CreditCard, Shield, ArrowRight, Zap, BadgeCheck, Clock, Smartphone, Bell, AlertTriangle, MapPin, Camera, Mic, Volume2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -20,10 +20,8 @@ const features = {
     "Priority emergency response",
     "Dark web monitoring",
     "Global threat map (full access)",
-    "Unlimited device protection",
     "24/7 priority support",
     "Voice assistant integration",
-    "Family protection plan",
     "AI Detected Emergency Alert",
     "Natural Disaster Detection",
     "Live Incident Capturing",
@@ -38,11 +36,25 @@ const features = {
     "Police Siren Mode",
     "Health Monitor",
     "Stealth Mode"
+  ],
+  family: [
+    "Everything in Premium plan",
+    "Up to 5 family members",
+    "Family location sharing",
+    "Family emergency alerts",
+    "Shared safety notifications",
+    "Family check-in system",
+    "Customizable safety zones",
+    "School & work safety monitoring",
+    "Child-specific threat detection",
+    "Senior citizen monitoring features",
+    "Family emergency response coordination",
+    "Unified family dashboard"
   ]
 };
 
 interface PricingCardProps {
-  type: 'free' | 'premium';
+  type: 'free' | 'premium' | 'family';
   title: string;
   price: string;
   period: string;
@@ -52,6 +64,7 @@ interface PricingCardProps {
   popular?: boolean;
   isSelected: boolean;
   onSelect: () => void;
+  icon?: React.ReactNode;
 }
 
 const PricingCard = ({ 
@@ -64,7 +77,8 @@ const PricingCard = ({
   buttonText, 
   popular,
   isSelected,
-  onSelect
+  onSelect,
+  icon
 }: PricingCardProps) => {
   return (
     <Card className={cn(
@@ -78,7 +92,10 @@ const PricingCard = ({
             Most Popular
           </div>
         )}
-        <CardTitle>{title}</CardTitle>
+        <div className="flex items-center gap-2">
+          {icon}
+          <CardTitle>{title}</CardTitle>
+        </div>
         <div className="flex items-baseline mt-2">
           <span className="text-3xl font-bold">{price}</span>
           {period && <span className="ml-1.5 text-sm text-muted-foreground">/{period}</span>}
@@ -136,6 +153,11 @@ const PricingCard = ({
                 title: "Premium Plan Selected",
                 description: "You've chosen the Soteria Premium plan. Experience advanced safety features!",
               });
+            } else if (type === 'family') {
+              toast({
+                title: "Family Plan Selected",
+                description: "You've chosen the Soteria Family plan. Protection for your entire family!",
+              });
             } else {
               toast({
                 title: "Free Plan Selected",
@@ -173,7 +195,7 @@ const Subscription = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [demoActive, setDemoActive] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium'>('free');
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium' | 'family'>('free');
   
   useEffect(() => {
     if (!demoActive) return;
@@ -314,7 +336,7 @@ const Subscription = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         <PricingCard 
           type="free"
           title="Soteria Free"
@@ -325,6 +347,7 @@ const Subscription = () => {
           buttonText="Get Started"
           isSelected={selectedPlan === 'free'}
           onSelect={() => setSelectedPlan('free')}
+          icon={<Shield className="h-5 w-5 text-muted-foreground" />}
         />
         
         <PricingCard 
@@ -332,12 +355,26 @@ const Subscription = () => {
           title="Soteria Premium"
           price={billingCycle === 'monthly' ? "$4.99" : "$49.99"}
           period={billingCycle === 'monthly' ? "month" : "year"}
-          description="Advanced protection for you and your family"
+          description="Advanced protection for individuals"
           features={features.premium}
           buttonText="Upgrade Now"
           popular
           isSelected={selectedPlan === 'premium'}
           onSelect={() => setSelectedPlan('premium')}
+          icon={<Shield className="h-5 w-5 text-primary" />}
+        />
+        
+        <PricingCard 
+          type="family"
+          title="Soteria Family"
+          price={billingCycle === 'monthly' ? "$19.99" : "$199.99"}
+          period={billingCycle === 'monthly' ? "month" : "year"}
+          description="Complete protection for your entire family"
+          features={features.family}
+          buttonText="Protect My Family"
+          isSelected={selectedPlan === 'family'}
+          onSelect={() => setSelectedPlan('family')}
+          icon={<Users className="h-5 w-5 text-blue-500" />}
         />
       </div>
 
@@ -351,25 +388,29 @@ const Subscription = () => {
                 <th className="pb-4 text-left">Feature</th>
                 <th className="pb-4 text-center">Free</th>
                 <th className="pb-4 text-center">Premium</th>
+                <th className="pb-4 text-center">Family</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { name: "AI Threat Detection", free: "Basic", premium: "Advanced" },
-                { name: "Emergency Response", free: "Standard", premium: "Priority" },
-                { name: "Dark Web Monitoring", free: "Limited", premium: "Comprehensive" },
-                { name: "Device Protection", free: "1 Device", premium: "Unlimited" },
-                { name: "Voice Assistant", free: "No", premium: "Yes" },
-                { name: "Family Protection", free: "No", premium: "Up to 5 members" },
-                { name: "Support", free: "Email", premium: "24/7 Priority" },
-                { name: "Natural Disaster Detection", free: "No", premium: "Yes" },
-                { name: "Live Incident Capturing", free: "No", premium: "Yes" },
-                { name: "Instant Police Voice Call", free: "No", premium: "Yes" },
-                { name: "200m Radius Alert", free: "No", premium: "Yes" },
-                { name: "Smartwatch Integration", free: "No", premium: "Yes" },
-                { name: "Personalized Safety AI", free: "No", premium: "Yes" },
-                { name: "Health Monitoring", free: "No", premium: "Yes" },
-                { name: "Stealth Mode", free: "No", premium: "Yes" },
+                { name: "AI Threat Detection", free: "Basic", premium: "Advanced", family: "Advanced+" },
+                { name: "Emergency Response", free: "Standard", premium: "Priority", family: "Priority+" },
+                { name: "Dark Web Monitoring", free: "Limited", premium: "Comprehensive", family: "Comprehensive" },
+                { name: "Device Protection", free: "1 Device", premium: "1 Device", family: "Up to 5 devices" },
+                { name: "Voice Assistant", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Support", free: "Email", premium: "24/7 Priority", family: "24/7 Priority" },
+                { name: "Natural Disaster Detection", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Live Incident Capturing", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Instant Police Voice Call", free: "No", premium: "Yes", family: "Yes" },
+                { name: "200m Radius Alert", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Smartwatch Integration", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Personalized Safety AI", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Health Monitoring", free: "No", premium: "Yes", family: "Yes" },
+                { name: "Family Location Sharing", free: "No", premium: "No", family: "Yes" },
+                { name: "Family Emergency Alerts", free: "No", premium: "No", family: "Yes" },
+                { name: "Safety Zones", free: "No", premium: "No", family: "Yes" },
+                { name: "School Safety Monitoring", free: "No", premium: "No", family: "Yes" },
+                { name: "Child Threat Detection", free: "No", premium: "No", family: "Yes" },
               ].map((feature, idx) => (
                 <tr key={idx} className="border-b last:border-b-0">
                   <td className="py-4 text-sm">{feature.name}</td>
@@ -383,8 +424,19 @@ const Subscription = () => {
                   <td className="py-4 text-center">
                     {feature.premium === "Yes" ? (
                       <Check className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : feature.premium === "No" ? (
+                      <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
                     ) : (
                       <span className="text-sm font-medium">{feature.premium}</span>
+                    )}
+                  </td>
+                  <td className="py-4 text-center">
+                    {feature.family === "Yes" ? (
+                      <Check className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : feature.family === "No" ? (
+                      <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
+                    ) : (
+                      <span className="text-sm font-medium">{feature.family}</span>
                     )}
                   </td>
                 </tr>
@@ -645,16 +697,20 @@ const Subscription = () => {
           <CardContent className="p-8">
             <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold mb-2">Upgrade to Premium</h3>
+                <h3 className="text-2xl font-bold mb-2">Upgrade Today</h3>
                 <p className="text-primary-foreground/90 max-w-md">
-                  Get comprehensive protection for just $4.99/month and secure your digital life.
+                  {selectedPlan === 'premium' 
+                    ? "Get comprehensive protection for just $4.99/month and secure your digital life."
+                    : selectedPlan === 'family'
+                      ? "Protect your entire family for $19.99/month with our comprehensive Family plan."
+                      : "Choose a premium plan that fits your security needs."}
                 </p>
               </div>
               <Button className="bg-white text-primary hover:bg-white/90 px-6"
                 onClick={() => {
                   toast({
-                    title: "Premium Subscription",
-                    description: "You're being redirected to complete your premium subscription.",
+                    title: selectedPlan === 'premium' ? "Premium Subscription" : selectedPlan === 'family' ? "Family Subscription" : "Subscription",
+                    description: "You're being redirected to complete your subscription.",
                   });
                 }}
               >

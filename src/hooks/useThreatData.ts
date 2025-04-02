@@ -16,6 +16,8 @@ export const useThreatData = (userLocation: [number, number] | null) => {
   const { toast } = useToast();
 
   const loadThreatData = useCallback(async () => {
+    if (refreshing) return; // Prevent multiple simultaneous data loads
+    
     setLoading(true);
     try {
       let allThreats: ThreatMarker[] = [];
@@ -148,7 +150,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [userLocation, disasterAlerts, toast]);
+  }, [userLocation, disasterAlerts, toast, refreshing]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -156,28 +158,46 @@ export const useThreatData = (userLocation: [number, number] | null) => {
   }, [loadThreatData]);
 
   useEffect(() => {
-    if (userLocation) {
-      loadThreatData();
+    let mounted = true;
+    
+    const fetchData = async () => {
+      if (!mounted) return;
       
-      // Load emergency services information
-      emergencyService.getEmergencyNumbersByLocation(userLocation[0], userLocation[1])
-        .then(numbers => {
-          if (numbers) {
+      if (userLocation) {
+        await loadThreatData();
+        
+        // Load emergency services information
+        try {
+          const numbers = await emergencyService.getEmergencyNumbersByLocation(userLocation[0], userLocation[1]);
+          if (numbers && mounted) {
             setEmergencyNumbers(numbers);
             toast({
               title: "Emergency Services",
               description: `Loaded emergency numbers for ${numbers.country}`,
             });
           }
-        })
-        .catch(err => console.error("Failed to load emergency numbers:", err));
+        } catch (err) {
+          console.error("Failed to load emergency numbers:", err);
+        }
         
-      emergencyService.getDisasterAlertsNearLocation(userLocation[0], userLocation[1])
-        .then(alerts => {
-          setDisasterAlerts(alerts);
-        })
-        .catch(err => console.error("Failed to load disaster alerts:", err));
-    }
+        try {
+          const alerts = await emergencyService.getDisasterAlertsNearLocation(userLocation[0], userLocation[1]);
+          if (mounted) {
+            setDisasterAlerts(alerts);
+          }
+        } catch (err) {
+          console.error("Failed to load disaster alerts:", err);
+        }
+      } else {
+        await loadThreatData();
+      }
+    };
+    
+    fetchData();
+    
+    return () => {
+      mounted = false;
+    };
   }, [userLocation, toast, loadThreatData]);
 
   return {
