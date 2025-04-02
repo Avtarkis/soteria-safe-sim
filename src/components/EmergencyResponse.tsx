@@ -6,6 +6,9 @@ import VoiceAssistant from './emergency/VoiceAssistant';
 import EmergencyFeatures from './emergency/EmergencyFeatures';
 import EmergencyContacts from './emergency/EmergencyContacts';
 import SafetyPlan from './emergency/SafetyPlan';
+import AIMonitoringStatus from './ai/AIMonitoringStatus';
+import AIDetections from './ai/AIDetections';
+import { ArrowRight } from 'lucide-react';
 
 // Define emergency contacts
 const EmergencyContactsList = [
@@ -34,6 +37,11 @@ const EmergencyResponse = () => {
         <div>
           <VoiceAssistant />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <AIMonitoringStatus />
+        <AIDetections />
       </div>
 
       <EmergencyFeatures 

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Map as MapIcon } from 'lucide-react';
 
 // Import custom hooks
@@ -21,6 +21,7 @@ import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
 const ThreatsMap = () => {
   // Get user location
   const { userLocation, locationAccuracy } = useUserLocation();
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   // Get threat data
   const { 
@@ -54,29 +55,38 @@ const ThreatsMap = () => {
   // Get filtered markers
   const filteredMarkers = getFilteredMarkers(threatMarkers);
 
+  // Ensure map only initializes once
+  useEffect(() => {
+    if (!loading && !isMapInitialized) {
+      setIsMapInitialized(true);
+    }
+  }, [loading]);
+
   return (
     <div className="container pb-10 animate-fade-in">
       <ThreatsMapHeader destination={destination} />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 relative">
-          <MainThreatMap
-            loading={loading}
-            showLegend={showLegend}
-            showUserLocation={showUserLocation}
-            filters={filters}
-            userLocation={userLocation}
-            mapRef={mapRef}
-            selectedThreat={selectedThreat}
-            refreshing={refreshing}
-            filteredMarkers={filteredMarkers}
-            toggleUserLocation={toggleUserLocation}
-            setShowLegend={setShowLegend}
-            handleRefresh={handleRefresh}
-            toggleFilter={toggleFilter}
-            handleThreatClick={handleThreatClick}
-            clearSelectedThreat={clearSelectedThreat}
-          />
+          {isMapInitialized && (
+            <MainThreatMap
+              loading={loading}
+              showLegend={showLegend}
+              showUserLocation={showUserLocation}
+              filters={filters}
+              userLocation={userLocation}
+              mapRef={mapRef}
+              selectedThreat={selectedThreat}
+              refreshing={refreshing}
+              filteredMarkers={filteredMarkers}
+              toggleUserLocation={toggleUserLocation}
+              setShowLegend={setShowLegend}
+              handleRefresh={handleRefresh}
+              toggleFilter={toggleFilter}
+              handleThreatClick={handleThreatClick}
+              clearSelectedThreat={clearSelectedThreat}
+            />
+          )}
         </div>
 
         <div className="lg:col-span-1">
