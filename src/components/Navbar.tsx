@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -6,12 +5,12 @@ import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart } from 'luci
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile();
 
   const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     return (

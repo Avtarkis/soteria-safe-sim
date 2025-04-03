@@ -22,7 +22,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/auth" element={<AuthScreen />} />
-            <Route path="/" element={<Layout />}>
+            <Route element={<Layout />}>
               <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
