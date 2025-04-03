@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Crosshair, Navigation, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,29 +26,57 @@ const MapActionButtons = ({
 }: MapActionButtonsProps) => {
   const { toast } = useToast();
   
+  // Create a stable callback for centering the map
+  const handleCenterMap = useCallback(() => {
+    if (userLocation) {
+      toast({
+        title: "Location Updated",
+        description: "Map centered on your current location.",
+      });
+      
+      // Dispatch an event that the map can listen for to center
+      const event = new CustomEvent('centerMapOnUserLocation', {
+        detail: { lat: userLocation[0], lng: userLocation[1] }
+      });
+      document.dispatchEvent(event);
+    }
+  }, [userLocation, toast]);
+  
+  // Create a memoized toggle for location tracking
+  const handleToggleLocation = useCallback(() => {
+    toggleUserLocation();
+    
+    // Add toast notification
+    toast({
+      title: showUserLocation ? "Tracking Disabled" : "Tracking Enabled",
+      description: showUserLocation 
+        ? "Live location tracking has been turned off." 
+        : "Your location will now be tracked in real-time.",
+    });
+  }, [showUserLocation, toggleUserLocation, toast]);
+  
   return (
     <div className="absolute top-4 left-4 z-10 space-y-2">
       <Button 
         variant="outline" 
         size="sm" 
-        className="shadow-sm bg-background/80 backdrop-blur-sm"
-        onClick={toggleUserLocation}
+        className={cn(
+          "shadow-sm backdrop-blur-sm",
+          showUserLocation 
+            ? "bg-primary text-white" 
+            : "bg-background/80"
+        )}
+        onClick={handleToggleLocation}
       >
-        <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-primary")} />
+        <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-white")} />
         <span>{showUserLocation ? "Tracking On" : "Track My Location"}</span>
       </Button>
       <Button 
         variant="outline" 
         size="sm" 
         className="shadow-sm bg-background/80 backdrop-blur-sm"
-        onClick={() => {
-          if (userLocation) {
-            toast({
-              title: "Location Updated",
-              description: "Map centered on your current location.",
-            });
-          }
-        }}
+        onClick={handleCenterMap}
+        disabled={!userLocation}
       >
         <Navigation className="h-4 w-4 mr-1" />
         <span>Center Map</span>

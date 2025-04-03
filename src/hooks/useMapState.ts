@@ -1,6 +1,7 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { ThreatMarker } from '@/types/threats';
+import { useToast } from '@/hooks/use-toast';
 
 interface ThreatZone {
   id: string;
@@ -30,9 +31,30 @@ export const useMapState = () => {
     { id: 'environmental', label: 'Environmental', active: true, color: 'bg-green-500' },
   ]);
   const mapRef = useRef<L.Map | null>(null);
+  const { toast } = useToast();
+  
+  // Store the previous tracking state to detect changes
+  const previousTrackingStateRef = useRef(showUserLocation);
 
   const toggleUserLocation = useCallback(() => {
     setShowUserLocation(prev => !prev);
+    previousTrackingStateRef.current = !showUserLocation;
+  }, [showUserLocation]);
+
+  // Listen for map centering events
+  useEffect(() => {
+    const handleCenterMap = (e: CustomEvent) => {
+      if (mapRef.current && e.detail) {
+        const { lat, lng } = e.detail;
+        mapRef.current.setView([lat, lng], 15);
+      }
+    };
+
+    document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    
+    return () => {
+      document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    };
   }, []);
 
   const toggleFilter = useCallback((id: string) => {

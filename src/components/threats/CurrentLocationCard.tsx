@@ -36,10 +36,14 @@ const CurrentLocationCard = ({
         </div>
         <div className="flex justify-between items-center mt-4">
           <Button 
-            variant="default" 
+            variant={showUserLocation ? "default" : "outline"} 
             size="sm" 
             onClick={toggleUserLocation}
-            className={cn(showUserLocation ? "bg-primary" : "bg-muted")}
+            className={cn(
+              showUserLocation 
+                ? "bg-primary text-white font-medium" 
+                : "bg-background text-primary border-primary font-medium"
+            )}
           >
             <Crosshair className="h-4 w-4 mr-1" />
             {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
