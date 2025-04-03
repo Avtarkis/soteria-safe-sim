@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { MapIcon } from 'lucide-react';
 
 interface ThreatsMapHeaderProps {
   destination: string | null;

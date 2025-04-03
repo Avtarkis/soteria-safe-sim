@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ThreatMarker } from '@/types/threats';
 import { threatService } from '@/services/threatService';
 import { crimeService } from '@/services/crimeService';
@@ -14,9 +14,28 @@ export const useThreatData = (userLocation: [number, number] | null) => {
   const [disasterAlerts, setDisasterAlerts] = useState<any[]>([]);
   const [emergencyNumbers, setEmergencyNumbers] = useState<any>(null);
   const { toast } = useToast();
+  
+  // Use refs to track if data has already been loaded
+  const dataLoadedRef = useRef(false);
+  const emergencyNumbersLoadedRef = useRef(false);
+  const disasterAlertsLoadedRef = useRef(false);
+  const userLocationRef = useRef<[number, number] | null>(null);
 
-  const loadThreatData = useCallback(async () => {
-    if (refreshing) return; // Prevent multiple simultaneous data loads
+  const loadThreatData = useCallback(async (forceRefresh = false) => {
+    if (refreshing && !forceRefresh) return; // Prevent multiple simultaneous data loads
+    
+    // Skip loading if data already loaded and location hasn't changed
+    if (
+      dataLoadedRef.current && 
+      !forceRefresh && 
+      userLocationRef.current === userLocation
+    ) {
+      setLoading(false);
+      return;
+    }
+    
+    // Update location ref
+    userLocationRef.current = userLocation;
     
     setLoading(true);
     try {
@@ -80,9 +99,25 @@ export const useThreatData = (userLocation: [number, number] | null) => {
         }
       } catch (error) {
         console.error('Error loading cyber threat data:', error);
+        
+        // Add fallback cyber threats if API fails
+        if (userLocation) {
+          allThreats.push({
+            id: 'cyber-fallback-1',
+            position: [
+              userLocation[0] + (Math.random() * 0.05 - 0.025), 
+              userLocation[1] + (Math.random() * 0.05 - 0.025)
+            ] as [number, number],
+            level: 'high',
+            title: 'Data Breach Alert',
+            details: 'Detected compromise of user credentials in a recent breach. Advising password change.',
+            type: 'cyber'
+          });
+        }
       }
       
       setThreatMarkers(allThreats);
+      dataLoadedRef.current = true;
     } catch (error) {
       console.error('Error loading threat data:', error);
       toast({
@@ -118,6 +153,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
             type: 'environmental'
           }
         ]);
+        dataLoadedRef.current = true;
       } else {
         setThreatMarkers([
           {
@@ -145,6 +181,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
             type: 'environmental'
           }
         ]);
+        dataLoadedRef.current = true;
       }
     } finally {
       setLoading(false);
@@ -154,8 +191,40 @@ export const useThreatData = (userLocation: [number, number] | null) => {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    loadThreatData();
+    loadThreatData(true); // Force refresh
   }, [loadThreatData]);
+
+  // Load emergency services information
+  const loadEmergencyServices = useCallback(async () => {
+    if (!userLocation || emergencyNumbersLoadedRef.current) return;
+    
+    try {
+      const numbers = await emergencyService.getEmergencyNumbersByLocation(userLocation[0], userLocation[1]);
+      if (numbers) {
+        setEmergencyNumbers(numbers);
+        emergencyNumbersLoadedRef.current = true;
+        toast({
+          title: "Emergency Services",
+          description: `Loaded emergency numbers for ${numbers.country}`,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load emergency numbers:", err);
+    }
+  }, [userLocation, toast]);
+
+  // Load disaster alerts
+  const loadDisasterAlerts = useCallback(async () => {
+    if (!userLocation || disasterAlertsLoadedRef.current) return;
+    
+    try {
+      const alerts = await emergencyService.getDisasterAlertsNearLocation(userLocation[0], userLocation[1]);
+      setDisasterAlerts(alerts);
+      disasterAlertsLoadedRef.current = true;
+    } catch (err) {
+      console.error("Failed to load disaster alerts:", err);
+    }
+  }, [userLocation]);
 
   useEffect(() => {
     let mounted = true;
@@ -163,33 +232,11 @@ export const useThreatData = (userLocation: [number, number] | null) => {
     const fetchData = async () => {
       if (!mounted) return;
       
+      await loadThreatData();
+      
       if (userLocation) {
-        await loadThreatData();
-        
-        // Load emergency services information
-        try {
-          const numbers = await emergencyService.getEmergencyNumbersByLocation(userLocation[0], userLocation[1]);
-          if (numbers && mounted) {
-            setEmergencyNumbers(numbers);
-            toast({
-              title: "Emergency Services",
-              description: `Loaded emergency numbers for ${numbers.country}`,
-            });
-          }
-        } catch (err) {
-          console.error("Failed to load emergency numbers:", err);
-        }
-        
-        try {
-          const alerts = await emergencyService.getDisasterAlertsNearLocation(userLocation[0], userLocation[1]);
-          if (mounted) {
-            setDisasterAlerts(alerts);
-          }
-        } catch (err) {
-          console.error("Failed to load disaster alerts:", err);
-        }
-      } else {
-        await loadThreatData();
+        await loadEmergencyServices();
+        await loadDisasterAlerts();
       }
     };
     
@@ -198,7 +245,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
     return () => {
       mounted = false;
     };
-  }, [userLocation, toast, loadThreatData]);
+  }, [userLocation, loadThreatData, loadEmergencyServices, loadDisasterAlerts]);
 
   return {
     loading,

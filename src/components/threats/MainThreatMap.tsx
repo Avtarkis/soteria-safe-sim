@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/CardWrapper';
 import { MapIcon } from 'lucide-react';
 import LeafletMap from '@/components/ui/LeafletMap';
@@ -51,6 +51,17 @@ const MainThreatMap = ({
   handleThreatClick,
   clearSelectedThreat
 }: MainThreatMapProps) => {
+  // This will help ensure the map is properly sized when loaded
+  useEffect(() => {
+    if (mapRef.current && !loading) {
+      // Trigger a resize event after the map is loaded to ensure proper sizing
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        mapRef.current?.invalidateSize();
+      }, 100);
+    }
+  }, [loading, mapRef]);
+  
   return (
     <Card className="overflow-hidden h-[70vh]">
       <MapActionButtons 

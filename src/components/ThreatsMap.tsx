@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 
 // Import custom hooks
 import useUserLocation from '@/hooks/useUserLocation';
@@ -52,10 +52,10 @@ const ThreatsMap = () => {
   const { destination } = useDestination();
   
   // Memoize the filtered markers to prevent unnecessary recalculations
-  const filteredMarkers = useCallback(() => 
+  const filteredMarkers = useMemo(() => 
     getFilteredMarkers(threatMarkers), 
-    [threatMarkers, getFilteredMarkers]
-  )();
+    [threatMarkers, getFilteredMarkers, filters]
+  );
   
   // Only initialize map once
   useEffect(() => {
