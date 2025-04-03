@@ -95,36 +95,64 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     
     // Define user location icon with pulsing effect
     const createPulsingIcon = () => {
-      // Create styles for the pulsing effect
-      const pulsingCSS = `
-        @keyframes pulse {
-          0% { transform: scale(0.5); opacity: 1; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        .pulse-circle {
-          animation: pulse 1.5s infinite ease-out;
-        }
-      `;
-      
-      // Add the CSS to the document if it doesn't exist
+      // Create styles for the pulsing effect if they don't exist
       if (!document.getElementById('pulsing-marker-css')) {
         const styleElement = document.createElement('style');
         styleElement.id = 'pulsing-marker-css';
-        styleElement.textContent = pulsingCSS;
+        styleElement.textContent = `
+          @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+          }
+          .pulse-circle {
+            animation: pulse 1.5s infinite ease-out;
+          }
+          .double-pulse-circle {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(79, 70, 229, 0.3);
+            z-index: 1;
+          }
+          .double-pulse-circle:nth-child(1) {
+            animation: pulse 2s infinite ease-out;
+          }
+          .double-pulse-circle:nth-child(2) {
+            animation: pulse 2s infinite ease-out 1s;
+          }
+          .location-dot {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            background-color: #4F46E5;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 2;
+          }
+        `;
         document.head.appendChild(styleElement);
       }
       
+      // Create an improved pulsing icon with double pulse animation
       const customIcon = L.divIcon({
         className: 'user-location-marker',
         html: `
           <div style="position: relative; width: 40px; height: 40px;">
-            <div style="background-color: #4F46E5; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position: absolute; top: 12px; left: 12px; z-index: 2;"></div>
-            <div class="pulse-circle" style="background-color: rgba(79, 70, 229, 0.3); width: 40px; height: 40px; border-radius: 50%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
+            <div class="location-dot"></div>
+            <div class="double-pulse-circle"></div>
+            <div class="double-pulse-circle"></div>
           </div>
         `,
         iconSize: [40, 40],
         iconAnchor: [20, 20]
       });
+      
       return customIcon;
     };
 
