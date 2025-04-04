@@ -20,7 +20,7 @@ export const useUserLocation = () => {
   // Create a stable callback for location updates
   const handleLocationUpdate = useCallback((lat: number, lng: number, accuracy: number) => {
     try {
-      // Skip if the location hasn't changed significantly (within 10 meters)
+      // Skip if the location hasn't changed significantly (within 5 meters)
       if (previousLocationRef.current) {
         const [prevLat, prevLng] = previousLocationRef.current;
         const distance = Math.sqrt(
@@ -28,9 +28,9 @@ export const useUserLocation = () => {
           Math.pow((lng - prevLng) * 111000 * Math.cos(prevLat * Math.PI/180), 2)
         );
         
-        // If the distance is less than 10 meters and accuracy hasn't improved by 20%, skip the update
-        if (distance < 10 && locationAccuracy && (accuracy > locationAccuracy * 0.8)) {
-          console.log("Skipping redundant location update (distance < 10m)");
+        // If the distance is less than 5 meters and accuracy hasn't improved by 20%, skip the update
+        if (distance < 5 && locationAccuracy && (accuracy > locationAccuracy * 0.8)) {
+          console.log("Skipping redundant location update (distance < 5m)");
           return;
         }
       }
@@ -63,7 +63,7 @@ export const useUserLocation = () => {
           console.error("Error updating location state:", error);
           errorCountRef.current++;
         }
-      }, 800); // Increased debounce time to 800ms for stability
+      }, 500); // Reduced debounce time to 500ms for faster updates
     } catch (error) {
       console.error("Error in handleLocationUpdate:", error);
       errorCountRef.current++;

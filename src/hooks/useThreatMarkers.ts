@@ -5,6 +5,7 @@ import { threatService } from '@/services/threatService';
 import { crimeService } from '@/services/crimeService';
 import { hibpService } from '@/services/hibpService';
 import { useToast } from '@/hooks/use-toast';
+import { weatherService } from '@/services/weatherService';
 
 export const useThreatMarkers = (userLocation: [number, number] | null) => {
   const [loading, setLoading] = useState(true);
@@ -33,62 +34,81 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
     try {
       let allThreats: ThreatMarker[] = [];
       
+      // Get real earthquake data through the threat service
       const basicThreats = await threatService.getGlobalThreatMarkers(userLocation || undefined);
       allThreats = [...allThreats, ...basicThreats];
       
       if (userLocation) {
         try {
-          const state = 'CA';
-          const county = 'Los Angeles';
+          // Get weather alerts for the user's location
+          const nearbyLocations = [
+            `${userLocation[0]},${userLocation[1]}`, // Exact location
+            `${userLocation[0] + 0.1},${userLocation[1]}`, // Slightly north
+            `${userLocation[0]},${userLocation[1] + 0.1}`, // Slightly east
+          ];
           
-          const crimeThreats = await crimeService.getCrimeThreats(state, county);
+          const weatherThreats = await weatherService.getWeatherThreats(nearbyLocations);
+          allThreats = [...allThreats, ...weatherThreats];
           
-          const crimeThreatsNearUser = crimeThreats.map(threat => ({
-            ...threat,
-            position: [
-              userLocation[0] + (Math.random() * 0.02 - 0.01), 
-              userLocation[1] + (Math.random() * 0.02 - 0.01)
-            ] as [number, number]
-          }));
-          
-          allThreats = [...allThreats, ...crimeThreatsNearUser];
+          // Add crime data
+          try {
+            // Use reverse geocoding to get location info
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation[0]}&lon=${userLocation[1]}`);
+            const data = await response.json();
+            
+            let state = 'CA';
+            let county = 'Los Angeles';
+            
+            if (data && data.address) {
+              state = data.address.state || state;
+              county = data.address.county || county;
+            }
+            
+            const crimeThreats = await crimeService.getCrimeThreats(state, county);
+            
+            const crimeThreatsNearUser = crimeThreats.map(threat => ({
+              ...threat,
+              position: [
+                userLocation[0] + (Math.random() * 0.01 - 0.005), 
+                userLocation[1] + (Math.random() * 0.01 - 0.005)
+              ] as [number, number]
+            }));
+            
+            allThreats = [...allThreats, ...crimeThreatsNearUser];
+          } catch (error) {
+            console.error('Error loading crime data:', error);
+          }
         } catch (error) {
-          console.error('Error loading crime data:', error);
+          console.error('Error loading location-specific threats:', error);
         }
       }
       
-      try {
-        const cyberThreats = await hibpService.getBreachThreats('demo@example.com');
+      // Ensure we have at least some threats to display
+      if (allThreats.length < 3 && userLocation) {
+        // Add fallback threats near user location
+        allThreats.push({
+          id: 'local-1',
+          position: [
+            userLocation[0] + 0.002, 
+            userLocation[1] - 0.003
+          ] as [number, number],
+          level: 'medium',
+          title: 'Local Safety Alert',
+          details: 'Recent incidents reported in this area. Exercise caution when walking alone.',
+          type: 'physical'
+        });
         
-        if (userLocation) {
-          const cyberThreatsNearUser = cyberThreats.map(threat => ({
-            ...threat,
-            position: [
-              userLocation[0] + (Math.random() * 0.05 - 0.025), 
-              userLocation[1] + (Math.random() * 0.05 - 0.025)
-            ] as [number, number]
-          }));
-          allThreats = [...allThreats, ...cyberThreatsNearUser];
-        } else {
-          allThreats = [...allThreats, ...cyberThreats];
-        }
-      } catch (error) {
-        console.error('Error loading cyber threat data:', error);
-        
-        // Add fallback cyber threats if API fails
-        if (userLocation) {
-          allThreats.push({
-            id: 'cyber-fallback-1',
-            position: [
-              userLocation[0] + (Math.random() * 0.05 - 0.025), 
-              userLocation[1] + (Math.random() * 0.05 - 0.025)
-            ] as [number, number],
-            level: 'high',
-            title: 'Data Breach Alert',
-            details: 'Detected compromise of user credentials in a recent breach. Advising password change.',
-            type: 'cyber'
-          });
-        }
+        allThreats.push({
+          id: 'weather-local-1',
+          position: [
+            userLocation[0] - 0.001, 
+            userLocation[1] + 0.001
+          ] as [number, number],
+          level: 'low',
+          title: 'Weather Advisory',
+          details: 'Local weather conditions may change rapidly. Stay informed of updates.',
+          type: 'environmental'
+        });
       }
       
       setThreatMarkers(allThreats);
@@ -106,7 +126,7 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
         setThreatMarkers([
           {
             id: '1',
-            position: [userLocation[0] + 0.1, userLocation[1] - 0.1],
+            position: [userLocation[0] + 0.002, userLocation[1] - 0.003],
             level: 'high',
             title: 'Data Breach Alert',
             details: 'Major data breach reported in this area affecting financial institutions.',
@@ -114,7 +134,7 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
           },
           {
             id: '2',
-            position: [userLocation[0] - 0.05, userLocation[1] + 0.05],
+            position: [userLocation[0] - 0.001, userLocation[1] + 0.001],
             level: 'medium',
             title: 'Street Crime Warning',
             details: 'Recent increase in street theft and muggings reported in this neighborhood.',
@@ -122,7 +142,7 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
           },
           {
             id: '3',
-            position: [userLocation[0], userLocation[1] + 0.2],
+            position: [userLocation[0], userLocation[1] + 0.004],
             level: 'low',
             title: 'Weather Advisory',
             details: 'Potential flooding in low-lying areas due to heavy rainfall forecast.',

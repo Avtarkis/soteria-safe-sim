@@ -5,12 +5,12 @@ import './index.css'
 
 // Add an error boundary component to prevent entire app from crashing
 const ErrorFallback = () => (
-  <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif;">
+  <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
     <h1>Something went wrong</h1>
     <p>The application encountered an error. Please refresh the page or try again later.</p>
     <button 
       onClick={() => window.location.reload()} 
-      style="padding: 8px 16px; margin-top: 16px; cursor: pointer; background-color: #4F46E5; color: white; border: none; border-radius: 4px;"
+      style={{ padding: '8px 16px', marginTop: '16px', cursor: 'pointer', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '4px' }}
     >
       Refresh Page
     </button>
@@ -25,7 +25,9 @@ window.addEventListener('error', (event) => {
   const rootElement = document.getElementById("root");
   if (rootElement && event.error && event.error.toString().includes('Maximum update depth exceeded')) {
     console.error('Detected infinite re-render loop, displaying fallback UI');
-    rootElement.innerHTML = ErrorFallback().outerHTML;
+    if (rootElement) {
+      rootElement.innerHTML = ErrorFallback().toString();
+    }
   }
 });
 
@@ -40,6 +42,6 @@ try {
   // Display a fallback UI when the app fails to render
   const rootElement = document.getElementById("root");
   if (rootElement) {
-    rootElement.innerHTML = ErrorFallback().outerHTML;
+    rootElement.innerHTML = ErrorFallback().toString();
   }
 }

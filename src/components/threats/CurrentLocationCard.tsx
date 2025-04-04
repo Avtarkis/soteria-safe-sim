@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
-import { Crosshair } from 'lucide-react';
+import { Locate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CurrentLocationCardProps {
@@ -42,11 +42,11 @@ const CurrentLocationCard = ({
             className={cn(
               "font-medium w-full",
               showUserLocation 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background border-primary text-primary hover:bg-primary/90 hover:text-primary-foreground"
+                ? "bg-green-600 hover:bg-green-700 text-white" 
+                : "border-primary text-primary hover:bg-primary/10"
             )}
           >
-            <Crosshair className="h-4 w-4 mr-2" />
+            <Locate className="h-4 w-4 mr-2" />
             <span className="font-medium">
               {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
             </span>
