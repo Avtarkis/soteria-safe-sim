@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createPulsingIcon } from './UserLocationMarker';
 
@@ -13,10 +13,20 @@ export const useUserLocationTracking = (
   const userLocationAccuracyRef = useRef<number>(0);
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
   const locationTrackingInitializedRef = useRef<boolean>(false);
+  const watchIdRef = useRef<number | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const lastEventTimeRef = useRef<number>(0);
 
   // Handle location found event
   const handleLocationFound = (e: L.LocationEvent) => {
     if (!map) return;
+    
+    // Throttle updates - no more than one update every 2 seconds
+    const now = Date.now();
+    if (now - lastEventTimeRef.current < 2000) {
+      return;
+    }
+    lastEventTimeRef.current = now;
     
     console.log("Location found:", e);
     const radius = e.accuracy;
@@ -51,9 +61,6 @@ export const useUserLocationTracking = (
       weight: 1
     }).addTo(map);
     
-    // Automatically open the popup when first locating
-    userLocationMarkerRef.current.openPopup();
-
     // Update user location through callback if provided
     if (setUserLocation) {
       setUserLocation([e.latlng.lat, e.latlng.lng]);
@@ -77,32 +84,34 @@ export const useUserLocationTracking = (
     // Try to use navigator.geolocation as a fallback
     if (navigator.geolocation) {
       console.log("Trying fallback geolocation");
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (!map) return;
-          
-          const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
-          const accuracy = position.coords.accuracy;
-          
-          // Manually create a locationfound event
-          const locationEvent = {
-            latlng,
-            accuracy,
-            timestamp: position.timestamp,
-            bounds: L.latLngBounds(
-              [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
-              [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
-            )
-          } as L.LocationEvent;
-          
-          // Trigger the locationfound event handler
-          handleLocationFound(locationEvent);
-        },
-        (error) => {
-          console.error('Geolocation error:', error.message);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-      );
+      if (watchIdRef.current === null) {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (position) => {
+            if (!map) return;
+            
+            const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+            const accuracy = position.coords.accuracy;
+            
+            // Manually create a locationfound event
+            const locationEvent = {
+              latlng,
+              accuracy,
+              timestamp: position.timestamp,
+              bounds: L.latLngBounds(
+                [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
+                [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
+              )
+            } as L.LocationEvent;
+            
+            // Trigger the locationfound event handler
+            handleLocationFound(locationEvent);
+          },
+          (error) => {
+            console.error('Geolocation error:', error.message);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+      }
     }
   };
 
@@ -114,33 +123,46 @@ export const useUserLocationTracking = (
     map.on('locationfound', handleLocationFound);
     map.on('locationerror', handleLocationError);
     
-    // This ensures we only start tracking once, and don't restart on every rerender
-    // Only track when showUserLocation changes or when we haven't initialized tracking yet
-    if (showUserLocation) {
+    // Prevent duplicate initialization if tracking status hasn't changed
+    if (showUserLocation && !isTracking) {
       console.log("Starting location tracking");
-      map.locate({ 
-        setView: true, 
-        maxZoom: 16, 
-        watch: true,
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000
-      });
-      locationTrackingInitializedRef.current = true;
-    } else if (locationTrackingInitializedRef.current) {
-      // Only stop if tracking was previously initialized
+      if (locationTrackingInitializedRef.current) {
+        // If we've already initialized once, just toggle visibility instead of restarting tracking
+        if (userLocationMarkerRef.current && userLocationCircleRef.current) {
+          userLocationMarkerRef.current.addTo(map);
+          userLocationCircleRef.current.addTo(map);
+        } else {
+          // Only get location if we don't have markers
+          map.locate({ 
+            setView: false, // Don't auto-set view to prevent map jumping
+            maxZoom: 16, 
+            watch: true,
+            enableHighAccuracy: true
+          });
+        }
+      } else {
+        // First initialization
+        map.locate({ 
+          setView: true, 
+          maxZoom: 16, 
+          watch: true,
+          enableHighAccuracy: true
+        });
+        locationTrackingInitializedRef.current = true;
+      }
+      setIsTracking(true);
+    } else if (!showUserLocation && isTracking) {
       console.log("Stopping location tracking");
-      map.stopLocate();
       
-      // Remove location markers
+      // Don't actually stop locating, just hide the markers
       if (userLocationMarkerRef.current) {
         map.removeLayer(userLocationMarkerRef.current);
-        userLocationMarkerRef.current = null;
       }
       if (userLocationCircleRef.current) {
         map.removeLayer(userLocationCircleRef.current);
-        userLocationCircleRef.current = null;
       }
+      
+      setIsTracking(false);
     }
 
     return () => {
@@ -148,10 +170,15 @@ export const useUserLocationTracking = (
         // Clean up event handlers when component unmounts
         map.off('locationfound', handleLocationFound);
         map.off('locationerror', handleLocationError);
-        map.stopLocate();
+        
+        // Clear watch position if using navigator
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
       }
     };
-  }, [map, showUserLocation, setUserLocation]);
+  }, [map, showUserLocation, setUserLocation, isTracking]);
 
   return {
     getUserLocation: (): [number, number] | null => {

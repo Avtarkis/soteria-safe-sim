@@ -12,9 +12,26 @@ export const useUserLocation = () => {
   
   // Use a debounced location update to prevent too many state updates
   const debouncedLocationUpdateRef = useRef<NodeJS.Timeout | null>(null);
+  // Track the previous location to prevent redundant updates
+  const previousLocationRef = useRef<[number, number] | null>(null);
 
   // Create a stable callback for location updates
   const handleLocationUpdate = useCallback((lat: number, lng: number, accuracy: number) => {
+    // Skip if the location hasn't changed significantly (within 10 meters)
+    if (previousLocationRef.current) {
+      const [prevLat, prevLng] = previousLocationRef.current;
+      const distance = Math.sqrt(
+        Math.pow((lat - prevLat) * 111000, 2) + 
+        Math.pow((lng - prevLng) * 111000 * Math.cos(prevLat * Math.PI/180), 2)
+      );
+      
+      // If the distance is less than 10 meters and accuracy hasn't improved by 20%, skip the update
+      if (distance < 10 && locationAccuracy && (accuracy > locationAccuracy * 0.8)) {
+        console.log("Skipping redundant location update (distance < 10m)");
+        return;
+      }
+    }
+    
     // Clear existing timeout if there is one
     if (debouncedLocationUpdateRef.current) {
       clearTimeout(debouncedLocationUpdateRef.current);
@@ -22,8 +39,10 @@ export const useUserLocation = () => {
     
     // Debounce location updates to reduce unnecessary state changes
     debouncedLocationUpdateRef.current = setTimeout(() => {
+      console.log("Updating location:", lat, lng, accuracy);
       setUserLocation([lat, lng]);
       setLocationAccuracy(accuracy);
+      previousLocationRef.current = [lat, lng];
       
       // Only show toast if location accuracy has changed significantly 
       // or if it's the first update
@@ -34,8 +53,8 @@ export const useUserLocation = () => {
         });
         locationInitializedRef.current = true;
       }
-    }, 300);
-  }, [toast]);
+    }, 500); // Increased debounce time to 500ms
+  }, [toast, locationAccuracy]);
 
   // Listen for location updates from the map component
   useEffect(() => {
@@ -56,7 +75,7 @@ export const useUserLocation = () => {
     };
   }, [handleLocationUpdate]);
 
-  // Initial location detection
+  // Initial location detection - only run once
   useEffect(() => {
     // Skip if we already have a location
     if (locationInitializedRef.current) return;
