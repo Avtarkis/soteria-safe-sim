@@ -23,14 +23,14 @@ export const useUserLocationTracking = (
     try {
       if (!map) return;
       
-      // Throttle updates - no more than one update every 2 seconds
+      // Allow more frequent updates for better tracking - 500ms minimum interval
       const now = Date.now();
-      if (now - lastEventTimeRef.current < 2000) {
+      if (now - lastEventTimeRef.current < 500) {
         return;
       }
       lastEventTimeRef.current = now;
       
-      console.log("Location found:", e);
+      console.log("High-precision location found:", e);
       const radius = e.accuracy;
       userLocationAccuracyRef.current = radius;
       userLocationLatLngRef.current = e.latlng;
@@ -57,10 +57,10 @@ export const useUserLocationTracking = (
         userLocationMarkerRef.current = L.marker(e.latlng, { icon: pulsingIcon })
           .addTo(map)
           .bindPopup(`
-            <b>Your Current Location</b><br>
-            Lat: ${e.latlng.lat.toFixed(6)}<br>
-            Lng: ${e.latlng.lng.toFixed(6)}<br>
-            Accuracy: ±${radius.toFixed(1)} meters
+            <b>Your Exact Location</b><br>
+            Lat: ${e.latlng.lat.toFixed(8)}<br>
+            Lng: ${e.latlng.lng.toFixed(8)}<br>
+            Accuracy: ±${radius < 1 ? radius.toFixed(2) : radius.toFixed(1)} meters
           `);
 
         // Add circle showing accuracy radius
@@ -71,6 +71,18 @@ export const useUserLocationTracking = (
           fillOpacity: 0.1,
           weight: 1
         }).addTo(map);
+        
+        // Center map on user location with appropriate zoom level based on accuracy
+        // Only center if we have high accuracy or it's the first location fix
+        if (radius < 50 || !locationTrackingInitializedRef.current) {
+          // Use higher zoom for more precise location
+          const zoomLevel = radius < 10 ? 18 : 
+                           radius < 30 ? 17 : 
+                           radius < 100 ? 16 : 15;
+          
+          map.setView(e.latlng, zoomLevel, { animate: true });
+          locationTrackingInitializedRef.current = true;
+        }
         
         // Reset error count on successful update
         errorCountRef.current = 0;
@@ -123,7 +135,7 @@ export const useUserLocationTracking = (
   const handleLocationError = (e: L.ErrorEvent) => {
     console.error('Location error:', e.message);
     
-    // Try to use navigator.geolocation as a fallback
+    // Try to use navigator.geolocation as a fallback with maximum accuracy
     if (navigator.geolocation) {
       console.log("Trying fallback geolocation with high accuracy");
       if (watchIdRef.current === null) {
@@ -141,8 +153,8 @@ export const useUserLocationTracking = (
                 accuracy,
                 timestamp: position.timestamp,
                 bounds: L.latLngBounds(
-                  [position.coords.latitude - 0.01, position.coords.longitude - 0.01],
-                  [position.coords.latitude + 0.01, position.coords.longitude + 0.01]
+                  [position.coords.latitude - 0.0001, position.coords.longitude - 0.0001],
+                  [position.coords.latitude + 0.0001, position.coords.longitude + 0.0001]
                 )
               } as L.LocationEvent;
               
@@ -155,8 +167,8 @@ export const useUserLocationTracking = (
             },
             { 
               enableHighAccuracy: true, 
-              timeout: 10000, 
-              maximumAge: 5000 
+              timeout: 15000, 
+              maximumAge: 0 // Don't use cached positions
             }
           );
         } catch (error) {
@@ -177,31 +189,61 @@ export const useUserLocationTracking = (
       
       // Prevent duplicate initialization if tracking status hasn't changed
       if (showUserLocation && !isTracking) {
-        console.log("Starting location tracking");
-        if (locationTrackingInitializedRef.current) {
-          // If we've already initialized once, just toggle visibility instead of restarting tracking
-          if (userLocationMarkerRef.current && userLocationCircleRef.current) {
-            userLocationMarkerRef.current.addTo(map);
-            userLocationCircleRef.current.addTo(map);
-          } else {
-            // Only get location if we don't have markers
-            map.locate({ 
-              setView: false, // Don't auto-set view to prevent map jumping
-              maxZoom: 18, 
-              watch: true,
-              enableHighAccuracy: true
-            });
-          }
-        } else {
-          // First initialization with highest accuracy
-          map.locate({ 
-            setView: true, 
-            maxZoom: 18, 
-            watch: true,
-            enableHighAccuracy: true
-          });
-          locationTrackingInitializedRef.current = true;
+        console.log("Starting high-precision location tracking");
+        
+        // Stop any existing tracking first to ensure clean state
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
         }
+        
+        if (map.stopLocate) {
+          map.stopLocate();
+        }
+        
+        // Start tracking with highest accuracy settings
+        map.locate({ 
+          setView: true, 
+          maxZoom: 18, 
+          watch: true,
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+        
+        // Also use the native geolocation API for redundancy and better accuracy on some devices
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (position) => {
+            if (!map) return;
+            
+            const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+            const accuracy = position.coords.accuracy;
+            
+            // Manually create a locationfound event
+            const locationEvent = {
+              latlng,
+              accuracy,
+              timestamp: position.timestamp,
+              bounds: L.latLngBounds(
+                [position.coords.latitude - 0.0001, position.coords.longitude - 0.0001],
+                [position.coords.latitude + 0.0001, position.coords.longitude + 0.0001]
+              )
+            } as L.LocationEvent;
+            
+            // Trigger the locationfound event handler
+            handleLocationFound(locationEvent);
+          },
+          (error) => {
+            console.error('Geolocation watch error:', error.message);
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 15000, 
+            maximumAge: 0 
+          }
+        );
+        
+        locationTrackingInitializedRef.current = true;
         setIsTracking(true);
       } else if (!showUserLocation && isTracking) {
         console.log("Stopping location tracking");

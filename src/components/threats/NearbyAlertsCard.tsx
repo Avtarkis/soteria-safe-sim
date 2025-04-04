@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
 
@@ -11,10 +11,15 @@ interface NearbyAlertsCardProps {
 }
 
 const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) => {
+  const alerts = getNearbyAlerts();
+  
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Nearby Alerts</CardTitle>
+        <CardTitle className="text-base flex items-center">
+          <MapPin className="h-4 w-4 mr-2 text-red-500" />
+          Nearby Alerts
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -28,8 +33,13 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                 </div>
               </div>
             ))
+          ) : alerts.length === 0 ? (
+            <div className="text-center text-muted-foreground text-sm py-2">
+              <p>No nearby alerts detected</p>
+              <p className="text-xs mt-1">You're in a safe area right now</p>
+            </div>
           ) : (
-            getNearbyAlerts().map((alert, index) => (
+            alerts.map((alert, index) => (
               <div key={alert.id} className="flex items-start gap-3">
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center",
@@ -55,18 +65,18 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                       ? 'Nearby' 
                       : alert.type === 'cyber' 
                         ? 'Regional' 
-                        : 'Weather alert'} • {index * 15 + 5} min ago
+                        : 'Weather alert'} • {index * 7 + 3} min ago
                   </p>
                   <div className="mt-1">
                     <span className={cn(
-                      "text-xs px-2 py-0.5 rounded-full inline-block",
+                      "text-xs px-2 py-0.5 rounded-full inline-block font-medium",
                       alert.level === 'high' 
                         ? "bg-red-500/10 text-red-500 border border-red-500/20" 
                         : alert.level === 'medium'
                           ? "bg-orange-500/10 text-orange-500 border border-orange-500/20"
                           : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
                     )}>
-                      {alert.level.charAt(0).toUpperCase() + alert.level.slice(1)}
+                      {alert.level.charAt(0).toUpperCase() + alert.level.slice(1)} Risk
                     </span>
                   </div>
                 </div>

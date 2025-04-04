@@ -68,22 +68,25 @@ export const createPulsingIcon = () => {
   });
 };
 
-// Fixed: Correctly implement React FC returning null
+// Correctly implement React FC with null return
 const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, accuracy }) => {
   useEffect(() => {
     // Create marker and circle when component mounts
+    let marker: L.Marker | null = null;
+    let circle: L.Circle | null = null;
+    
     try {
-      const marker = L.marker(latlng, { icon: createPulsingIcon() })
+      marker = L.marker(latlng, { icon: createPulsingIcon() })
         .addTo(map)
         .bindPopup(`
-          <b>Your Current Location</b><br>
-          Lat: ${latlng.lat.toFixed(6)}<br>
-          Lng: ${latlng.lng.toFixed(6)}<br>
-          Accuracy: ±${accuracy.toFixed(1)} meters
+          <b>Your Exact Location</b><br>
+          Lat: ${latlng.lat.toFixed(8)}<br>
+          Lng: ${latlng.lng.toFixed(8)}<br>
+          Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
         `);
 
       // Add circle showing accuracy radius
-      const circle = L.circle(latlng, {
+      circle = L.circle(latlng, {
         radius: accuracy,
         color: '#4F46E5',
         fillColor: '#4F46E5',
@@ -94,8 +97,8 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, ac
       // Clean up when component unmounts
       return () => {
         try {
-          map.removeLayer(marker);
-          map.removeLayer(circle);
+          if (marker) map.removeLayer(marker);
+          if (circle) map.removeLayer(circle);
         } catch (error) {
           console.error("Error cleaning up marker/circle:", error);
         }

@@ -28,10 +28,10 @@ const CurrentLocationCard = ({
       <CardContent>
         <div className="text-sm text-muted-foreground mb-2">
           <p className="font-medium text-foreground">Coordinates:</p>
-          <p>Lat: {userLocation[0].toFixed(6)}</p>
-          <p>Lng: {userLocation[1].toFixed(6)}</p>
+          <p>Lat: {userLocation[0].toFixed(8)}</p>
+          <p>Lng: {userLocation[1].toFixed(8)}</p>
           {locationAccuracy && (
-            <p>Accuracy: ±{locationAccuracy.toFixed(1)} meters</p>
+            <p>Accuracy: ±{locationAccuracy < 1 ? locationAccuracy.toFixed(2) : locationAccuracy.toFixed(1)} meters</p>
           )}
         </div>
         <div className="flex justify-between items-center mt-4">
@@ -48,7 +48,7 @@ const CurrentLocationCard = ({
           >
             <Locate className="h-4 w-4 mr-2" />
             <span className="font-medium">
-              {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
+              {showUserLocation ? "High-Precision Tracking On" : "Enable High-Precision Tracking"}
             </span>
           </Button>
         </div>
