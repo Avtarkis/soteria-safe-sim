@@ -40,14 +40,16 @@ const CurrentLocationCard = ({
             size="sm" 
             onClick={toggleUserLocation}
             className={cn(
-              "font-medium",
+              "font-medium w-full",
               showUserLocation 
                 ? "bg-primary text-primary-foreground" 
-                : "bg-background border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                : "bg-background border-primary text-primary hover:bg-primary/90 hover:text-primary-foreground"
             )}
           >
-            <Crosshair className="h-4 w-4 mr-1" />
-            {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
+            <Crosshair className="h-4 w-4 mr-2" />
+            <span className="font-medium">
+              {showUserLocation ? "Live Tracking On" : "Enable Live Tracking"}
+            </span>
           </Button>
         </div>
       </CardContent>

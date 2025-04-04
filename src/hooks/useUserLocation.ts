@@ -14,50 +14,60 @@ export const useUserLocation = () => {
   const debouncedLocationUpdateRef = useRef<NodeJS.Timeout | null>(null);
   // Track the previous location to prevent redundant updates
   const previousLocationRef = useRef<[number, number] | null>(null);
+  // Track error count
+  const errorCountRef = useRef<number>(0);
 
   // Create a stable callback for location updates
   const handleLocationUpdate = useCallback((lat: number, lng: number, accuracy: number) => {
-    // Skip if the location hasn't changed significantly (within 10 meters)
-    if (previousLocationRef.current) {
-      const [prevLat, prevLng] = previousLocationRef.current;
-      const distance = Math.sqrt(
-        Math.pow((lat - prevLat) * 111000, 2) + 
-        Math.pow((lng - prevLng) * 111000 * Math.cos(prevLat * Math.PI/180), 2)
-      );
-      
-      // If the distance is less than 10 meters and accuracy hasn't improved by 20%, skip the update
-      if (distance < 10 && locationAccuracy && (accuracy > locationAccuracy * 0.8)) {
-        console.log("Skipping redundant location update (distance < 10m)");
-        return;
-      }
-    }
-    
-    // Clear existing timeout if there is one
-    if (debouncedLocationUpdateRef.current) {
-      clearTimeout(debouncedLocationUpdateRef.current);
-    }
-    
-    // Debounce location updates to reduce unnecessary state changes
-    debouncedLocationUpdateRef.current = setTimeout(() => {
-      try {
-        console.log("Updating location:", lat, lng, accuracy);
-        setUserLocation([lat, lng]);
-        setLocationAccuracy(accuracy);
-        previousLocationRef.current = [lat, lng];
+    try {
+      // Skip if the location hasn't changed significantly (within 10 meters)
+      if (previousLocationRef.current) {
+        const [prevLat, prevLng] = previousLocationRef.current;
+        const distance = Math.sqrt(
+          Math.pow((lat - prevLat) * 111000, 2) + 
+          Math.pow((lng - prevLng) * 111000 * Math.cos(prevLat * Math.PI/180), 2)
+        );
         
-        // Only show toast if location accuracy has changed significantly 
-        // or if it's the first update
-        if (!locationInitializedRef.current) {
-          toast({
-            title: "Location Detected",
-            description: `Your location has been detected with accuracy of ±${accuracy.toFixed(1)}m`,
-          });
-          locationInitializedRef.current = true;
+        // If the distance is less than 10 meters and accuracy hasn't improved by 20%, skip the update
+        if (distance < 10 && locationAccuracy && (accuracy > locationAccuracy * 0.8)) {
+          console.log("Skipping redundant location update (distance < 10m)");
+          return;
         }
-      } catch (error) {
-        console.error("Error updating location state:", error);
       }
-    }, 500); // Increased debounce time to 500ms
+      
+      // Clear existing timeout if there is one
+      if (debouncedLocationUpdateRef.current) {
+        clearTimeout(debouncedLocationUpdateRef.current);
+      }
+      
+      // Debounce location updates to reduce unnecessary state changes
+      debouncedLocationUpdateRef.current = setTimeout(() => {
+        try {
+          console.log("Updating location:", lat, lng, accuracy);
+          setUserLocation([lat, lng]);
+          setLocationAccuracy(accuracy);
+          previousLocationRef.current = [lat, lng];
+          
+          // Only show toast if location accuracy has changed significantly 
+          // or if it's the first update
+          if (!locationInitializedRef.current) {
+            toast({
+              title: "Location Detected",
+              description: `Your location has been detected with accuracy of ±${accuracy.toFixed(1)}m`,
+            });
+            locationInitializedRef.current = true;
+          }
+          // Reset error count on successful update
+          errorCountRef.current = 0;
+        } catch (error) {
+          console.error("Error updating location state:", error);
+          errorCountRef.current++;
+        }
+      }, 800); // Increased debounce time to 800ms for stability
+    } catch (error) {
+      console.error("Error in handleLocationUpdate:", error);
+      errorCountRef.current++;
+    }
   }, [toast, locationAccuracy]);
 
   // Listen for location updates from the map component
@@ -69,6 +79,7 @@ export const useUserLocation = () => {
         handleLocationUpdate(lat, lng, accuracy);
       } catch (error) {
         console.error("Error handling location update event:", error);
+        errorCountRef.current++;
       }
     };
 
@@ -111,7 +122,11 @@ export const useUserLocation = () => {
             setUserLocation([37.0902, -95.7129]);
             locationInitializedRef.current = true;
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 15000, // Increased timeout
+            maximumAge: 0 // Don't use cached positions for maximum accuracy
+          }
         );
       } else {
         toast({
