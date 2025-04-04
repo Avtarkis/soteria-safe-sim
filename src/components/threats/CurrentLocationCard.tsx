@@ -40,9 +40,10 @@ const CurrentLocationCard = ({
             size="sm" 
             onClick={toggleUserLocation}
             className={cn(
+              "font-medium",
               showUserLocation 
-                ? "bg-primary text-primary-foreground font-medium" 
-                : "bg-background border-primary text-primary hover:text-primary-foreground font-medium"
+                ? "bg-primary text-primary-foreground" 
+                : "bg-background border-primary text-primary hover:bg-primary hover:text-primary-foreground"
             )}
           >
             <Crosshair className="h-4 w-4 mr-1" />

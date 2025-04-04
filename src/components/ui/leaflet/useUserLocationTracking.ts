@@ -19,62 +19,66 @@ export const useUserLocationTracking = (
 
   // Handle location found event
   const handleLocationFound = (e: L.LocationEvent) => {
-    if (!map) return;
-    
-    // Throttle updates - no more than one update every 2 seconds
-    const now = Date.now();
-    if (now - lastEventTimeRef.current < 2000) {
-      return;
-    }
-    lastEventTimeRef.current = now;
-    
-    console.log("Location found:", e);
-    const radius = e.accuracy;
-    userLocationAccuracyRef.current = radius;
-    userLocationLatLngRef.current = e.latlng;
-    
-    // Remove previous markers if they exist
-    if (userLocationMarkerRef.current) {
-      map.removeLayer(userLocationMarkerRef.current);
-    }
-    if (userLocationCircleRef.current) {
-      map.removeLayer(userLocationCircleRef.current);
-    }
-    
-    // Add marker for user location with the pulsing icon
-    const pulsingIcon = createPulsingIcon();
-    userLocationMarkerRef.current = L.marker(e.latlng, { icon: pulsingIcon })
-      .addTo(map)
-      .bindPopup(`
-        <b>Your Current Location</b><br>
-        Lat: ${e.latlng.lat.toFixed(6)}<br>
-        Lng: ${e.latlng.lng.toFixed(6)}<br>
-        Accuracy: ±${radius.toFixed(1)} meters
-      `);
-
-    // Add circle showing accuracy radius
-    userLocationCircleRef.current = L.circle(e.latlng, {
-      radius: radius,
-      color: '#4F46E5',
-      fillColor: '#4F46E5',
-      fillOpacity: 0.1,
-      weight: 1
-    }).addTo(map);
-    
-    // Update user location through callback if provided
-    if (setUserLocation) {
-      setUserLocation([e.latlng.lat, e.latlng.lng]);
-    }
-
-    // Dispatch custom event so other components can react to location updates
-    const customEvent = new CustomEvent('userLocationUpdated', {
-      detail: {
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-        accuracy: radius
+    try {
+      if (!map) return;
+      
+      // Throttle updates - no more than one update every 2 seconds
+      const now = Date.now();
+      if (now - lastEventTimeRef.current < 2000) {
+        return;
       }
-    });
-    document.dispatchEvent(customEvent);
+      lastEventTimeRef.current = now;
+      
+      console.log("Location found:", e);
+      const radius = e.accuracy;
+      userLocationAccuracyRef.current = radius;
+      userLocationLatLngRef.current = e.latlng;
+      
+      // Remove previous markers if they exist
+      if (userLocationMarkerRef.current) {
+        map.removeLayer(userLocationMarkerRef.current);
+      }
+      if (userLocationCircleRef.current) {
+        map.removeLayer(userLocationCircleRef.current);
+      }
+      
+      // Add marker for user location with the pulsing icon
+      const pulsingIcon = createPulsingIcon();
+      userLocationMarkerRef.current = L.marker(e.latlng, { icon: pulsingIcon })
+        .addTo(map)
+        .bindPopup(`
+          <b>Your Current Location</b><br>
+          Lat: ${e.latlng.lat.toFixed(6)}<br>
+          Lng: ${e.latlng.lng.toFixed(6)}<br>
+          Accuracy: ±${radius.toFixed(1)} meters
+        `);
+
+      // Add circle showing accuracy radius
+      userLocationCircleRef.current = L.circle(e.latlng, {
+        radius: radius,
+        color: '#4F46E5',
+        fillColor: '#4F46E5',
+        fillOpacity: 0.1,
+        weight: 1
+      }).addTo(map);
+      
+      // Update user location through callback if provided
+      if (setUserLocation) {
+        setUserLocation([e.latlng.lat, e.latlng.lng]);
+      }
+
+      // Dispatch custom event so other components can react to location updates
+      const customEvent = new CustomEvent('userLocationUpdated', {
+        detail: {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          accuracy: radius
+        }
+      });
+      document.dispatchEvent(customEvent);
+    } catch (error) {
+      console.error("Error in handleLocationFound:", error);
+    }
   };
 
   // Handle location error
@@ -117,67 +121,71 @@ export const useUserLocationTracking = (
 
   // Start or stop location tracking based on showUserLocation
   useEffect(() => {
-    if (!map) return;
-    
-    // Set up event handlers
-    map.on('locationfound', handleLocationFound);
-    map.on('locationerror', handleLocationError);
-    
-    // Prevent duplicate initialization if tracking status hasn't changed
-    if (showUserLocation && !isTracking) {
-      console.log("Starting location tracking");
-      if (locationTrackingInitializedRef.current) {
-        // If we've already initialized once, just toggle visibility instead of restarting tracking
-        if (userLocationMarkerRef.current && userLocationCircleRef.current) {
-          userLocationMarkerRef.current.addTo(map);
-          userLocationCircleRef.current.addTo(map);
+    try {
+      if (!map) return;
+      
+      // Set up event handlers
+      map.on('locationfound', handleLocationFound);
+      map.on('locationerror', handleLocationError);
+      
+      // Prevent duplicate initialization if tracking status hasn't changed
+      if (showUserLocation && !isTracking) {
+        console.log("Starting location tracking");
+        if (locationTrackingInitializedRef.current) {
+          // If we've already initialized once, just toggle visibility instead of restarting tracking
+          if (userLocationMarkerRef.current && userLocationCircleRef.current) {
+            userLocationMarkerRef.current.addTo(map);
+            userLocationCircleRef.current.addTo(map);
+          } else {
+            // Only get location if we don't have markers
+            map.locate({ 
+              setView: false, // Don't auto-set view to prevent map jumping
+              maxZoom: 16, 
+              watch: true,
+              enableHighAccuracy: true
+            });
+          }
         } else {
-          // Only get location if we don't have markers
+          // First initialization
           map.locate({ 
-            setView: false, // Don't auto-set view to prevent map jumping
+            setView: true, 
             maxZoom: 16, 
             watch: true,
             enableHighAccuracy: true
           });
+          locationTrackingInitializedRef.current = true;
         }
-      } else {
-        // First initialization
-        map.locate({ 
-          setView: true, 
-          maxZoom: 16, 
-          watch: true,
-          enableHighAccuracy: true
-        });
-        locationTrackingInitializedRef.current = true;
-      }
-      setIsTracking(true);
-    } else if (!showUserLocation && isTracking) {
-      console.log("Stopping location tracking");
-      
-      // Don't actually stop locating, just hide the markers
-      if (userLocationMarkerRef.current) {
-        map.removeLayer(userLocationMarkerRef.current);
-      }
-      if (userLocationCircleRef.current) {
-        map.removeLayer(userLocationCircleRef.current);
-      }
-      
-      setIsTracking(false);
-    }
-
-    return () => {
-      if (map) {
-        // Clean up event handlers when component unmounts
-        map.off('locationfound', handleLocationFound);
-        map.off('locationerror', handleLocationError);
+        setIsTracking(true);
+      } else if (!showUserLocation && isTracking) {
+        console.log("Stopping location tracking");
         
-        // Clear watch position if using navigator
-        if (watchIdRef.current !== null) {
-          navigator.geolocation.clearWatch(watchIdRef.current);
-          watchIdRef.current = null;
+        // Don't actually stop locating, just hide the markers
+        if (userLocationMarkerRef.current) {
+          map.removeLayer(userLocationMarkerRef.current);
         }
+        if (userLocationCircleRef.current) {
+          map.removeLayer(userLocationCircleRef.current);
+        }
+        
+        setIsTracking(false);
       }
-    };
+
+      return () => {
+        if (map) {
+          // Clean up event handlers when component unmounts
+          map.off('locationfound', handleLocationFound);
+          map.off('locationerror', handleLocationError);
+          
+          // Clear watch position if using navigator
+          if (watchIdRef.current !== null) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+          }
+        }
+      };
+    } catch (error) {
+      console.error("Error in location tracking effect:", error);
+    }
   }, [map, showUserLocation, setUserLocation, isTracking]);
 
   return {

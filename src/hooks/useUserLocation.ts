@@ -39,19 +39,23 @@ export const useUserLocation = () => {
     
     // Debounce location updates to reduce unnecessary state changes
     debouncedLocationUpdateRef.current = setTimeout(() => {
-      console.log("Updating location:", lat, lng, accuracy);
-      setUserLocation([lat, lng]);
-      setLocationAccuracy(accuracy);
-      previousLocationRef.current = [lat, lng];
-      
-      // Only show toast if location accuracy has changed significantly 
-      // or if it's the first update
-      if (!locationInitializedRef.current) {
-        toast({
-          title: "Location Detected",
-          description: `Your location has been detected with accuracy of ±${accuracy.toFixed(1)}m`,
-        });
-        locationInitializedRef.current = true;
+      try {
+        console.log("Updating location:", lat, lng, accuracy);
+        setUserLocation([lat, lng]);
+        setLocationAccuracy(accuracy);
+        previousLocationRef.current = [lat, lng];
+        
+        // Only show toast if location accuracy has changed significantly 
+        // or if it's the first update
+        if (!locationInitializedRef.current) {
+          toast({
+            title: "Location Detected",
+            description: `Your location has been detected with accuracy of ±${accuracy.toFixed(1)}m`,
+          });
+          locationInitializedRef.current = true;
+        }
+      } catch (error) {
+        console.error("Error updating location state:", error);
       }
     }, 500); // Increased debounce time to 500ms
   }, [toast, locationAccuracy]);
@@ -59,9 +63,13 @@ export const useUserLocation = () => {
   // Listen for location updates from the map component
   useEffect(() => {
     const handleUserLocationUpdate = (e: CustomEvent) => {
-      console.log("User location update event received:", e.detail);
-      const { lat, lng, accuracy } = e.detail;
-      handleLocationUpdate(lat, lng, accuracy);
+      try {
+        console.log("User location update event received:", e.detail);
+        const { lat, lng, accuracy } = e.detail;
+        handleLocationUpdate(lat, lng, accuracy);
+      } catch (error) {
+        console.error("Error handling location update event:", error);
+      }
     };
 
     document.addEventListener('userLocationUpdated', handleUserLocationUpdate as EventListener);
@@ -80,36 +88,43 @@ export const useUserLocation = () => {
     // Skip if we already have a location
     if (locationInitializedRef.current) return;
     
-    if (navigator.geolocation) {
-      console.log("Getting user location via navigator.geolocation");
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log("Position obtained:", position);
-          handleLocationUpdate(
-            position.coords.latitude, 
-            position.coords.longitude, 
-            position.coords.accuracy
-          );
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          toast({
-            title: 'Location Error',
-            description: 'Could not access your location. Using default view.',
-            variant: 'destructive',
-          });
-          // Set a default location
-          setUserLocation([37.0902, -95.7129]);
-          locationInitializedRef.current = true;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-      );
-    } else {
-      toast({
-        title: 'Location Not Supported',
-        description: 'Geolocation is not supported by this browser. Using default view.',
-        variant: 'destructive',
-      });
+    try {
+      if (navigator.geolocation) {
+        console.log("Getting user location via navigator.geolocation");
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log("Position obtained:", position);
+            handleLocationUpdate(
+              position.coords.latitude, 
+              position.coords.longitude, 
+              position.coords.accuracy
+            );
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            toast({
+              title: 'Location Error',
+              description: 'Could not access your location. Using default view.',
+              variant: 'destructive',
+            });
+            // Set a default location
+            setUserLocation([37.0902, -95.7129]);
+            locationInitializedRef.current = true;
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+      } else {
+        toast({
+          title: 'Location Not Supported',
+          description: 'Geolocation is not supported by this browser. Using default view.',
+          variant: 'destructive',
+        });
+        setUserLocation([37.0902, -95.7129]);
+        locationInitializedRef.current = true;
+      }
+    } catch (error) {
+      console.error("Error initializing location:", error);
+      // Set a default location on error
       setUserLocation([37.0902, -95.7129]);
       locationInitializedRef.current = true;
     }
