@@ -1,12 +1,12 @@
 
-import React, { Component, ErrorInfo } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
 // Define a basic ErrorBoundary component
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface ErrorBoundaryState {

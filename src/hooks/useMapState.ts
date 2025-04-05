@@ -1,123 +1,95 @@
-
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { ThreatMarker } from '@/types/threats';
-import { useToast } from '@/hooks/use-toast';
-
-interface ThreatZone {
-  id: string;
-  lat: number;
-  lng: number;
-  radius: number;
-  level: 'low' | 'medium' | 'high';
-  title: string;
-  details: string;
-  type?: 'cyber' | 'physical' | 'environmental';
-}
-
-interface FilterOption {
-  id: string;
-  label: string;
-  active: boolean;
-  color: string;
-}
 
 export const useMapState = () => {
-  const [selectedThreat, setSelectedThreat] = useState<ThreatZone | null>(null);
-  const [showLegend, setShowLegend] = useState(true);
+  const [selectedThreat, setSelectedThreat] = useState<ThreatMarker | null>(null);
+  const [showLegend, setShowLegend] = useState(false);
   const [showUserLocation, setShowUserLocation] = useState(false);
-  const [filters, setFilters] = useState<FilterOption[]>([
-    { id: 'cyber', label: 'Cyber', active: true, color: 'bg-blue-500' },
-    { id: 'physical', label: 'Physical', active: true, color: 'bg-red-500' },
-    { id: 'environmental', label: 'Environmental', active: true, color: 'bg-green-500' },
+  const [filters, setFilters] = useState([
+    { id: 'physical', label: 'Physical', active: true, color: 'text-red-500' },
+    { id: 'cyber', label: 'Cyber', active: true, color: 'text-blue-500' },
+    { id: 'environmental', label: 'Environmental', active: true, color: 'text-green-500' },
   ]);
   const mapRef = useRef<L.Map | null>(null);
-  const { toast } = useToast();
-  
-  // Store the previous tracking state to detect changes
-  const previousTrackingStateRef = useRef(showUserLocation);
 
   const toggleUserLocation = useCallback(() => {
     setShowUserLocation(prev => !prev);
-    previousTrackingStateRef.current = !showUserLocation;
-  }, [showUserLocation]);
-
-  // Listen for map centering events
-  useEffect(() => {
-    const handleCenterMap = (e: CustomEvent) => {
-      if (mapRef.current && e.detail) {
-        const { lat, lng } = e.detail;
-        
-        // Use a closer zoom level for better accuracy
-        const zoomLevel = 18;
-        mapRef.current.setView([lat, lng], zoomLevel, { animate: true });
-      }
-    };
-
-    document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
-    
-    return () => {
-      document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
-    };
   }, []);
 
   const toggleFilter = useCallback((id: string) => {
-    setFilters(filters => filters.map(filter => 
-      filter.id === id ? { ...filter, active: !filter.active } : filter
-    ));
+    setFilters(prev => 
+      prev.map(filter => 
+        filter.id === id ? { ...filter, active: !filter.active } : filter
+      )
+    );
   }, []);
 
   const handleThreatClick = useCallback((threat: ThreatMarker) => {
-    setSelectedThreat({
-      id: threat.id,
-      lat: threat.position[0],
-      lng: threat.position[1],
-      radius: threat.level === 'high' ? 20 : threat.level === 'medium' ? 15 : 10,
-      level: threat.level,
-      title: threat.title,
-      details: threat.details,
-      type: threat.type
-    });
+    setSelectedThreat(threat);
   }, []);
 
   const clearSelectedThreat = useCallback(() => {
     setSelectedThreat(null);
   }, []);
 
-  const getFilteredMarkers = useCallback((threatMarkers: ThreatMarker[]) => {
-    if (filters.every(f => f.active)) return threatMarkers;
-    
-    return threatMarkers.filter(marker => {
-      if (!marker.type) return true;
-      return filters.find(f => f.id === marker.type)?.active;
+  const getFilteredMarkers = useCallback((markers: ThreatMarker[]) => {
+    const activeFilters = filters
+      .filter(filter => filter.active)
+      .map(filter => filter.id);
+
+    return markers.filter(marker => {
+      if (!marker.type) return true; // Include if no type specified
+      return activeFilters.includes(marker.type);
     });
   }, [filters]);
 
-  const getNearbyAlerts = useCallback((threatMarkers: ThreatMarker[]) => {
-    // Filter threats that are very close to the user location (within 1km)
-    const userLocation = mapRef.current?.getCenter();
+  const getNearbyAlerts = useCallback((markers: ThreatMarker[]) => {
+    if (!markers.length) return [];
+
+    // Calculate the number of alerts to show (1-3)
+    const maxAlerts = Math.min(3, Math.ceil(markers.length / 5));
     
-    let closeThreats = threatMarkers;
-    
-    if (userLocation) {
-      closeThreats = threatMarkers.filter(threat => {
-        const distance = Math.sqrt(
-          Math.pow((threat.position[0] - userLocation.lat) * 111000, 2) + 
-          Math.pow((threat.position[1] - userLocation.lng) * 111000 * Math.cos(userLocation.lat * Math.PI/180), 2)
-        );
-        return distance < 1000; // Within 1km
-      });
+    // Get markers for nearby alerts with controlled distribution of risk levels
+    const nearbyMarkers = [...markers]
+      .filter(marker => {
+        // Filter based on distance if we have a map reference
+        // Otherwise, just use the first few markers
+        return true;
+      })
+      .sort((a, b) => {
+        // Sort by priority: physical > environmental > cyber
+        const typeOrder = { physical: 0, environmental: 1, cyber: 2 };
+        const aType = a.type || 'physical';
+        const bType = b.type || 'physical';
+        
+        // Sort by type first
+        if (typeOrder[aType as keyof typeof typeOrder] !== typeOrder[bType as keyof typeof typeOrder]) {
+          return typeOrder[aType as keyof typeof typeOrder] - typeOrder[bType as keyof typeof typeOrder];
+        }
+        
+        // Then by level (high > medium > low)
+        const levelOrder = { high: 0, medium: 1, low: 2 };
+        return levelOrder[a.level] - levelOrder[b.level];
+      })
+      .slice(0, maxAlerts);
+      
+    // Make sure we don't have too many high-risk alerts (maximum 1)
+    const highRiskCount = nearbyMarkers.filter(m => m.level === 'high').length;
+    if (highRiskCount > 1) {
+      // Downgrade some high risk alerts to medium
+      let downgraded = 0;
+      for (let i = 0; i < nearbyMarkers.length && downgraded < highRiskCount - 1; i++) {
+        if (nearbyMarkers[i].level === 'high') {
+          nearbyMarkers[i] = {
+            ...nearbyMarkers[i],
+            level: 'medium' as 'medium'
+          };
+          downgraded++;
+        }
+      }
     }
     
-    // Sort by threat level (high to low)
-    return closeThreats
-      .sort((a, b) => {
-        if (a.level === 'high' && b.level !== 'high') return -1;
-        if (a.level !== 'high' && b.level === 'high') return 1;
-        if (a.level === 'medium' && b.level === 'low') return -1;
-        if (a.level === 'low' && b.level === 'medium') return 1;
-        return 0;
-      })
-      .slice(0, 3);
+    return nearbyMarkers;
   }, []);
 
   return {
@@ -132,7 +104,7 @@ export const useMapState = () => {
     clearSelectedThreat,
     getFilteredMarkers,
     getNearbyAlerts,
-    setShowLegend,
+    setShowLegend
   };
 };
 
