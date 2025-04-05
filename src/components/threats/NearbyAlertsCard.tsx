@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { AlertTriangle, Info, MapPin, NavigationCheck, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, MapPin, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +78,7 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
             ))
           ) : alerts.length === 0 ? (
             <div className="text-center text-muted-foreground text-sm py-2">
-              <NavigationCheck className="h-5 w-5 mx-auto mb-2 text-green-500" />
+              <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-green-500" />
               <p>All clear in your area</p>
               <p className="text-xs mt-1">No active notifications at this time</p>
             </div>
