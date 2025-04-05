@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { AlertTriangle, Info, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
+import { useToast } from '@/hooks/use-toast';
 
 interface NearbyAlertsCardProps {
   loading: boolean;
@@ -11,7 +12,35 @@ interface NearbyAlertsCardProps {
 }
 
 const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) => {
-  const alerts = getNearbyAlerts();
+  const [alerts, setAlerts] = useState<ThreatMarker[]>([]);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    if (!loading) {
+      try {
+        const nearbyThreats = getNearbyAlerts();
+        setAlerts(nearbyThreats);
+        
+        if (nearbyThreats.length > 0) {
+          const highRiskThreats = nearbyThreats.filter(threat => threat.level === 'high');
+          if (highRiskThreats.length > 0) {
+            toast({
+              title: "High Risk Alert",
+              description: `${highRiskThreats.length} high risk threat(s) detected near your location`,
+              variant: "destructive"
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error loading nearby alerts:", error);
+      }
+    }
+  }, [loading, getNearbyAlerts, toast]);
+  
+  const getTimeAgo = (index: number) => {
+    const times = ['2 min ago', '15 min ago', '47 min ago', '1 hour ago', '3 hours ago'];
+    return times[index % times.length];
+  };
   
   return (
     <Card>
@@ -65,7 +94,7 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                       ? 'Nearby' 
                       : alert.type === 'cyber' 
                         ? 'Regional' 
-                        : 'Weather alert'} • {index * 7 + 3} min ago
+                        : 'Weather alert'} • {getTimeAgo(index)}
                   </p>
                   <div className="mt-1">
                     <span className={cn(

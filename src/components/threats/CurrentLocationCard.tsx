@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWr
 import { Button } from '@/components/ui/button';
 import { Locate } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface CurrentLocationCardProps {
   userLocation: [number, number] | null;
@@ -18,7 +19,29 @@ const CurrentLocationCard = ({
   showUserLocation, 
   toggleUserLocation 
 }: CurrentLocationCardProps) => {
+  const { toast } = useToast();
+  
   if (!userLocation) return null;
+  
+  const handleToggleTracking = () => {
+    toggleUserLocation();
+    
+    // Add toast notification
+    toast({
+      title: showUserLocation ? "High-Precision Tracking Disabled" : "High-Precision Tracking Enabled",
+      description: showUserLocation 
+        ? "Location tracking has been turned off." 
+        : "Your location is now being tracked with maximum precision.",
+    });
+    
+    // Center the map on user when enabling tracking
+    if (!showUserLocation && userLocation) {
+      const event = new CustomEvent('centerMapOnUserLocation', {
+        detail: { lat: userLocation[0], lng: userLocation[1] }
+      });
+      document.dispatchEvent(event);
+    }
+  };
   
   return (
     <Card>
@@ -38,7 +61,7 @@ const CurrentLocationCard = ({
           <Button 
             variant={showUserLocation ? "default" : "outline"} 
             size="sm" 
-            onClick={toggleUserLocation}
+            onClick={handleToggleTracking}
             className={cn(
               "font-medium w-full",
               showUserLocation 

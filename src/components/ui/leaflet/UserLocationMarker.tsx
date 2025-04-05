@@ -68,7 +68,7 @@ export const createPulsingIcon = () => {
   });
 };
 
-// Correctly implement React FC with null return
+// Fixed implementation to correctly return null as required for React FC
 const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, accuracy }) => {
   useEffect(() => {
     // Create marker and circle when component mounts

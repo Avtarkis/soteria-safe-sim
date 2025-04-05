@@ -17,15 +17,16 @@ export const useUserLocationTracking = (
   const [isTracking, setIsTracking] = useState(false);
   const lastEventTimeRef = useRef<number>(0);
   const errorCountRef = useRef<number>(0);
+  const highPrecisionModeRef = useRef<boolean>(false);
 
   // Handle location found event with improved error handling
   const handleLocationFound = (e: L.LocationEvent) => {
     try {
       if (!map) return;
       
-      // Allow more frequent updates for better tracking - 500ms minimum interval
+      // Allow more frequent updates for better tracking - 300ms minimum interval
       const now = Date.now();
-      if (now - lastEventTimeRef.current < 500) {
+      if (now - lastEventTimeRef.current < 300) {
         return;
       }
       lastEventTimeRef.current = now;
@@ -73,16 +74,18 @@ export const useUserLocationTracking = (
         }).addTo(map);
         
         // Center map on user location with appropriate zoom level based on accuracy
-        // Only center if we have high accuracy or it's the first location fix
-        if (radius < 50 || !locationTrackingInitializedRef.current) {
+        // Only center if high precision tracking is enabled or it's the first location
+        if (highPrecisionModeRef.current || !locationTrackingInitializedRef.current) {
           // Use higher zoom for more precise location
-          const zoomLevel = radius < 10 ? 18 : 
-                           radius < 30 ? 17 : 
-                           radius < 100 ? 16 : 15;
+          const zoomLevel = radius < 10 ? 19 : 
+                           radius < 30 ? 18 : 
+                           radius < 100 ? 17 : 16;
           
           map.setView(e.latlng, zoomLevel, { animate: true });
-          locationTrackingInitializedRef.current = true;
+          highPrecisionModeRef.current = false; // Reset after first centering
         }
+        
+        locationTrackingInitializedRef.current = true;
         
         // Reset error count on successful update
         errorCountRef.current = 0;
@@ -191,6 +194,9 @@ export const useUserLocationTracking = (
       if (showUserLocation && !isTracking) {
         console.log("Starting high-precision location tracking");
         
+        // Signal that we need to center the map immediately
+        highPrecisionModeRef.current = true;
+        
         // Stop any existing tracking first to ensure clean state
         if (watchIdRef.current !== null) {
           navigator.geolocation.clearWatch(watchIdRef.current);
@@ -203,15 +209,46 @@ export const useUserLocationTracking = (
         
         // Start tracking with highest accuracy settings
         map.locate({ 
-          setView: true, 
-          maxZoom: 18, 
+          setView: false, // Don't set view automatically, we'll do it manually
+          maxZoom: 19, 
           watch: true,
           enableHighAccuracy: true,
           timeout: 10000,
           maximumAge: 0
         });
         
-        // Also use the native geolocation API for redundancy and better accuracy on some devices
+        // Use navigator.geolocation for maximum accuracy
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log("Initial high-precision position:", position);
+            
+            // Immediately create a marker if we have position
+            if (map && position) {
+              const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+              const locationEvent = {
+                latlng,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp,
+                bounds: L.latLngBounds(
+                  [position.coords.latitude - 0.0001, position.coords.longitude - 0.0001],
+                  [position.coords.latitude + 0.0001, position.coords.longitude + 0.0001]
+                )
+              } as L.LocationEvent;
+              
+              handleLocationFound(locationEvent);
+            }
+          },
+          (error) => {
+            console.error("Error getting initial position:", error);
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+          }
+        );
+        
+        // Also use the native geolocation API for redundancy and better accuracy
         watchIdRef.current = navigator.geolocation.watchPosition(
           (position) => {
             if (!map) return;
@@ -248,10 +285,11 @@ export const useUserLocationTracking = (
       } else if (!showUserLocation && isTracking) {
         console.log("Stopping location tracking");
         
-        // Don't actually stop locating, just hide the markers
+        // Remove markers when tracking is turned off
         if (userLocationMarkerRef.current) {
           try {
             map.removeLayer(userLocationMarkerRef.current);
+            userLocationMarkerRef.current = null;
           } catch (error) {
             console.error("Error removing marker on toggle off:", error);
           }
@@ -259,9 +297,18 @@ export const useUserLocationTracking = (
         if (userLocationCircleRef.current) {
           try {
             map.removeLayer(userLocationCircleRef.current);
+            userLocationCircleRef.current = null;
           } catch (error) {
             console.error("Error removing circle on toggle off:", error);
           }
+        }
+        
+        // Stop tracking
+        map.stopLocate();
+        
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
         }
         
         setIsTracking(false);
@@ -288,6 +335,31 @@ export const useUserLocationTracking = (
       console.error("Error in location tracking effect:", error);
     }
   }, [map, showUserLocation, setUserLocation, isTracking]);
+
+  // Listen for centerMapOnUserLocation events
+  useEffect(() => {
+    const handleCenterMap = (e: CustomEvent) => {
+      if (map && userLocationLatLngRef.current) {
+        // Signal that we need to center with high precision
+        highPrecisionModeRef.current = true;
+        
+        // Force a location update with high zoom
+        map.locate({ 
+          setView: false,
+          maxZoom: 19, 
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        });
+      }
+    };
+
+    document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    
+    return () => {
+      document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    };
+  }, [map]);
 
   return {
     getUserLocation: (): [number, number] | null => {
