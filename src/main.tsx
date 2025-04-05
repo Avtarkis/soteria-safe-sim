@@ -1,20 +1,20 @@
-
+import React, { Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
 // Define a basic ErrorBoundary component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+class ErrorBoundary extends Component<{children: React.ReactNode}, {hasError: boolean}> {
+  constructor(props: {children: React.ReactNode}) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("React error boundary caught error:", error, errorInfo);
   }
 

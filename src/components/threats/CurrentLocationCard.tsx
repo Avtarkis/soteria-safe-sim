@@ -36,10 +36,12 @@ const CurrentLocationCard = ({
     
     // Center the map on user when enabling tracking
     if (!showUserLocation && userLocation) {
-      const event = new CustomEvent('centerMapOnUserLocation', {
-        detail: { lat: userLocation[0], lng: userLocation[1] }
-      });
-      document.dispatchEvent(event);
+      setTimeout(() => {
+        const event = new CustomEvent('centerMapOnUserLocation', {
+          detail: { lat: userLocation[0], lng: userLocation[1] }
+        });
+        document.dispatchEvent(event);
+      }, 200); // Small delay to ensure map is ready
     }
   };
   

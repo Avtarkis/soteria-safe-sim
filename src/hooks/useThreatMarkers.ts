@@ -97,7 +97,7 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
       // Ensure we have at least some threats that are extremely close to the user's location
       // These will show up in the "Nearby Alerts" section
       if (userLocation) {
-        const realWorldThreats = [
+        const realWorldThreats: ThreatMarker[] = [
           {
             id: `local-${Date.now()}-1`,
             position: [
@@ -164,7 +164,7 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
         
         // Add fallback threats if all APIs fail
         if (userLocation) {
-          setThreatMarkers([
+          const fallbackThreats: ThreatMarker[] = [
             {
               id: `fallback-${Date.now()}-1`,
               position: [userLocation[0] + 0.0005, userLocation[1] - 0.0008],
@@ -189,7 +189,8 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
               details: 'Be aware of increased cyber threats targeting local networks.',
               type: 'cyber'
             }
-          ]);
+          ];
+          setThreatMarkers(fallbackThreats);
           dataLoadedRef.current = true;
         } else {
           setThreatMarkers([]);
