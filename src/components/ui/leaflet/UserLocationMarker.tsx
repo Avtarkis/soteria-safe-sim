@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import L from 'leaflet';
 
 interface UserLocationMarkerProps {
@@ -49,6 +49,16 @@ export const createPulsingIcon = () => {
         box-shadow: 0 0 10px rgba(0,0,0,0.3);
         z-index: 2;
       }
+      .street-label {
+        background-color: rgba(255, 255, 255, 0.85);
+        padding: 5px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 12px;
+        white-space: nowrap;
+        border: 1px solid rgba(79, 70, 229, 0.5);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
     `;
     document.head.appendChild(styleElement);
   }
@@ -69,16 +79,68 @@ export const createPulsingIcon = () => {
 };
 
 const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, accuracy }) => {
+  const [streetName, setStreetName] = useState<string | null>(null);
+  
+  // Get street name using reverse geocoding
+  useEffect(() => {
+    const fetchStreetName = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}&zoom=18&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        // Extract street name or nearest named feature
+        let locationName = '';
+        
+        if (data.address) {
+          const { road, street, pedestrian, path, footway, residential, house_number } = data.address;
+          
+          // Try to get the most specific street information
+          const streetInfo = road || street || pedestrian || path || footway || residential || '';
+          const houseNum = house_number ? `${house_number}, ` : '';
+          
+          if (streetInfo) {
+            locationName = `${houseNum}${streetInfo}`;
+          } else if (data.name) {
+            locationName = data.name;
+          } else {
+            // Use any other available location data if street name not found
+            const locality = data.address.suburb || data.address.neighbourhood || data.address.city_district || '';
+            if (locality) {
+              locationName = locality;
+            }
+          }
+        }
+        
+        // If we couldn't find a street name, use the display_name but shortened
+        if (!locationName && data.display_name) {
+          locationName = data.display_name.split(',').slice(0, 2).join(',');
+        }
+        
+        setStreetName(locationName || 'Unknown location');
+      } catch (error) {
+        console.error("Error fetching street name:", error);
+        setStreetName('Location');
+      }
+    };
+    
+    fetchStreetName();
+  }, [latlng.lat, latlng.lng]);
+
   useEffect(() => {
     // Create marker and circle when component mounts
     let marker: L.Marker | null = null;
     let circle: L.Circle | null = null;
+    let streetLabel: L.Marker | null = null;
     
     try {
+      // Create the main location marker
       marker = L.marker(latlng, { icon: createPulsingIcon() })
         .addTo(map)
         .bindPopup(`
           <b>Your Exact Location</b><br>
+          ${streetName ? `Location: ${streetName}<br>` : ''}
           Lat: ${latlng.lat.toFixed(8)}<br>
           Lng: ${latlng.lng.toFixed(8)}<br>
           Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
@@ -93,20 +155,36 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, ac
         weight: 1
       }).addTo(map);
       
+      // Add street name label if available
+      if (streetName) {
+        const streetLabelIcon = L.divIcon({
+          className: 'street-label',
+          html: `<div class="street-label">${streetName}</div>`,
+          iconSize: [120, 20],
+          iconAnchor: [60, 30]
+        });
+        
+        // Position the street label above the location marker
+        const labelLatLng = L.latLng(latlng.lat + 0.0001, latlng.lng);
+        streetLabel = L.marker(labelLatLng, { icon: streetLabelIcon, interactive: false })
+          .addTo(map);
+      }
+      
       // Clean up when component unmounts
       return () => {
         try {
           if (marker) map.removeLayer(marker);
           if (circle) map.removeLayer(circle);
+          if (streetLabel) map.removeLayer(streetLabel);
         } catch (error) {
-          console.error("Error cleaning up marker/circle:", error);
+          console.error("Error cleaning up marker/circle/label:", error);
         }
       };
     } catch (error) {
       console.error("Error creating location marker:", error);
       return undefined;
     }
-  }, [map, latlng, accuracy]);
+  }, [map, latlng, accuracy, streetName]);
   
   // Return null as this is a side-effect component
   return null;

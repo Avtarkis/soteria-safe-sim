@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
-import { Locate } from 'lucide-react';
+import { Locate, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,6 +20,71 @@ const CurrentLocationCard = ({
   toggleUserLocation 
 }: CurrentLocationCardProps) => {
   const { toast } = useToast();
+  const [streetName, setStreetName] = useState<string | null>(null);
+  const [isLoadingStreet, setIsLoadingStreet] = useState(false);
+  
+  // Get street name using reverse geocoding
+  useEffect(() => {
+    if (!userLocation) return;
+    
+    const fetchStreetName = async () => {
+      setIsLoadingStreet(true);
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation[0]}&lon=${userLocation[1]}&zoom=18&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        // Extract street name or nearest named feature
+        let locationName = '';
+        
+        if (data.address) {
+          const { road, street, pedestrian, path, footway, residential, house_number, city, county, state } = data.address;
+          
+          // Try to get the most specific street information
+          const streetInfo = road || street || pedestrian || path || footway || residential || '';
+          const houseNum = house_number ? `${house_number}, ` : '';
+          
+          if (streetInfo) {
+            locationName = `${houseNum}${streetInfo}`;
+            
+            // Add city/area if available
+            if (city) {
+              locationName += `, ${city}`;
+            } else if (county) {
+              locationName += `, ${county}`;
+            }
+          } else if (data.name) {
+            locationName = data.name;
+          } else {
+            // Use any other available location data if street name not found
+            const locality = data.address.suburb || data.address.neighbourhood || data.address.city_district || '';
+            if (locality) {
+              locationName = locality;
+              if (city) locationName += `, ${city}`;
+            } else if (county) {
+              locationName = county;
+              if (state) locationName += `, ${state}`;
+            }
+          }
+        }
+        
+        // If we couldn't find a street name, use the display_name but shortened
+        if (!locationName && data.display_name) {
+          locationName = data.display_name.split(',').slice(0, 2).join(',');
+        }
+        
+        setStreetName(locationName || 'Unknown location');
+      } catch (error) {
+        console.error("Error fetching street name:", error);
+        setStreetName('Location information unavailable');
+      } finally {
+        setIsLoadingStreet(false);
+      }
+    };
+    
+    fetchStreetName();
+  }, [userLocation]);
   
   if (!userLocation) return null;
   
@@ -48,9 +113,17 @@ const CurrentLocationCard = ({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Your Current Location</CardTitle>
+        <CardTitle className="text-base flex items-center">
+          <MapPin className="h-4 w-4 mr-2" /> 
+          Your Current Location
+        </CardTitle>
       </CardHeader>
       <CardContent>
+        {streetName && (
+          <div className="mb-3 bg-muted/50 p-2 rounded-md border border-border">
+            <p className="text-sm font-medium truncate">{streetName}</p>
+          </div>
+        )}
         <div className="text-sm text-muted-foreground mb-2">
           <p className="font-medium text-foreground">Coordinates:</p>
           <p>Lat: {userLocation[0].toFixed(8)}</p>

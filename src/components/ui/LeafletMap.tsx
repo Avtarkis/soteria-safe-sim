@@ -132,6 +132,37 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     }
   }, [mapCreated]);
 
+  // Add Mapbox street labels layer when map is created
+  useEffect(() => {
+    if (mapRef.current && mapCreated) {
+      // Set the base tile layer to OpenStreetMap with more visible street names
+      const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      });
+      
+      // Optional: Add a more detailed map layer from Stamen
+      const tonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.png', {
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      });
+      
+      // Add layer control to toggle between maps
+      const baseMaps = {
+        "OpenStreetMap": baseMap,
+        "Toner Lite": tonerLite
+      };
+      
+      L.control.layers(baseMaps).addTo(mapRef.current);
+      
+      // Set the initial base layer
+      baseMap.addTo(mapRef.current);
+      
+      // Add scale control to show distances
+      L.control.scale().addTo(mapRef.current);
+    }
+  }, [mapCreated]);
+
   return (
     <div 
       ref={mapContainerRef} 

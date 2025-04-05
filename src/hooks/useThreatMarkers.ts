@@ -213,3 +213,5 @@ export const useThreatMarkers = (userLocation: [number, number] | null) => {
     loadThreatMarkers
   };
 };
+
+export default useThreatMarkers;
