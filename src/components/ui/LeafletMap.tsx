@@ -4,12 +4,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
 
-// Import marker icon images (Leaflet requires these)
+// Import marker icon images
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Import custom hooks and components
+// Import custom hooks
 import useMapInitialization from './leaflet/useMapInitialization';
 import useUserLocationTracking from './leaflet/useUserLocationTracking';
 import ThreatMarkers from './leaflet/ThreatMarkers';
@@ -28,29 +28,28 @@ export interface ThreatMarker {
   level: 'low' | 'medium' | 'high';
   title: string;
   details: string;
-  type?: 'cyber' | 'physical' | 'environmental'; // Add type to categorize threats
+  type?: 'cyber' | 'physical' | 'environmental';
 }
 
 interface LeafletMapProps {
   className?: string;
   markers?: ThreatMarker[];
   onMarkerClick?: (marker: ThreatMarker) => void;
-  center?: [number, number]; // [latitude, longitude]
+  center?: [number, number];
   zoom?: number;
   showUserLocation?: boolean;
 }
 
-// Changed to use forwardRef to properly handle the ref
 const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   className,
   markers = [],
   onMarkerClick,
-  center = [40.7128, -74.006], // Default to New York City
+  center = [40.7128, -74.006],
   zoom = 13,
   showUserLocation = false
 }, ref) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [updateKey, setUpdateKey] = useState(0); // Used to force re-render when necessary
+  const [mapKey, setMapKey] = useState(Date.now()); // Used to force re-renders if needed
   
   // Initialize map
   const { mapRef, markersLayerRef, mapCreated } = useMapInitialization(
@@ -74,7 +73,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   useEffect(() => {
     if (!mapRef.current || !markersLayerRef.current || !mapCreated || markers.length === 0) return;
 
-    // Use the ThreatMarkers component logic directly here since we're in a useEffect
+    // Clear existing markers
     markersLayerRef.current.clearLayers();
     
     markers.forEach(marker => {
@@ -121,18 +120,29 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     });
   }, [markers, onMarkerClick, mapCreated]);
 
-  // This will help ensure the map is properly sized
+  // Ensure the map is properly sized
   useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        console.log("Resizing map in response to window resize");
+        mapRef.current.invalidateSize(true);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Also do an immediate resize and a delayed one for reliability
     if (mapRef.current && mapCreated) {
-      // Trigger a resize event after the map is loaded to ensure proper sizing
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-        mapRef.current?.invalidateSize();
-      }, 100);
+      setTimeout(handleResize, 100);
+      setTimeout(handleResize, 500);
     }
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [mapCreated]);
 
-  // Add Mapbox street labels layer when map is created
+  // Add additional map layers when map is created
   useEffect(() => {
     if (mapRef.current && mapCreated) {
       // Set the base tile layer to OpenStreetMap with more visible street names
@@ -141,16 +151,23 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         maxZoom: 19,
       });
       
-      // Optional: Add a more detailed map layer from Stamen
+      // Add a more detailed map layer option
       const tonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.png', {
-        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>',
+        maxZoom: 19,
+      });
+      
+      // Add satellite view option
+      const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         maxZoom: 19,
       });
       
       // Add layer control to toggle between maps
       const baseMaps = {
         "OpenStreetMap": baseMap,
-        "Toner Lite": tonerLite
+        "Light": tonerLite,
+        "Satellite": satellite
       };
       
       L.control.layers(baseMaps).addTo(mapRef.current);
@@ -158,7 +175,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       // Set the initial base layer
       baseMap.addTo(mapRef.current);
       
-      // Add scale control to show distances
+      // Add scale control
       L.control.scale().addTo(mapRef.current);
     }
   }, [mapCreated]);
@@ -168,7 +185,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       ref={mapContainerRef} 
       className={cn("h-full w-full min-h-[300px]", className)}
       id="leaflet-map-container"
-      key={`map-container-${updateKey}`}
+      key={`map-container-${mapKey}`}
     />
   );
 });

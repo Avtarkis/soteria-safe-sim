@@ -1,38 +1,54 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { Layers } from 'lucide-react';
+import { Card } from '@/components/ui/CardWrapper';
+import { cn } from '@/lib/utils';
 
-const LegendCard = ({ showLegend }: { showLegend: boolean }) => {
+interface LegendCardProps {
+  showLegend: boolean;
+}
+
+const LegendCard = ({ showLegend }: LegendCardProps) => {
   if (!showLegend) return null;
   
   return (
-    <div className="absolute top-4 right-4 z-10">
-      <Card className="shadow-sm bg-background/80 backdrop-blur-sm w-48">
-        <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-sm flex items-center">
-            <Layers className="h-4 w-4 mr-1" />
-            Threat Levels
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-1">
-          <div className="space-y-1.5 text-xs">
-            <div className="flex items-center">
-              <span className="w-3 h-3 rounded-full bg-threat-high mr-2"></span>
-              <span>High Risk</span>
-            </div>
-            <div className="flex items-center">
-              <span className="w-3 h-3 rounded-full bg-threat-medium mr-2"></span>
-              <span>Medium Risk</span>
-            </div>
-            <div className="flex items-center">
-              <span className="w-3 h-3 rounded-full bg-threat-low mr-2"></span>
-              <span>Low Risk</span>
-            </div>
+    <Card className={cn(
+      "absolute bottom-4 right-4 z-10 p-3 w-64 shadow-lg",
+      "bg-background/90 backdrop-blur-sm border border-border/50"
+    )}>
+      <div className="text-sm font-semibold mb-2">Threat Legend</div>
+      <div className="space-y-2 text-xs">
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full mr-2 bg-red-500"></div>
+          <span>High Risk Physical Threat</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full mr-2 bg-orange-400"></div>
+          <span>Medium Risk Physical Threat</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full mr-2 bg-blue-500"></div>
+          <span>Low Risk Physical Threat</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full mr-2 bg-pink-500"></div>
+          <span>Cyber Threat</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full mr-2 bg-green-500"></div>
+          <span>Environmental Threat</span>
+        </div>
+        <div className="border-t border-border/50 pt-2 mt-2">
+          <div className="flex items-center">
+            <div className="w-4 h-4 rounded-full mr-2 bg-indigo-500 border border-white"></div>
+            <span>Your Location</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="flex items-center mt-1">
+            <div className="w-4 h-4 rounded-full mr-2 animate-pulse bg-indigo-500/50"></div>
+            <span>Location Accuracy Range</span>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 };
 

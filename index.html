@@ -20,10 +20,11 @@
     <!-- Base href to fix routing in production -->
     <base href="/" />
     
-    <!-- Added error recovery scripts with improved handling for production issues -->
+    <!-- Improved error recovery scripts for production -->
     <script>
       window.addEventListener('error', function(e) {
         console.error('Global error caught:', e.message);
+        // Only show error UI if the body is empty
         if (document.body && document.body.innerHTML === '') {
           document.body.innerHTML = '<div style="padding: 20px; font-family: system-ui, sans-serif;">'+
             '<h1>Application Error</h1>'+
@@ -34,31 +35,13 @@
         }
       });
       
-      // Additional check for blank page after load
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          if (document.body && (document.body.innerHTML === '' || !document.getElementById('root') || document.getElementById('root').innerHTML === '')) {
-            console.error('Blank page detected, attempting recovery');
-            window.location.reload();
-          }
-        }, 3000);
-      });
+      // Prevent blank page by limiting reloads
+      var reloadCount = parseInt(sessionStorage.getItem('reloadCount') || '0');
       
-      // Production navigator handling to prevent infinite reloads
-      if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/index.html')) {
-        // Check for SPA paths that should redirect to the root in production
-        const knownRoutes = ['/map', '/dashboard', '/emergency', '/cyber', '/subscription', '/family', '/auth'];
-        if (knownRoutes.some(route => window.location.pathname.startsWith(route))) {
-          console.log('Redirecting SPA route to base path');
-          if (!window.location.search.includes('_redirected=true')) {
-            const separator = window.location.search ? '&' : '?';
-            window.location.href = '/' + window.location.search + separator + '_redirected=true' + window.location.hash;
-          }
-        }
-      }
-      
-      // Detect potential routing issues and fix them
-      if (window.location.search.includes('_redirected=true')) {
+      // Detect potential routing issues but limit reload attempts
+      if (window.location.search.includes('_redirected=true') && reloadCount < 2) {
+        sessionStorage.setItem('reloadCount', (reloadCount + 1).toString());
+        
         window.addEventListener('DOMContentLoaded', function() {
           // Give the app time to initialize routing
           setTimeout(function() {
@@ -70,7 +53,29 @@
             }
           }, 300);
         });
+      } else if (reloadCount >= 2) {
+        // Stop trying to reload and show a helpful message instead
+        console.warn('Multiple reload attempts detected. Stopping automatic reloads.');
+        sessionStorage.removeItem('reloadCount');
       }
+      
+      // Additional check for blank page after load, but with limited reload attempts
+      window.addEventListener('load', function() {
+        if (reloadCount < 2) {
+          setTimeout(function() {
+            if (document.body && (document.body.innerHTML === '' || !document.getElementById('root') || document.getElementById('root').innerHTML === '')) {
+              console.error('Blank page detected, attempting recovery');
+              
+              // Increment reload count
+              sessionStorage.setItem('reloadCount', (reloadCount + 1).toString());
+              window.location.reload();
+            } else {
+              // If page loaded successfully, reset reload counter
+              sessionStorage.removeItem('reloadCount');
+            }
+          }, 3000);
+        }
+      });
     </script>
     
     <!-- Preload critical leaflet resources to avoid missing map -->

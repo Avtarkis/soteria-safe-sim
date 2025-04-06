@@ -64,18 +64,31 @@ export const createPulsingIcon = () => {
         text-overflow: ellipsis;
         z-index: 1000;
       }
+      
+      /* Safety indicators */
+      .safety-high {
+        background-color: #22c55e !important; /* Green for safe */
+      }
+      .safety-medium {
+        background-color: #f59e0b !important; /* Yellow for caution */
+      }
+      .safety-low {
+        background-color: #ef4444 !important; /* Red for danger */
+      }
     `;
     document.head.appendChild(styleElement);
   }
   
-  // Create an improved pulsing icon with double pulse animation
+  // Create an improved pulsing icon with safety indicator (defaulting to safe/high)
+  const safetyClass = 'safety-high'; // Default to high safety
+  
   return L.divIcon({
     className: 'user-location-marker',
     html: `
       <div style="position: relative; width: 40px; height: 40px;">
-        <div class="location-dot"></div>
-        <div class="double-pulse-circle"></div>
-        <div class="double-pulse-circle"></div>
+        <div class="location-dot ${safetyClass}"></div>
+        <div class="double-pulse-circle ${safetyClass}"></div>
+        <div class="double-pulse-circle ${safetyClass}"></div>
       </div>
     `,
     iconSize: [40, 40],

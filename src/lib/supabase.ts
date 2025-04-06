@@ -1,18 +1,18 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Try to get environment variables from Supabase's integration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Try to get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// If environment variables are not available, check if we're in a development environment
-// and use empty strings (the Supabase client will be non-functional but won't crash the app)
-const url = supabaseUrl || (import.meta.env.DEV ? 'https://placeholder-url.supabase.co' : '');
-const key = supabaseAnonKey || (import.meta.env.DEV ? 'placeholder-key' : '');
-
+// Check if we're missing environment variables and use development fallbacks if needed
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables. Some features may not work correctly.');
+  console.warn('Missing Supabase environment variables. Using development fallbacks to prevent blank screen.');
 }
+
+// Create a development fallback that won't crash the app
+const url = supabaseUrl || 'https://placeholder-url.supabase.co';
+const key = supabaseAnonKey || 'placeholder-key-to-prevent-crash';
 
 // Define types for our database
 export type Database = {

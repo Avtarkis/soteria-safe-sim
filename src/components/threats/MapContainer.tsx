@@ -28,11 +28,11 @@ const MapContainer = ({
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mapInitializedRef = useRef(false);
   
-  // This effect will help ensure the map is properly resized
+  // Enhanced map sizing effect
   useEffect(() => {
     const resizeMap = () => {
       if (mapRef.current) {
-        console.log('Resizing map to ensure display');
+        console.log('Resizing map to ensure proper display');
         window.dispatchEvent(new Event('resize'));
         mapRef.current.invalidateSize(true);
       }
@@ -44,10 +44,14 @@ const MapContainer = ({
     // Also apply resize when window gets resized
     window.addEventListener('resize', resizeMap);
     
-    // And once more after a short delay to handle any delayed rendering
+    // And schedule multiple resize attempts for reliability
     const timeoutId = setTimeout(() => {
       resizeMap();
       mapInitializedRef.current = true;
+      
+      // Make additional resize attempts
+      setTimeout(resizeMap, 300);
+      setTimeout(resizeMap, 1000);
     }, 500);
     
     return () => {
@@ -74,13 +78,7 @@ const MapContainer = ({
             window.dispatchEvent(new Event('resize'));
             mapRef.current.invalidateSize(true);
             
-            // Notify user that high precision is active
-            toast({
-              title: "High-Precision Tracking Active",
-              description: "Map updated with street-level details and precise location.",
-            });
-            
-            // Make another attempt after a delay for reliability
+            // Force a second update for reliability
             setTimeout(() => {
               if (mapRef.current) {
                 mapRef.current.invalidateSize(true);
