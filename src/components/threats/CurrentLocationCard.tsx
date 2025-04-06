@@ -30,16 +30,28 @@ const CurrentLocationCard = ({
     const fetchStreetName = async () => {
       setIsLoadingStreet(true);
       try {
+        // Use Open Street Map API for better street details
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation[0]}&lon=${userLocation[1]}&zoom=18&addressdetails=1`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation[0]}&lon=${userLocation[1]}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'Accept-Language': 'en',
+              'User-Agent': 'SoteriaSafeSim/1.0'
+            }
+          }
         );
+        
+        if (!response.ok) {
+          throw new Error(`Geocoding error: ${response.status}`);
+        }
+        
         const data = await response.json();
         
-        // Extract street name or nearest named feature
+        // Extract street name or nearest named feature with improved logic
         let locationName = '';
         
         if (data.address) {
-          const { road, street, pedestrian, path, footway, residential, house_number, city, county, state } = data.address;
+          const { road, street, pedestrian, path, footway, residential, house_number, city, suburb, neighbourhood, county, state, postcode } = data.address;
           
           // Try to get the most specific street information
           const streetInfo = road || street || pedestrian || path || footway || residential || '';
@@ -48,22 +60,31 @@ const CurrentLocationCard = ({
           if (streetInfo) {
             locationName = `${houseNum}${streetInfo}`;
             
-            // Add city/area if available
-            if (city) {
+            // Add city/area if available for better context
+            const localArea = suburb || neighbourhood || '';
+            
+            if (localArea && city) {
+              locationName += `, ${localArea}, ${city}`;
+            } else if (city) {
               locationName += `, ${city}`;
+            } else if (localArea) {
+              locationName += `, ${localArea}`;
             } else if (county) {
               locationName += `, ${county}`;
             }
+            
+            // Add postal code if available
+            if (postcode && !locationName.includes(postcode)) {
+              locationName += ` ${postcode}`;
+            }
           } else if (data.name) {
             locationName = data.name;
+            if (city) locationName += `, ${city}`;
           } else {
             // Use any other available location data if street name not found
-            const locality = data.address.suburb || data.address.neighbourhood || data.address.city_district || '';
+            const locality = suburb || neighbourhood || city || county || '';
             if (locality) {
               locationName = locality;
-              if (city) locationName += `, ${city}`;
-            } else if (county) {
-              locationName = county;
               if (state) locationName += `, ${state}`;
             }
           }
@@ -71,10 +92,11 @@ const CurrentLocationCard = ({
         
         // If we couldn't find a street name, use the display_name but shortened
         if (!locationName && data.display_name) {
-          locationName = data.display_name.split(',').slice(0, 2).join(',');
+          locationName = data.display_name.split(',').slice(0, 3).join(',');
         }
         
         setStreetName(locationName || 'Your current location');
+        console.log("Retrieved location name:", locationName);
       } catch (error) {
         console.error("Error fetching street name:", error);
         setStreetName('Location information unavailable');
@@ -134,7 +156,13 @@ const CurrentLocationCard = ({
           <p>Lat: {userLocation[0].toFixed(8)}</p>
           <p>Lng: {userLocation[1].toFixed(8)}</p>
           {locationAccuracy && (
-            <p>Accuracy: ±{locationAccuracy < 1 ? locationAccuracy.toFixed(2) : locationAccuracy.toFixed(1)} meters</p>
+            <p className={cn(
+              "font-medium",
+              locationAccuracy > 100 ? "text-red-500" : 
+              locationAccuracy > 20 ? "text-yellow-500" : "text-green-500"
+            )}>
+              Accuracy: ±{locationAccuracy < 1 ? locationAccuracy.toFixed(2) : locationAccuracy.toFixed(1)} meters
+            </p>
           )}
         </div>
         <div className="flex justify-between items-center mt-4">

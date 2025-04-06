@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -9,6 +10,8 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  // Set base path to ensure assets load correctly in production
+  base: '/',
   plugins: [
     react(),
     mode === 'development' &&
@@ -18,5 +21,12 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // Ensure proper build options for production deployments
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true,
+    chunkSizeWarningLimit: 1000,
   },
 }));

@@ -20,7 +20,7 @@
     <!-- Base href to fix routing in production -->
     <base href="/" />
     
-    <!-- Added error recovery scripts with improved handling -->
+    <!-- Added error recovery scripts with improved handling for production issues -->
     <script>
       window.addEventListener('error', function(e) {
         console.error('Global error caught:', e.message);
@@ -43,6 +43,34 @@
           }
         }, 3000);
       });
+      
+      // Production navigator handling to prevent infinite reloads
+      if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/index.html')) {
+        // Check for SPA paths that should redirect to the root in production
+        const knownRoutes = ['/map', '/dashboard', '/emergency', '/cyber', '/subscription', '/family', '/auth'];
+        if (knownRoutes.some(route => window.location.pathname.startsWith(route))) {
+          console.log('Redirecting SPA route to base path');
+          if (!window.location.search.includes('_redirected=true')) {
+            const separator = window.location.search ? '&' : '?';
+            window.location.href = '/' + window.location.search + separator + '_redirected=true' + window.location.hash;
+          }
+        }
+      }
+      
+      // Detect potential routing issues and fix them
+      if (window.location.search.includes('_redirected=true')) {
+        window.addEventListener('DOMContentLoaded', function() {
+          // Give the app time to initialize routing
+          setTimeout(function() {
+            const path = window.location.hash.replace('#', '') || window.location.pathname;
+            console.log('Attempting to navigate to:', path);
+            if (window.history && window.history.pushState) {
+              window.history.pushState({}, '', path);
+              window.dispatchEvent(new Event('popstate'));
+            }
+          }, 300);
+        });
+      }
     </script>
     
     <!-- Preload critical leaflet resources to avoid missing map -->

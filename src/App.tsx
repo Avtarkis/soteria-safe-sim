@@ -19,7 +19,8 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AuthProvider>
-        <Router>
+        {/* Use basename to ensure proper routing in production */}
+        <Router basename="/">
           <Routes>
             <Route path="/auth" element={<AuthScreen />} />
             <Route element={<Layout />}>

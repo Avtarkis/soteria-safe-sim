@@ -46,22 +46,39 @@ const ThreatMarkers: React.FC<ThreatMarkersProps> = ({
       color: markerColor,
       fillColor: markerColor,
       fillOpacity: 0.2,
-      radius: circleRadius * 50 // Scaled for visibility
+      radius: circleRadius * 50, // Scaled for visibility
+      weight: 2, // More visible border
+      className: `threat-circle-${marker.level}`
     }).addTo(markersLayer);
     
-    // Add marker at the center of threat zone
+    // Add marker at the center of threat zone with improved visibility
     const icon = L.divIcon({
       className: `threat-marker-${marker.level}`,
-      html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+      html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
       iconSize: [16, 16],
       iconAnchor: [8, 8]
     });
     
     const mapMarker = L.marker(marker.position, { icon }).addTo(markersLayer);
     
-    // Add popup with basic info
-    const threatType = marker.type ? `<br>${marker.type.toUpperCase()} threat` : '';
-    mapMarker.bindPopup(`<b>${marker.title}</b><br>${marker.level.toUpperCase()} threat level${threatType}`);
+    // Add popup with enhanced information
+    const threatType = marker.type ? `<br><span style="text-transform: uppercase; font-weight: bold;">${marker.type}</span> threat` : '';
+    const levelClass = marker.level === 'high' ? 'color: red; font-weight: bold;' : 
+                      marker.level === 'medium' ? 'color: orange; font-weight: bold;' : 
+                      'color: blue; font-weight: bold;';
+                      
+    mapMarker.bindPopup(
+      `<div style="text-align: center;">
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">${marker.title}</div>
+        <div style="${levelClass} text-transform: uppercase; margin-bottom: 4px;">${marker.level} threat level</div>
+        <div style="font-size: 12px;">${threatType}</div>
+        <div style="font-size: 11px; margin-top: 6px; color: #666;">Click for details</div>
+      </div>`,
+      { 
+        closeButton: true,
+        className: `threat-popup-${marker.level}`
+      }
+    );
     
     // Add click handler
     if (onMarkerClick) {

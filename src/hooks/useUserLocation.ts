@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +13,11 @@ export const useUserLocation = () => {
   const errorCountRef = useRef<number>(0);
   const highAccuracyModeRef = useRef<boolean>(false);
   const watchIdRef = useRef<number | null>(null);
+  const positionOptions = useRef({
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  });
 
   // Create a stable callback for location updates
   const handleLocationUpdate = useCallback((lat: number, lng: number, accuracy: number) => {
@@ -64,12 +68,27 @@ export const useUserLocation = () => {
             });
             locationInitializedRef.current = true;
           } else if (highAccuracyModeRef.current) {
-            toast({
-              title: "High Precision Active",
-              description: `Location tracking at ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)}m precision`,
-            });
-            highAccuracyModeRef.current = false;
+            // Show toast for high precision mode
+            if (accuracy < 100) {
+              toast({
+                title: "High Precision Active",
+                description: `Location tracking at ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)}m precision`,
+              });
+              highAccuracyModeRef.current = false;
+              
+              // Dispatch event to update map with high precision
+              document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+            } else {
+              // Keep trying for better accuracy
+              console.log("Still waiting for higher accuracy:", accuracy);
+              requestHighAccuracyLocation();
+            }
           }
+          
+          // Dispatch event for map and other components to use
+          document.dispatchEvent(new CustomEvent('userLocationUpdated', {
+            detail: { lat, lng, accuracy }
+          }));
           
           // Reset error count on successful update
           errorCountRef.current = 0;
@@ -98,31 +117,50 @@ export const useUserLocation = () => {
     // Try to get a high accuracy fix
     if (navigator.geolocation) {
       console.log("Requesting high-accuracy location");
+      
+      // Update position options for maximum accuracy
+      positionOptions.current = {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      };
+      
+      // First get a single position fix
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          handleLocationUpdate(
-            position.coords.latitude,
-            position.coords.longitude,
-            position.coords.accuracy
-          );
+          const { latitude, longitude, accuracy } = position.coords;
+          console.log("High accuracy position received:", latitude, longitude, accuracy);
+          
+          handleLocationUpdate(latitude, longitude, accuracy);
           
           // Start watching with maximum precision
           watchIdRef.current = navigator.geolocation.watchPosition(
             (watchPosition) => {
-              handleLocationUpdate(
-                watchPosition.coords.latitude,
-                watchPosition.coords.longitude,
-                watchPosition.coords.accuracy
-              );
+              const { latitude, longitude, accuracy } = watchPosition.coords;
+              
+              // Only process updates with reasonable accuracy
+              if (accuracy < 1000000) {
+                handleLocationUpdate(latitude, longitude, accuracy);
+              } else {
+                console.warn("Received position with very poor accuracy:", accuracy);
+              }
             },
             (error) => {
               console.warn("Watch position error:", error);
+              
+              // If permission denied, show appropriate message
+              if (error.code === 1) { // PERMISSION_DENIED
+                toast({
+                  title: "Location Access Required",
+                  description: "Please enable location services to use high-precision tracking.",
+                  variant: "destructive"
+                });
+              }
+              
+              // Try a fallback approach
+              fallbackToRegularAccuracy();
             },
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0
-            }
+            positionOptions.current
           );
         },
         (error) => {
@@ -130,41 +168,43 @@ export const useUserLocation = () => {
           // Fall back to regular accuracy
           fallbackToRegularAccuracy();
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
+        positionOptions.current
       );
     }
-  }, [handleLocationUpdate]);
+  }, [handleLocationUpdate, toast]);
   
   // Fallback to regular accuracy if high accuracy fails
   const fallbackToRegularAccuracy = useCallback(() => {
     if (navigator.geolocation) {
+      positionOptions.current = {
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 30000
+      };
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          handleLocationUpdate(
-            position.coords.latitude,
-            position.coords.longitude,
-            position.coords.accuracy
-          );
+          const { latitude, longitude, accuracy } = position.coords;
+          handleLocationUpdate(latitude, longitude, accuracy);
         },
         (error) => {
           console.error("Regular accuracy position error:", error);
-          // Set a default location
+          
+          // Set a default location if all attempts fail
           setUserLocation([37.0902, -95.7129]);
           setLocationAccuracy(5000); // Large accuracy radius for default location
           locationInitializedRef.current = true;
+          
+          toast({
+            title: "Location Detection Failed",
+            description: "Using default location. Please enable location services for accurate information.",
+            variant: "destructive"
+          });
         },
-        {
-          enableHighAccuracy: false,
-          timeout: 20000,
-          maximumAge: 60000
-        }
+        positionOptions.current
       );
     }
-  }, [handleLocationUpdate]);
+  }, [handleLocationUpdate, toast]);
 
   // Listen for location updates from the map component
   useEffect(() => {
