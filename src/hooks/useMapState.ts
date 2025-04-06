@@ -48,53 +48,53 @@ export const useMapState = () => {
     if (!markers.length) return [];
 
     // Calculate the number of alerts to show (1-2 only)
-    const maxAlerts = Math.min(2, Math.ceil(markers.length / 8));
+    const maxAlerts = Math.min(1, Math.ceil(markers.length / 10));
     
-    // Filter to mostly medium and low risk alerts, rarely high
+    // Filter to mostly low and occasionally medium risk alerts, very rarely high
     let nearbyMarkers = [...markers]
       .filter(marker => {
         // Reduce high-risk alerts significantly
         if (marker.level === 'high') {
-          return Math.random() < 0.15; // Only 15% of high risk alerts pass through
+          return Math.random() < 0.05; // Only 5% of high risk alerts pass through
         }
-        return true;
+        // Reduce medium alerts
+        if (marker.level === 'medium') {
+          return Math.random() < 0.3; // 30% of medium risk alerts pass
+        }
+        return Math.random() < 0.7; // 70% of low risk alerts pass
       })
       .sort((a, b) => {
-        // Sort by priority but favor medium over high risk
+        // Sort by priority but heavily favor low risk over others
         const typeOrder = { physical: 0, environmental: 1, cyber: 2 };
         const aType = a.type || 'physical';
         const bType = b.type || 'physical';
         
-        // Sort by type first
-        if (typeOrder[aType as keyof typeof typeOrder] !== typeOrder[bType as keyof typeof typeOrder]) {
-          return typeOrder[aType as keyof typeof typeOrder] - typeOrder[bType as keyof typeof typeOrder];
+        // Sort by level first (prioritize lower risk)
+        const levelOrder = { low: 0, medium: 1, high: 2 };
+        if (levelOrder[a.level as keyof typeof levelOrder] !== levelOrder[b.level as keyof typeof levelOrder]) {
+          return levelOrder[a.level as keyof typeof levelOrder] - levelOrder[b.level as keyof typeof levelOrder];
         }
         
-        // Then by level but prioritize medium over high (less alarming)
-        const levelOrder = { medium: 0, low: 1, high: 2 };
-        return levelOrder[a.level as keyof typeof levelOrder] - levelOrder[b.level as keyof typeof levelOrder];
+        // Then by type if same level
+        return typeOrder[aType as keyof typeof typeOrder] - typeOrder[bType as keyof typeof typeOrder];
       })
       .slice(0, maxAlerts);
       
-    // If we have too many alerts or happen to get multiple high-risk ones,
-    // downgrade them further to make them less alarming
+    // Downgrade any remaining alerts to make them less alarming
     if (nearbyMarkers.length > 0) {
-      nearbyMarkers = nearbyMarkers.map((marker, index) => {
-        // First alert has a small chance to be medium/high, others should be lower risk
-        if (index === 0) {
-          // 70% chance to downgrade high to medium
-          if (marker.level === 'high' && Math.random() < 0.7) {
-            return { ...marker, level: 'medium' as 'medium' };
+      nearbyMarkers = nearbyMarkers.map(marker => {
+        // 90% chance to downgrade high to medium or low
+        if (marker.level === 'high') {
+          if (Math.random() < 0.9) {
+            return { 
+              ...marker, 
+              level: Math.random() < 0.7 ? 'low' as 'low' : 'medium' as 'medium'
+            };
           }
-        } else {
-          // Subsequent alerts should be medium or low
-          if (marker.level === 'high') {
-            return { ...marker, level: 'medium' as 'medium' };
-          }
-          // 50% chance to downgrade medium to low for non-first alerts
-          if (marker.level === 'medium' && Math.random() < 0.5) {
-            return { ...marker, level: 'low' as 'low' };
-          }
+        }
+        // 70% chance to downgrade medium to low
+        if (marker.level === 'medium' && Math.random() < 0.7) {
+          return { ...marker, level: 'low' as 'low' };
         }
         return marker;
       });

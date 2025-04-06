@@ -74,7 +74,7 @@ const CurrentLocationCard = ({
           locationName = data.display_name.split(',').slice(0, 2).join(',');
         }
         
-        setStreetName(locationName || 'Unknown location');
+        setStreetName(locationName || 'Your current location');
       } catch (error) {
         console.error("Error fetching street name:", error);
         setStreetName('Location information unavailable');
@@ -90,6 +90,11 @@ const CurrentLocationCard = ({
   
   const handleToggleTracking = () => {
     toggleUserLocation();
+    
+    // Dispatch high precision mode event when enabling
+    if (!showUserLocation) {
+      document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+    }
     
     // Add toast notification
     toast({

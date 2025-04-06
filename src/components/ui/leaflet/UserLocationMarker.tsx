@@ -50,14 +50,19 @@ export const createPulsingIcon = () => {
         z-index: 2;
       }
       .street-label {
-        background-color: rgba(255, 255, 255, 0.85);
-        padding: 5px 8px;
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 6px 10px;
         border-radius: 4px;
         font-weight: bold;
-        font-size: 12px;
+        font-size: 13px;
         white-space: nowrap;
-        border: 1px solid rgba(79, 70, 229, 0.5);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        border: 2px solid rgba(79, 70, 229, 0.6);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        color: #333;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        z-index: 1000;
       }
     `;
     document.head.appendChild(styleElement);
@@ -94,21 +99,37 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, ac
         let locationName = '';
         
         if (data.address) {
-          const { road, street, pedestrian, path, footway, residential, house_number } = data.address;
+          const { road, street, pedestrian, path, footway, residential, house_number, city, county, state, country, suburb, neighbourhood } = data.address;
           
           // Try to get the most specific street information
           const streetInfo = road || street || pedestrian || path || footway || residential || '';
           const houseNum = house_number ? `${house_number}, ` : '';
+          const areaInfo = suburb || neighbourhood || '';
           
           if (streetInfo) {
             locationName = `${houseNum}${streetInfo}`;
+            
+            // Add area/city if available
+            if (areaInfo) {
+              locationName += `, ${areaInfo}`;
+            } else if (city) {
+              locationName += `, ${city}`;
+            } else if (county) {
+              locationName += `, ${county}`;
+            }
           } else if (data.name) {
             locationName = data.name;
+            if (city || county) {
+              locationName += `, ${city || county}`;
+            }
           } else {
             // Use any other available location data if street name not found
-            const locality = data.address.suburb || data.address.neighbourhood || data.address.city_district || '';
+            const locality = suburb || neighbourhood || city || county || '';
             if (locality) {
               locationName = locality;
+              if (state) locationName += `, ${state}`;
+            } else if (state) {
+              locationName = `${state}, ${country || ''}`.trim();
             }
           }
         }
@@ -118,10 +139,10 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, ac
           locationName = data.display_name.split(',').slice(0, 2).join(',');
         }
         
-        setStreetName(locationName || 'Unknown location');
+        setStreetName(locationName || 'Your Location');
       } catch (error) {
         console.error("Error fetching street name:", error);
-        setStreetName('Location');
+        setStreetName('Your Current Location');
       }
     };
     
@@ -152,22 +173,33 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({ map, latlng, ac
         color: '#4F46E5',
         fillColor: '#4F46E5',
         fillOpacity: 0.1,
-        weight: 1
+        weight: 2
       }).addTo(map);
       
-      // Add street name label if available
+      // Add street name label if available - always show it when high precision is enabled
       if (streetName) {
         const streetLabelIcon = L.divIcon({
-          className: 'street-label',
+          className: 'street-label-container',
           html: `<div class="street-label">${streetName}</div>`,
-          iconSize: [120, 20],
-          iconAnchor: [60, 30]
+          iconSize: [200, 30],
+          iconAnchor: [100, 45] // Position it above the marker
         });
         
         // Position the street label above the location marker
-        const labelLatLng = L.latLng(latlng.lat + 0.0001, latlng.lng);
-        streetLabel = L.marker(labelLatLng, { icon: streetLabelIcon, interactive: false })
-          .addTo(map);
+        // Use a slight offset to ensure it's visible
+        const labelLatLng = L.latLng(latlng.lat + 0.0002, latlng.lng);
+        streetLabel = L.marker(labelLatLng, { 
+          icon: streetLabelIcon, 
+          interactive: true,
+          zIndexOffset: 1000 // Make sure label is on top
+        }).addTo(map);
+        
+        // Make the label clickable to show more details
+        streetLabel.bindPopup(`
+          <b>${streetName}</b><br>
+          Coordinates: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}<br>
+          Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
+        `);
       }
       
       // Clean up when component unmounts

@@ -12,12 +12,108 @@ export const useUserLocationTracking = (
   const userLocationCircleRef = useRef<L.Circle | null>(null);
   const userLocationAccuracyRef = useRef<number>(0);
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
+  const streetLabelRef = useRef<L.Marker | null>(null);
   const locationTrackingInitializedRef = useRef<boolean>(false);
   const watchIdRef = useRef<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const lastEventTimeRef = useRef<number>(0);
   const errorCountRef = useRef<number>(0);
   const highPrecisionModeRef = useRef<boolean>(false);
+  const streetLookupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Add street labels to the map
+  const addStreetLabels = async (latlng: L.LatLng) => {
+    if (!map) return;
+    
+    try {
+      // Remove existing street label
+      if (streetLabelRef.current) {
+        map.removeLayer(streetLabelRef.current);
+        streetLabelRef.current = null;
+      }
+      
+      // Clear any existing timeout
+      if (streetLookupTimeoutRef.current) {
+        clearTimeout(streetLookupTimeoutRef.current);
+      }
+      
+      // Set timeout to avoid too many API calls
+      streetLookupTimeoutRef.current = setTimeout(async () => {
+        try {
+          // Get street name
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          // Extract street name or nearest named feature
+          let streetName = '';
+          
+          if (data.address) {
+            const { road, street, pedestrian, path, footway, residential, house_number, suburb, neighbourhood } = data.address;
+            
+            // Try to get the most specific street information
+            const streetInfo = road || street || pedestrian || path || footway || residential || '';
+            const houseNum = house_number ? `${house_number}, ` : '';
+            const areaInfo = suburb || neighbourhood || '';
+            
+            if (streetInfo) {
+              streetName = `${houseNum}${streetInfo}`;
+              
+              // Add area info if available
+              if (areaInfo) {
+                streetName += `, ${areaInfo}`;
+              }
+            } else if (data.name) {
+              streetName = data.name;
+            } else {
+              // Use any other available location data if street name not found
+              const locality = data.address.suburb || data.address.neighbourhood || '';
+              if (locality) {
+                streetName = locality;
+              }
+            }
+          }
+          
+          // If we couldn't find a street name, use the display_name but shortened
+          if (!streetName && data.display_name) {
+            streetName = data.display_name.split(',').slice(0, 2).join(',');
+          }
+          
+          // If we have a street name, add it to the map
+          if (streetName) {
+            const streetLabelIcon = L.divIcon({
+              className: 'street-label-container',
+              html: `<div class="street-label">${streetName}</div>`,
+              iconSize: [200, 30],
+              iconAnchor: [100, 45] // Position it above the marker
+            });
+            
+            // Position the street label above the location marker
+            const labelLatLng = L.latLng(latlng.lat + 0.0002, latlng.lng);
+            streetLabelRef.current = L.marker(labelLatLng, { 
+              icon: streetLabelIcon, 
+              interactive: true,
+              zIndexOffset: 1000 // Make sure label is on top
+            }).addTo(map);
+            
+            // Make the label clickable to show more details
+            streetLabelRef.current.bindPopup(`
+              <b>${streetName}</b><br>
+              Coordinates: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}<br>
+              Accuracy: ±${userLocationAccuracyRef.current < 1 ? 
+                userLocationAccuracyRef.current.toFixed(2) : 
+                userLocationAccuracyRef.current.toFixed(1)} meters
+            `);
+          }
+        } catch (error) {
+          console.error("Error adding street label:", error);
+        }
+      }, 300);
+    } catch (error) {
+      console.error("Error in addStreetLabels:", error);
+    }
+  };
 
   // Handle location found event with improved error handling
   const handleLocationFound = (e: L.LocationEvent) => {
@@ -70,19 +166,29 @@ export const useUserLocationTracking = (
           color: '#4F46E5',
           fillColor: '#4F46E5',
           fillOpacity: 0.1,
-          weight: 1
+          weight: 2
         }).addTo(map);
+        
+        // Add street labels
+        addStreetLabels(e.latlng);
         
         // Center map on user location with appropriate zoom level based on accuracy
         // Only center if high precision tracking is enabled or it's the first location
         if (highPrecisionModeRef.current || !locationTrackingInitializedRef.current) {
           // Use higher zoom for more precise location
           const zoomLevel = radius < 10 ? 19 : 
-                           radius < 30 ? 18 : 
-                           radius < 100 ? 17 : 16;
+                          radius < 30 ? 18 : 
+                          radius < 100 ? 17 : 16;
           
           map.setView(e.latlng, zoomLevel, { animate: true });
-          highPrecisionModeRef.current = false; // Reset after first centering
+          
+          // Add street labels to the map when initially centering
+          addStreetLabels(e.latlng);
+          
+          // Only reset high precision mode after the first centering
+          if (locationTrackingInitializedRef.current) {
+            highPrecisionModeRef.current = false;
+          }
         }
         
         locationTrackingInitializedRef.current = true;
@@ -133,6 +239,27 @@ export const useUserLocationTracking = (
       }
     }
   };
+
+  // Listen for high precision mode activation
+  useEffect(() => {
+    const handleHighPrecisionMode = () => {
+      highPrecisionModeRef.current = true;
+      
+      // Dispatch event to notify about high precision mode
+      document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+      
+      // If we have a location, add street labels
+      if (userLocationLatLngRef.current) {
+        addStreetLabels(userLocationLatLngRef.current);
+      }
+    };
+    
+    document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
+    
+    return () => {
+      document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
+    };
+  }, [map]);
 
   // Handle location error with better fallback
   const handleLocationError = (e: L.ErrorEvent) => {
@@ -236,6 +363,9 @@ export const useUserLocationTracking = (
               } as L.LocationEvent;
               
               handleLocationFound(locationEvent);
+              
+              // Dispatch event to use high precision mode
+              document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
             }
           },
           (error) => {
@@ -302,6 +432,14 @@ export const useUserLocationTracking = (
             console.error("Error removing circle on toggle off:", error);
           }
         }
+        if (streetLabelRef.current) {
+          try {
+            map.removeLayer(streetLabelRef.current);
+            streetLabelRef.current = null;
+          } catch (error) {
+            console.error("Error removing street label on toggle off:", error);
+          }
+        }
         
         // Stop tracking
         map.stopLocate();
@@ -326,6 +464,11 @@ export const useUserLocationTracking = (
               navigator.geolocation.clearWatch(watchIdRef.current);
               watchIdRef.current = null;
             }
+            
+            // Clear any pending timeouts
+            if (streetLookupTimeoutRef.current) {
+              clearTimeout(streetLookupTimeoutRef.current);
+            }
           } catch (error) {
             console.error("Error cleaning up location tracking:", error);
           }
@@ -338,7 +481,7 @@ export const useUserLocationTracking = (
 
   // Listen for centerMapOnUserLocation events
   useEffect(() => {
-    const handleCenterMap = (e: CustomEvent) => {
+    const handleCenterMap = () => {
       if (map && userLocationLatLngRef.current) {
         // Signal that we need to center with high precision
         highPrecisionModeRef.current = true;
@@ -351,6 +494,12 @@ export const useUserLocationTracking = (
           timeout: 5000,
           maximumAge: 0
         });
+        
+        // Center map on user location
+        map.setView(userLocationLatLngRef.current, 18, { animate: true });
+        
+        // Add street labels to the map
+        addStreetLabels(userLocationLatLngRef.current);
       }
     };
 

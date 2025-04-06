@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { AlertTriangle, CheckCircle2, Info, MapPin, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, MapPin, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
 import { useToast } from '@/hooks/use-toast';
@@ -21,30 +21,34 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
         const nearbyThreats = getNearbyAlerts();
         
         // Filter to ensure we're not showing too many alerts or high-risk ones
-        const filteredThreats = nearbyThreats.slice(0, 2); // Limit to max 2 alerts
+        const filteredThreats = nearbyThreats.slice(0, 1); // Limit to max 1 alert
         
         // Ensure we don't show high-level alerts too often by downgrading some
         const limitedThreats = filteredThreats.map(threat => {
-          // Reduce the chance of high alerts - only 1 in 5 high alerts stays high
-          if (threat.level === 'high' && Math.random() > 0.2) {
-            return { ...threat, level: 'medium' as 'medium' };
+          // Reduce the chance of high alerts - only 1 in 20 high alerts stays high
+          if (threat.level === 'high' && Math.random() > 0.05) {
+            return { ...threat, level: 'low' as 'low' };
+          }
+          // Also reduce medium alerts
+          if (threat.level === 'medium' && Math.random() > 0.2) {
+            return { ...threat, level: 'low' as 'low' };
           }
           return threat;
         });
         
         setAlerts(limitedThreats);
         
-        // Show toast less frequently and only for truly high-risk threats
+        // Show toast very rarely and only for truly high-risk threats
         if (limitedThreats.some(threat => threat.level === 'high')) {
           // Check if this high risk alert has been shown in this session
           const lastAlertTime = sessionStorage.getItem('high-risk-alert-time');
           const currentTime = Date.now();
           
-          // Only show once every 2 hours (7200000 ms)
-          if (!lastAlertTime || currentTime - parseInt(lastAlertTime) > 7200000) {
+          // Only show once every 24 hours (86400000 ms)
+          if (!lastAlertTime || currentTime - parseInt(lastAlertTime) > 86400000) {
             toast({
               title: "Information",
-              description: "Advisory notification in your vicinity",
+              description: "Local information notice",
               variant: "default"
             });
             
@@ -102,7 +106,7 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                       : "bg-blue-500/20"
                 )}>
                   {alert.level === 'high' ? (
-                    <ShieldAlert className="h-4 w-4 text-orange-500" />
+                    <Shield className="h-4 w-4 text-orange-500" />
                   ) : alert.level === 'medium' ? (
                     <AlertTriangle className="h-4 w-4 text-yellow-500" />
                   ) : (
@@ -127,8 +131,8 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                           ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
                           : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
                     )}>
-                      {alert.level === 'high' ? 'Advisory' : 
-                       alert.level === 'medium' ? 'Notice' : 'Info'}
+                      {alert.level === 'high' ? 'Notice' : 
+                       alert.level === 'medium' ? 'Info' : 'General Info'}
                     </span>
                   </div>
                 </div>
