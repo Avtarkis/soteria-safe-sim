@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { ThreatMarker } from '@/types/threats';
 
@@ -46,18 +47,20 @@ export const useMapState = () => {
   const getNearbyAlerts = useCallback((markers: ThreatMarker[]) => {
     if (!markers.length) return [];
 
-    // Calculate the number of alerts to show (1-3)
-    const maxAlerts = Math.min(3, Math.ceil(markers.length / 5));
+    // Calculate the number of alerts to show (1-2 only)
+    const maxAlerts = Math.min(2, Math.ceil(markers.length / 8));
     
-    // Get markers for nearby alerts with controlled distribution of risk levels
-    const nearbyMarkers = [...markers]
+    // Filter to mostly medium and low risk alerts, rarely high
+    let nearbyMarkers = [...markers]
       .filter(marker => {
-        // Filter based on distance if we have a map reference
-        // Otherwise, just use the first few markers
+        // Reduce high-risk alerts significantly
+        if (marker.level === 'high') {
+          return Math.random() < 0.15; // Only 15% of high risk alerts pass through
+        }
         return true;
       })
       .sort((a, b) => {
-        // Sort by priority: physical > environmental > cyber
+        // Sort by priority but favor medium over high risk
         const typeOrder = { physical: 0, environmental: 1, cyber: 2 };
         const aType = a.type || 'physical';
         const bType = b.type || 'physical';
@@ -67,26 +70,34 @@ export const useMapState = () => {
           return typeOrder[aType as keyof typeof typeOrder] - typeOrder[bType as keyof typeof typeOrder];
         }
         
-        // Then by level (high > medium > low)
-        const levelOrder = { high: 0, medium: 1, low: 2 };
-        return levelOrder[a.level] - levelOrder[b.level];
+        // Then by level but prioritize medium over high (less alarming)
+        const levelOrder = { medium: 0, low: 1, high: 2 };
+        return levelOrder[a.level as keyof typeof levelOrder] - levelOrder[b.level as keyof typeof levelOrder];
       })
       .slice(0, maxAlerts);
       
-    // Make sure we don't have too many high-risk alerts (maximum 1)
-    const highRiskCount = nearbyMarkers.filter(m => m.level === 'high').length;
-    if (highRiskCount > 1) {
-      // Downgrade some high risk alerts to medium
-      let downgraded = 0;
-      for (let i = 0; i < nearbyMarkers.length && downgraded < highRiskCount - 1; i++) {
-        if (nearbyMarkers[i].level === 'high') {
-          nearbyMarkers[i] = {
-            ...nearbyMarkers[i],
-            level: 'medium' as 'medium'
-          };
-          downgraded++;
+    // If we have too many alerts or happen to get multiple high-risk ones,
+    // downgrade them further to make them less alarming
+    if (nearbyMarkers.length > 0) {
+      nearbyMarkers = nearbyMarkers.map((marker, index) => {
+        // First alert has a small chance to be medium/high, others should be lower risk
+        if (index === 0) {
+          // 70% chance to downgrade high to medium
+          if (marker.level === 'high' && Math.random() < 0.7) {
+            return { ...marker, level: 'medium' as 'medium' };
+          }
+        } else {
+          // Subsequent alerts should be medium or low
+          if (marker.level === 'high') {
+            return { ...marker, level: 'medium' as 'medium' };
+          }
+          // 50% chance to downgrade medium to low for non-first alerts
+          if (marker.level === 'medium' && Math.random() < 0.5) {
+            return { ...marker, level: 'low' as 'low' };
+          }
         }
-      }
+        return marker;
+      });
     }
     
     return nearbyMarkers;

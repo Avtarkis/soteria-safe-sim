@@ -19,29 +19,37 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
     if (!loading) {
       try {
         const nearbyThreats = getNearbyAlerts();
-        setAlerts(nearbyThreats);
         
-        // Only show toast for truly high-risk threats and not too frequently
-        // Use sessionStorage to prevent showing the same alert multiple times
-        if (nearbyThreats.length > 0) {
-          const highRiskThreats = nearbyThreats.filter(threat => threat.level === 'high');
-          if (highRiskThreats.length > 0) {
-            // Check if this high risk alert has been shown in this session
-            const alertShown = sessionStorage.getItem('high-risk-alert-shown');
-            if (!alertShown) {
-              toast({
-                title: "Alert",
-                description: `${highRiskThreats.length} important alert(s) in your vicinity`,
-                variant: "default"
-              });
-              // Mark that we've shown this alert
-              sessionStorage.setItem('high-risk-alert-shown', 'true');
-              
-              // Reset this flag after 30 minutes
-              setTimeout(() => {
-                sessionStorage.removeItem('high-risk-alert-shown');
-              }, 30 * 60 * 1000);
-            }
+        // Filter to ensure we're not showing too many alerts or high-risk ones
+        const filteredThreats = nearbyThreats.slice(0, 2); // Limit to max 2 alerts
+        
+        // Ensure we don't show high-level alerts too often by downgrading some
+        const limitedThreats = filteredThreats.map(threat => {
+          // Reduce the chance of high alerts - only 1 in 5 high alerts stays high
+          if (threat.level === 'high' && Math.random() > 0.2) {
+            return { ...threat, level: 'medium' as 'medium' };
+          }
+          return threat;
+        });
+        
+        setAlerts(limitedThreats);
+        
+        // Show toast less frequently and only for truly high-risk threats
+        if (limitedThreats.some(threat => threat.level === 'high')) {
+          // Check if this high risk alert has been shown in this session
+          const lastAlertTime = sessionStorage.getItem('high-risk-alert-time');
+          const currentTime = Date.now();
+          
+          // Only show once every 2 hours (7200000 ms)
+          if (!lastAlertTime || currentTime - parseInt(lastAlertTime) > 7200000) {
+            toast({
+              title: "Information",
+              description: "Advisory notification in your vicinity",
+              variant: "default"
+            });
+            
+            // Mark that we've shown this alert and when
+            sessionStorage.setItem('high-risk-alert-time', currentTime.toString());
           }
         }
       } catch (error) {
