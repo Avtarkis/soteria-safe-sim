@@ -7,17 +7,13 @@ export const useUserLocation = () => {
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const { toast } = useToast();
   
-  // Use a ref to track if location has been initialized to prevent unnecessary reloads
+  // Use refs to track if location has been initialized
   const locationInitializedRef = useRef(false);
-  
-  // Use a debounced location update to prevent too many state updates
   const debouncedLocationUpdateRef = useRef<NodeJS.Timeout | null>(null);
-  // Track the previous location to prevent redundant updates
   const previousLocationRef = useRef<[number, number] | null>(null);
-  // Track error count
   const errorCountRef = useRef<number>(0);
-  // Track high accuracy mode
   const highAccuracyModeRef = useRef<boolean>(false);
+  const watchIdRef = useRef<number | null>(null);
 
   // Create a stable callback for location updates
   const handleLocationUpdate = useCallback((lat: number, lng: number, accuracy: number) => {
@@ -46,6 +42,15 @@ export const useUserLocation = () => {
       debouncedLocationUpdateRef.current = setTimeout(() => {
         try {
           console.log("Updating location with high precision:", lat, lng, accuracy);
+          
+          // Improved accuracy validation - reject unreasonable values
+          if (accuracy > 1000000) {
+            console.warn("Rejecting location with unreasonable accuracy:", accuracy);
+            // Try to get a better location fix
+            requestHighAccuracyLocation();
+            return;
+          }
+          
           setUserLocation([lat, lng]);
           setLocationAccuracy(accuracy);
           previousLocationRef.current = [lat, lng];
@@ -79,6 +84,88 @@ export const useUserLocation = () => {
     }
   }, [toast, locationAccuracy]);
 
+  // Function to request high accuracy location
+  const requestHighAccuracyLocation = useCallback(() => {
+    // Clear any existing watch
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    
+    // Set high accuracy mode flag
+    highAccuracyModeRef.current = true;
+    
+    // Try to get a high accuracy fix
+    if (navigator.geolocation) {
+      console.log("Requesting high-accuracy location");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          handleLocationUpdate(
+            position.coords.latitude,
+            position.coords.longitude,
+            position.coords.accuracy
+          );
+          
+          // Start watching with maximum precision
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            (watchPosition) => {
+              handleLocationUpdate(
+                watchPosition.coords.latitude,
+                watchPosition.coords.longitude,
+                watchPosition.coords.accuracy
+              );
+            },
+            (error) => {
+              console.warn("Watch position error:", error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0
+            }
+          );
+        },
+        (error) => {
+          console.error("High accuracy position error:", error);
+          // Fall back to regular accuracy
+          fallbackToRegularAccuracy();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+  }, [handleLocationUpdate]);
+  
+  // Fallback to regular accuracy if high accuracy fails
+  const fallbackToRegularAccuracy = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          handleLocationUpdate(
+            position.coords.latitude,
+            position.coords.longitude,
+            position.coords.accuracy
+          );
+        },
+        (error) => {
+          console.error("Regular accuracy position error:", error);
+          // Set a default location
+          setUserLocation([37.0902, -95.7129]);
+          setLocationAccuracy(5000); // Large accuracy radius for default location
+          locationInitializedRef.current = true;
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 60000
+        }
+      );
+    }
+  }, [handleLocationUpdate]);
+
   // Listen for location updates from the map component
   useEffect(() => {
     const handleUserLocationUpdate = (e: CustomEvent) => {
@@ -96,9 +183,11 @@ export const useUserLocation = () => {
     
     return () => {
       document.removeEventListener('userLocationUpdated', handleUserLocationUpdate as EventListener);
-      // Clear any pending timeouts
       if (debouncedLocationUpdateRef.current) {
         clearTimeout(debouncedLocationUpdateRef.current);
+      }
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
   }, [handleLocationUpdate]);
@@ -106,7 +195,9 @@ export const useUserLocation = () => {
   // Listen for high precision mode activation
   useEffect(() => {
     const handleHighPrecisionMode = () => {
+      console.log("High precision mode activated");
       highAccuracyModeRef.current = true;
+      requestHighAccuracyLocation();
     };
     
     document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
@@ -114,7 +205,7 @@ export const useUserLocation = () => {
     return () => {
       document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
     };
-  }, []);
+  }, [requestHighAccuracyLocation]);
 
   // Initial location detection - only run once
   useEffect(() => {
@@ -122,78 +213,22 @@ export const useUserLocation = () => {
     if (locationInitializedRef.current) return;
     
     try {
-      if (navigator.geolocation) {
-        console.log("Getting user location via navigator.geolocation with high accuracy");
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            console.log("High-precision position obtained:", position);
-            handleLocationUpdate(
-              position.coords.latitude, 
-              position.coords.longitude, 
-              position.coords.accuracy
-            );
-            
-            // Start watching for even more accurate location updates
-            const watchId = navigator.geolocation.watchPosition(
-              (watchPosition) => {
-                // Compare new position with previous to see if it's more accurate
-                if (watchPosition.coords.accuracy < position.coords.accuracy) {
-                  handleLocationUpdate(
-                    watchPosition.coords.latitude,
-                    watchPosition.coords.longitude,
-                    watchPosition.coords.accuracy
-                  );
-                }
-              },
-              (error) => {
-                console.warn("Watch position error:", error);
-              },
-              {
-                enableHighAccuracy: true,
-                timeout: 30000,
-                maximumAge: 0
-              }
-            );
-            
-            // Clear watch after 30 seconds to save battery
-            setTimeout(() => {
-              navigator.geolocation.clearWatch(watchId);
-            }, 30000);
-          },
-          (error) => {
-            console.error('Error getting location:', error);
-            toast({
-              title: 'Location Error',
-              description: 'Could not access your precise location. Using default view.',
-              variant: 'destructive',
-            });
-            
-            // Set a default location
-            setUserLocation([37.0902, -95.7129]);
-            locationInitializedRef.current = true;
-          },
-          { 
-            enableHighAccuracy: true, 
-            timeout: 30000, // Increased timeout for better accuracy
-            maximumAge: 0 // Don't use cached positions for maximum accuracy
-          }
-        );
-      } else {
-        toast({
-          title: 'Location Not Supported',
-          description: 'Geolocation is not supported by this browser. Using default view.',
-          variant: 'destructive',
-        });
-        setUserLocation([37.0902, -95.7129]);
-        locationInitializedRef.current = true;
-      }
+      requestHighAccuracyLocation();
     } catch (error) {
       console.error("Error initializing location:", error);
       // Set a default location on error
       setUserLocation([37.0902, -95.7129]);
+      setLocationAccuracy(5000);
       locationInitializedRef.current = true;
     }
-  }, [toast, handleLocationUpdate]);
+    
+    // Return cleanup function
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, [requestHighAccuracyLocation]);
 
   return {
     userLocation,

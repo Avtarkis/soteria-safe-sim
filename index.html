@@ -16,11 +16,14 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Base href to fix routing in production -->
     <base href="/" />
     
-    <!-- Added error recovery scripts -->
+    <!-- Added error recovery scripts with improved handling -->
     <script>
       window.addEventListener('error', function(e) {
+        console.error('Global error caught:', e.message);
         if (document.body && document.body.innerHTML === '') {
           document.body.innerHTML = '<div style="padding: 20px; font-family: system-ui, sans-serif;">'+
             '<h1>Application Error</h1>'+
@@ -30,7 +33,21 @@
           '</div>';
         }
       });
+      
+      // Additional check for blank page after load
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          if (document.body && (document.body.innerHTML === '' || !document.getElementById('root') || document.getElementById('root').innerHTML === '')) {
+            console.error('Blank page detected, attempting recovery');
+            window.location.reload();
+          }
+        }, 3000);
+      });
     </script>
+    
+    <!-- Preload critical leaflet resources to avoid missing map -->
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   </head>
 
   <body>
