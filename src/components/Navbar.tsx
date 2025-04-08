@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const handleNavigation = (path: string) => {
@@ -32,14 +34,15 @@ const Navbar = () => {
   };
 
   const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
+    const isActive = location.pathname === to;
+    
     return (
       <button
         onClick={() => handleNavigation(to)}
-        className={({ isActive }: { isActive: boolean }) =>
-          `flex items-center gap-4 py-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg w-full text-left ${
-            location.pathname === to ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'
-          }`
-        }
+        className={cn(
+          "flex items-center gap-4 py-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg w-full text-left",
+          isActive ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'
+        )}
       >
         {icon}
         <span>{label}</span>
@@ -111,9 +114,10 @@ const Navbar = () => {
             <nav className="flex items-center gap-6">
               <button 
                 onClick={() => handleNavigation('/dashboard')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/dashboard' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <Home className="h-4 w-4" />
                 <span>Dashboard</span>
@@ -121,9 +125,10 @@ const Navbar = () => {
               
               <button 
                 onClick={() => handleNavigation('/map')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/map' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <Map className="h-4 w-4" />
                 <span>Threat Map</span>
@@ -131,9 +136,10 @@ const Navbar = () => {
               
               <button 
                 onClick={() => handleNavigation('/family')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/family' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <Heart className="h-4 w-4" />
                 <span>Family</span>
@@ -141,9 +147,10 @@ const Navbar = () => {
               
               <button 
                 onClick={() => handleNavigation('/emergency')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/emergency' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <Bell className="h-4 w-4" />
                 <span>Emergency</span>
@@ -151,9 +158,10 @@ const Navbar = () => {
               
               <button 
                 onClick={() => handleNavigation('/cyber')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/cyber' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <Shield className="h-4 w-4" />
                 <span>Cyber Security</span>
@@ -161,9 +169,10 @@ const Navbar = () => {
               
               <button 
                 onClick={() => handleNavigation('/subscription')} 
-                className={`flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg ${
+                className={cn(
+                  "flex items-center gap-2 py-2 px-3 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg",
                   location.pathname === '/subscription' ? 'bg-accent/50 text-accent-foreground font-medium' : 'text-muted-foreground'
-                }`}
+                )}
               >
                 <CreditCard className="h-4 w-4" />
                 <span>Subscription</span>

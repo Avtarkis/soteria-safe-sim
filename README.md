@@ -20,13 +20,27 @@ VITE_SUPABASE_ANON_KEY = your-supabase-anon-key
 
 If you don't have a Supabase project yet, you can create one at [https://supabase.com](https://supabase.com) or use Lovable's built-in Supabase integration.
 
-### Troubleshooting
+### Troubleshooting Blank Screens
 
-If you're still experiencing a blank screen or navigation issues after setting environment variables:
+If you experience a blank screen or non-functioning navigation:
 
-1. Clear your browser cache or try in an incognito window
-2. Check the browser console for any errors
-3. Verify that your Supabase project is active and the API keys are correct
-4. Try rebuilding and redeploying the application
+1. **Ensure Environment Variables are Set**:
+   - Make sure both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in your Lovable Project Settings
+   - These must be set exactly as named above (they are case-sensitive)
 
-The app includes fallback values for development, but these won't work optimally in production.
+2. **After Setting Variables**:
+   - Save all changes in project settings
+   - Redeploy your application using the Publish button
+   - The app will use fallback development values if these are not set, but with limited functionality
+
+3. **If Still Experiencing Issues**:
+   - Clear your browser cache or try in an incognito window
+   - Check the browser console for specific error messages
+   - Verify that your Supabase project is active and the API keys are correct
+
+### Development vs. Production
+
+- In development mode, the app includes fallback values for Supabase to prevent crashes
+- In production, proper environment variables must be set for full functionality
+- Lovable handles environment variable injection during the build process, no .env files are needed
+

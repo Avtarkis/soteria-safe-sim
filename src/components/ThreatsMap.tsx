@@ -32,7 +32,7 @@ const ThreatsMap = () => {
     handleRefresh 
   } = useThreatData(userLocation);
   
-  // Get map state
+  // Get map state - initialize with legend showing
   const {
     selectedThreat,
     showLegend,
@@ -50,6 +50,14 @@ const ThreatsMap = () => {
   
   // Get destination
   const { destination } = useDestination();
+  
+  // Ensure legend is visible by default
+  useEffect(() => {
+    // Make sure legend is always showing by default
+    if (!showLegend) {
+      setShowLegend(true);
+    }
+  }, [showLegend, setShowLegend]);
   
   // Memoize the filtered markers to prevent unnecessary recalculations
   const filteredMarkers = useMemo(() => 

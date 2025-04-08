@@ -39,8 +39,31 @@ const MapActionButtons = ({
         detail: { lat: userLocation[0], lng: userLocation[1] }
       });
       document.dispatchEvent(event);
+    } else {
+      toast({
+        title: "Location Not Available",
+        description: "Unable to center map. Your location is not available.",
+        variant: "destructive"
+      });
     }
   }, [userLocation, toast]);
+  
+  // Handle activation of high precision tracking
+  const handleActivateHighPrecision = useCallback(() => {
+    // Fire custom event that the map and location hooks listen for
+    document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+    
+    // Toggle user location on if it's not already
+    if (!showUserLocation) {
+      toggleUserLocation();
+    }
+    
+    // Show notification
+    toast({
+      title: "High Precision Activated",
+      description: "Attempting to get your precise location...",
+    });
+  }, [showUserLocation, toggleUserLocation, toast]);
   
   // Create a memoized toggle for location tracking
   const handleToggleLocation = useCallback(() => {
@@ -71,6 +94,17 @@ const MapActionButtons = ({
         <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-white")} />
         <span>{showUserLocation ? "Tracking On" : "Track My Location"}</span>
       </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="shadow-sm bg-primary/80 text-white backdrop-blur-sm hover:bg-primary"
+        onClick={handleActivateHighPrecision}
+      >
+        <Navigation className="h-4 w-4 mr-1 animate-pulse" />
+        <span>High Precision Tracking</span>
+      </Button>
+      
       <Button 
         variant="outline" 
         size="sm" 
@@ -81,6 +115,7 @@ const MapActionButtons = ({
         <Navigation className="h-4 w-4 mr-1" />
         <span>Center Map</span>
       </Button>
+      
       <Button 
         variant="outline" 
         size="sm" 
@@ -90,6 +125,7 @@ const MapActionButtons = ({
         {showLegend ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
         <span>{showLegend ? "Hide Legend" : "Show Legend"}</span>
       </Button>
+      
       <Button 
         variant="outline" 
         size="sm" 

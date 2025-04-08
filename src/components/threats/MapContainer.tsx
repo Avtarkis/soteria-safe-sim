@@ -27,6 +27,7 @@ const MapContainer = ({
   const { toast } = useToast();
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mapInitializedRef = useRef(false);
+  const highPrecisionAttemptedRef = useRef(false);
   
   // Enhanced map sizing effect
   useEffect(() => {
@@ -64,6 +65,8 @@ const MapContainer = ({
   useEffect(() => {
     const handleHighPrecisionMode = () => {
       console.log("High precision mode activated in map container");
+      highPrecisionAttemptedRef.current = true;
+      
       // Force map update and resize
       if (mapRef.current) {
         // Clear any existing timeout
@@ -101,6 +104,13 @@ const MapContainer = ({
     
     document.addEventListener('userLocationUpdated', handleUserLocationUpdate);
     
+    // Try to activate high precision mode automatically when component mounts
+    if (!highPrecisionAttemptedRef.current) {
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+      }, 1500);
+    }
+    
     return () => {
       document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
       document.removeEventListener('userLocationUpdated', handleUserLocationUpdate);
@@ -118,7 +128,7 @@ const MapContainer = ({
           onMarkerClick={handleThreatClick}
           center={userLocation || [37.0902, -95.7129]}
           zoom={userLocation ? 12 : 4}
-          showUserLocation={showUserLocation}
+          showUserLocation={showUserLocation || true} // Always show user location for better UX
           ref={mapRef}
         />
       </div>

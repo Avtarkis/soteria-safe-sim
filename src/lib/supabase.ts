@@ -11,9 +11,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.info('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables for production.');
 }
 
-// Create a development fallback that won't crash the app but will work with limited functionality
-const url = supabaseUrl || 'https://xyzcompany.supabase.co';
-const key = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtbmF5eWt3dWR5YXFidnl2dXRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDUzNjcyNTYsImV4cCI6MjAyMDk0MzI1Nn0.u93xLQODXv_zUss-n9JY3NcyHPyuGezTKS-SP-1PYEQ';
+// Development fallback values to prevent crashes
+const url = supabaseUrl || 'https://fake-supabase-url.supabase.co';
+const key = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtbmF5eWt3dWR5YXFidnl2dXRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDUzNjcyNTYsImV4cCI6MjAyMDk0MzI1Nn0.DUMMY-KEY-FOR-DEVELOPMENT';
 
 // Define types for our database
 export type Database = {
@@ -125,3 +125,8 @@ export const supabase = createClient<Database>(url, key);
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ThreatAlert = Database['public']['Tables']['threat_alerts']['Row'];
 export type SecurityLog = Database['public']['Tables']['security_logs']['Row'];
+
+// Helper function to check if we're using fallback values
+export const isUsingFallbackValues = () => {
+  return !supabaseUrl || !supabaseAnonKey;
+};

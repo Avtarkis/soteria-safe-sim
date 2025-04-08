@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -13,7 +13,11 @@ import CyberSecurity from '@/components/CyberSecurity';
 import Subscription from '@/components/Subscription';
 import FamilyMonitoring from '@/components/family/FamilyMonitoring';
 import NotFound from '@/pages/NotFound';
+import { isUsingFallbackValues } from '@/lib/supabase';
 import './App.css';
+
+// Make the supabase helper function available to the global scope for error handling
+window.isUsingFallbackValues = isUsingFallbackValues;
 
 function App() {
   return (
@@ -23,8 +27,8 @@ function App() {
         <Router basename="/">
           <Routes>
             <Route path="/auth" element={<AuthScreen />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<Layout />}>
-              <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
               <Route path="emergency" element={<ProtectedRoute><EmergencyResponse /></ProtectedRoute>} />

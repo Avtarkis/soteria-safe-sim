@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>soteria-safe-sim</title>
+    <title>Soteria Safety Platform</title>
     <meta name="description" content="Soteria - Personal Safety Platform" />
     <meta name="author" content="Lovable" />
 
@@ -30,6 +30,12 @@
             '<h1>Application Error</h1>'+
             '<p>We\'re sorry, but the application encountered an error. Trying to recover...</p>'+
             '<p id="error-details">' + e.message + '</p>'+
+            '<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid #4F46E5;">'+
+              '<h3 style="margin-top: 0;">Possible Solutions:</h3>'+
+              '<p>1. Make sure you\'ve set your Supabase environment variables in Project Settings.</p>'+
+              '<p>2. Try clearing your browser cache or using incognito mode.</p>'+
+              '<p>3. Check your browser console for specific error messages.</p>'+
+            '</div>'+
             '<button onclick="window.location.reload()" style="padding: 8px 16px; margin-top: 16px; cursor: pointer; background-color: #4F46E5; color: white; border: none; border-radius: 4px">Reload Page</button>'+
           '</div>';
         }
@@ -46,8 +52,10 @@
       
       // Function to detect Supabase environment variables
       function checkForEnvVars() {
-        if (!window.VITE_SUPABASE_URL || !window.VITE_SUPABASE_ANON_KEY) {
-          console.warn('Missing Supabase environment variables. App will use fallbacks.');
+        if (typeof import !== 'undefined' && import.meta && import.meta.env) {
+          if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+            console.warn('Missing Supabase environment variables. App will use fallbacks.');
+          }
         }
       }
       
@@ -112,6 +120,22 @@
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
+      .env-warning {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px;
+        border-radius: 4px;
+        font-family: system-ui, sans-serif;
+        z-index: 9999;
+        display: none;
+      }
+      .env-warning.show {
+        display: block;
+      }
     </style>
   </head>
 
@@ -123,6 +147,24 @@
         <p style="margin-top: 20px; font-family: system-ui, sans-serif;">Loading Soteria...</p>
       </div>
     </div>
+    
+    <!-- Environment variable warning banner -->
+    <div id="env-warning" class="env-warning">
+      <strong>Missing Supabase Configuration:</strong> Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Project Settings.
+      <button onclick="this.parentElement.style.display='none'" style="float:right; background:none; border:none; color:white; cursor:pointer">✕</button>
+    </div>
+    
+    <script>
+      // Show environment warning if using fallbacks after app loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          if (window.isUsingFallbackValues && window.isUsingFallbackValues()) {
+            document.getElementById('env-warning').classList.add('show');
+          }
+        }, 3000);
+      });
+    </script>
+    
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

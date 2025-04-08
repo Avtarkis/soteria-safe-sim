@@ -30,8 +30,9 @@ export default defineConfig(({ mode }) => ({
     minify: true,
     chunkSizeWarningLimit: 1000,
   },
-  // Handle environment variables more robustly
+  // Define global environment variables or provide defaults
   define: {
+    // Provide fallback values for environment variables if missing
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || ''),
   },
