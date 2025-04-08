@@ -1,190 +1,112 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { emergencyService } from '@/services/emergencyService';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { EmergencyService } from '@/types/emergency';
 
 export const useEmergencyServices = (userLocation: [number, number] | null) => {
-  const [emergencyNumbers, setEmergencyNumbers] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [emergencyNumbers, setEmergencyNumbers] = useState<EmergencyService[]>([]);
   const { toast } = useToast();
-  const emergencyNumbersLoadedRef = useRef(false);
-  const userLocationRef = useRef<[number, number] | null>(null);
-  const loadAttemptsRef = useRef(0);
-  const lastCountryCodeRef = useRef<string | null>(null);
 
-  const loadEmergencyServices = useCallback(async (forceRefresh = false) => {
-    // Don't proceed if no location or if already loaded (unless forced)
-    if (!userLocation || 
-        (emergencyNumbersLoadedRef.current && 
-         !forceRefresh && 
-         JSON.stringify(userLocationRef.current) === JSON.stringify(userLocation))) return;
-    
-    // Update location ref and set loading
-    userLocationRef.current = userLocation;
-    setLoading(true);
-    
+  // Get country code from coordinates using the Nominatim service
+  const getCountryCode = useCallback(async (lat: number, lng: number): Promise<string> => {
     try {
-      // Track attempts to avoid infinite loops
-      loadAttemptsRef.current += 1;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
       
-      console.log("Loading emergency services for location:", userLocation);
-      const numbers = await emergencyService.getEmergencyNumbersByLocation(userLocation[0], userLocation[1]);
+      if (!response.ok) {
+        throw new Error('Failed to get location data');
+      }
       
-      if (numbers) {
-        // Only update if country has changed or it's a forced refresh
-        if (forceRefresh || numbers.countryCode !== lastCountryCodeRef.current) {
-          setEmergencyNumbers(numbers);
-          lastCountryCodeRef.current = numbers.countryCode;
-          emergencyNumbersLoadedRef.current = true;
-          
-          // Only show toast when we have new data
-          toast({
-            title: "Emergency Services",
-            description: `Loaded emergency numbers for ${numbers.country}`,
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load emergency numbers:", err);
-      
-      // If we can't get the data, use a fallback for the current location
-      if (loadAttemptsRef.current <= 3) {
-        const fallbackNumbers = await determineFallbackEmergencyNumbers(userLocation);
-        if (fallbackNumbers) {
-          setEmergencyNumbers(fallbackNumbers);
-          lastCountryCodeRef.current = fallbackNumbers.countryCode;
-          emergencyNumbersLoadedRef.current = true;
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [userLocation, toast]);
-
-  // Helper function to determine fallback emergency numbers based on rough location
-  const determineFallbackEmergencyNumbers = async (location: [number, number]) => {
-    // Simple reverse geocoding based on latitude to determine continent/region
-    try {
-      const [lat, lng] = location;
-      
-      // Nigeria - Added specific fallback for Nigeria
-      if (lat > 4 && lat < 14 && lng > 2 && lng < 15) {
-        return {
-          country: "Nigeria",
-          countryCode: "NG",
-          ambulance: "112",
-          police: "112",
-          fire: "112"
-        };
-      }
-      // North America (US/Canada)
-      if (lat > 24 && lat < 50 && lng > -125 && lng < -66) {
-        return {
-          country: "United States",
-          countryCode: "US",
-          ambulance: "911",
-          police: "911",
-          fire: "911"
-        };
-      } 
-      // Europe
-      else if (lat > 35 && lat < 70 && lng > -10 && lng < 30) {
-        return {
-          country: "Europe",
-          countryCode: "EU",
-          ambulance: "112",
-          police: "112",
-          fire: "112"
-        };
-      } 
-      // United Kingdom
-      else if (lat > 50 && lat < 59 && lng > -8 && lng < 2) {
-        return {
-          country: "United Kingdom",
-          countryCode: "GB",
-          ambulance: "999",
-          police: "999",
-          fire: "999"
-        };
-      }
-      // Australia/Oceania
-      else if (lat > -10 && lat < 35 && lng > 100 && lng < 145) {
-        return {
-          country: "Australia",
-          countryCode: "AU",
-          ambulance: "000",
-          police: "000",
-          fire: "000"
-        };
-      }
-      // India
-      else if (lat > 8 && lat < 35 && lng > 68 && lng < 97) {
-        return {
-          country: "India",
-          countryCode: "IN",
-          police: "100",
-          ambulance: "102",
-          fire: "101"
-        };
-      }
-      // Try to determine from browser language as last resort
-      else {
-        try {
-          const browserLang = navigator.language;
-          if (browserLang) {
-            const countryCode = browserLang.split('-')[1];
-            if (countryCode) {
-              // Attempt to get emergency numbers for this country code
-              const numbers = await emergencyService.getEmergencyNumbers(countryCode);
-              if (numbers) return numbers;
-            }
-          }
-        } catch (e) {
-          console.error("Error determining country from language:", e);
-        }
-        
-        // Default international
-        return {
-          country: "International",
-          countryCode: "INTL",
-          ambulance: "112",
-          police: "112",
-          fire: "112"
-        };
-      }
+      const data = await response.json();
+      return data.address?.country_code?.toUpperCase() || 'US';
     } catch (error) {
-      console.error("Error determining fallback emergency numbers:", error);
-      return {
-        country: "International",
-        countryCode: "INTL",
-        ambulance: "112",
-        police: "112",
-        fire: "112"
-      };
+      console.error('Error getting country code:', error);
+      return 'US'; // Default to US
     }
-  };
+  }, []);
 
-  // Load emergency services when location changes
-  useEffect(() => {
-    if (userLocationRef.current !== userLocation) {
-      loadEmergencyServices();
-    }
-  }, [userLocation, loadEmergencyServices]);
-
-  // Initial load attempt with a timeout
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (userLocation && !emergencyNumbersLoadedRef.current) {
-        loadEmergencyServices(true);
-      }
-    }, 2000);
+  // Get emergency numbers based on country code
+  const getEmergencyNumbers = useCallback((countryCode: string): EmergencyService[] => {
+    // Common emergency services by country
+    const emergencyServices: Record<string, EmergencyService[]> = {
+      US: [
+        { name: 'Emergency', number: '911' },
+        { name: 'Police', number: '911' },
+        { name: 'Fire', number: '911' },
+        { name: 'Ambulance', number: '911' },
+      ],
+      GB: [
+        { name: 'Emergency', number: '999' },
+        { name: 'Police', number: '999' },
+        { name: 'Fire', number: '999' },
+        { name: 'Ambulance', number: '999' },
+      ],
+      AU: [
+        { name: 'Emergency', number: '000' },
+        { name: 'Police', number: '000' },
+        { name: 'Fire', number: '000' },
+        { name: 'Ambulance', number: '000' },
+      ],
+      CA: [
+        { name: 'Emergency', number: '911' },
+        { name: 'Police', number: '911' },
+        { name: 'Fire', number: '911' },
+        { name: 'Ambulance', number: '911' },
+      ],
+      NG: [
+        { name: 'Emergency', number: '112' },
+        { name: 'Police', number: '112' },
+        { name: 'Fire', number: '112' },
+        { name: 'Ambulance', number: '112' },
+      ],
+      IN: [
+        { name: 'Emergency', number: '112' },
+        { name: 'Police', number: '100' },
+        { name: 'Fire', number: '101' },
+        { name: 'Ambulance', number: '102' },
+      ],
+      // Add more countries as needed
+    };
     
-    return () => clearTimeout(timeoutId);
+    return emergencyServices[countryCode] || emergencyServices.US;
+  }, []);
+
+  // Load emergency services
+  const loadEmergencyServices = useCallback(async (forceRefresh = false) => {
+    if (!userLocation) {
+      // Default fallback emergency numbers
+      setEmergencyNumbers(getEmergencyNumbers('US'));
+      return;
+    }
+    
+    try {
+      const countryCode = await getCountryCode(userLocation[0], userLocation[1]);
+      const services = getEmergencyNumbers(countryCode);
+      setEmergencyNumbers(services);
+      
+      console.log(`Loaded emergency services for country code: ${countryCode}`);
+    } catch (error) {
+      console.error('Error loading emergency services:', error);
+      
+      // Fallback to US emergency numbers
+      setEmergencyNumbers(getEmergencyNumbers('US'));
+      
+      toast({
+        title: 'Error Loading Emergency Services',
+        description: 'Could not load local emergency services. Using default numbers.',
+        variant: 'destructive',
+      });
+    }
+  }, [userLocation, toast, getCountryCode, getEmergencyNumbers]);
+
+  // Load emergency services when user location changes
+  useEffect(() => {
+    loadEmergencyServices();
   }, [userLocation, loadEmergencyServices]);
 
   return {
     emergencyNumbers,
-    loading,
     loadEmergencyServices
   };
 };

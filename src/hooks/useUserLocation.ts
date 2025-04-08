@@ -1,32 +1,67 @@
 
+import { useState, useEffect, useCallback } from 'react';
 import { useLocationState } from './location/useLocationState';
-import { useLocationUpdater } from './location/useLocationUpdater';
 import { useGeolocationWatch } from './location/useGeolocationWatch';
+import { useLocationUpdater } from './location/useLocationUpdater';
 import { useInitialLocation } from './location/useInitialLocation';
+import { useToast } from './use-toast';
 
 export const useUserLocation = () => {
-  // Get location state (coordinates and accuracy)
+  const { userLocation, setUserLocation, locationAccuracy, setLocationAccuracy } = useLocationState();
+  const { toast } = useToast();
+  
+  // Create location updater
   const {
-    userLocation,
-    setUserLocation,
-    locationAccuracy,
-    setLocationAccuracy
-  } = useLocationState();
+    handleLocationUpdate,
+    setHighAccuracyMode,
+    isInitialized,
+    cleanup
+  } = useLocationUpdater(setUserLocation, setLocationAccuracy);
   
-  // Location updater with debounce and filtering
-  const locationUpdater = useLocationUpdater(setUserLocation, setLocationAccuracy);
-  
-  // Geolocation watcher
-  const geolocationWatch = useGeolocationWatch(locationUpdater.handleLocationUpdate);
+  // Create geolocation watcher
+  const {
+    startHighAccuracyWatch,
+    startStandardWatch,
+    stopLocationWatch,
+    useDefaultLocation
+  } = useGeolocationWatch(handleLocationUpdate);
   
   // Initialize location tracking
   useInitialLocation({
-    startHighAccuracyWatch: geolocationWatch.startHighAccuracyWatch,
-    startStandardWatch: geolocationWatch.startStandardWatch,
-    useDefaultLocation: () => geolocationWatch.useDefaultLocation()
+    startHighAccuracyWatch,
+    startStandardWatch,
+    useDefaultLocation: () => useDefaultLocation(37.0902, -95.7129, 500)
   });
   
-  // Return the combined API
+  // Listen for high precision mode activation
+  useEffect(() => {
+    const handleHighPrecisionMode = () => {
+      console.log("High precision mode activated in useUserLocation");
+      setHighAccuracyMode(true);
+      startHighAccuracyWatch();
+      
+      toast({
+        title: "High Precision Mode",
+        description: "Activated enhanced location precision.",
+      });
+    };
+    
+    document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
+    
+    // Automatically try high precision mode on mount
+    setTimeout(() => {
+      if (!isInitialized()) {
+        document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+      }
+    }, 1000);
+    
+    return () => {
+      document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
+      stopLocationWatch();
+      cleanup();
+    };
+  }, [startHighAccuracyWatch, stopLocationWatch, toast, setHighAccuracyMode, isInitialized, cleanup]);
+  
   return {
     userLocation,
     locationAccuracy,

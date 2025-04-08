@@ -15,15 +15,25 @@ export function useGeolocationWatch(
   const watchIdRef = useRef<number | null>(null);
   const errorCountRef = useRef<number>(0);
   const highAccuracyModeRef = useRef<boolean>(false);
+  const singlePositionAttemptedRef = useRef<boolean>(false);
 
   // Options for geolocation
   const getGeolocationOptions = useCallback((highAccuracy = false): GeolocationOptions => {
     return {
       enableHighAccuracy: highAccuracy,
-      timeout: highAccuracy ? 20000 : 15000, // Increased timeout for high accuracy
-      maximumAge: highAccuracy ? 0 : 30000
+      timeout: highAccuracy ? 10000 : 8000,  // Reduced timeouts for faster response
+      maximumAge: highAccuracy ? 0 : 5000    // Reduced for more current positions
     };
   }, []);
+
+  // Intermediate position handler with error tracking
+  const handlePosition = useCallback((position: GeolocationPosition) => {
+    const { latitude, longitude, accuracy } = position.coords;
+    console.log(`Received location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}, accuracy: ${accuracy.toFixed(1)}m`);
+    onLocationUpdate(latitude, longitude, accuracy);
+    errorCountRef.current = 0; // Reset error count on success
+    singlePositionAttemptedRef.current = true;
+  }, [onLocationUpdate]);
 
   // Start watching location with high accuracy
   const startHighAccuracyWatch = useCallback(() => {
@@ -38,33 +48,34 @@ export function useGeolocationWatch(
     if (navigator.geolocation) {
       console.log("Starting high-accuracy location watch");
       
-      // First get a single position fix
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          onLocationUpdate(latitude, longitude, accuracy);
-          
-          // Start watching with maximum precision
-          watchIdRef.current = navigator.geolocation.watchPosition(
-            (watchPosition) => {
-              const { latitude, longitude, accuracy } = watchPosition.coords;
-              onLocationUpdate(latitude, longitude, accuracy);
-            },
-            (error) => {
-              console.warn("Watch position error:", error);
-              errorCountRef.current += 1;
-              
-              if (errorCountRef.current > 3) {
-                // Fall back to standard accuracy after multiple errors
-                startStandardWatch();
-              }
-            },
-            getGeolocationOptions(true)
-          );
-        },
+      // First try to get a quick single position fix
+      if (!singlePositionAttemptedRef.current) {
+        navigator.geolocation.getCurrentPosition(
+          handlePosition,
+          (error) => {
+            console.warn("Initial position error:", error);
+            // Fall back to standard accuracy immediately after error
+            navigator.geolocation.getCurrentPosition(
+              handlePosition,
+              (e) => console.error("Fallback position error:", e),
+              getGeolocationOptions(false)
+            );
+          },
+          getGeolocationOptions(true)
+        );
+      }
+      
+      // Start watching immediately - don't wait for initial position
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        handlePosition,
         (error) => {
-          console.error("High accuracy position error:", error);
-          startStandardWatch();
+          console.warn("Watch position error:", error);
+          errorCountRef.current += 1;
+          
+          if (errorCountRef.current > 2) {
+            // Fall back faster to standard accuracy
+            startStandardWatch();
+          }
         },
         getGeolocationOptions(true)
       );
@@ -75,7 +86,7 @@ export function useGeolocationWatch(
         variant: "destructive"
       });
     }
-  }, [onLocationUpdate, toast, getGeolocationOptions]);
+  }, [handlePosition, toast, getGeolocationOptions]);
 
   // Start watching with standard accuracy (fallback)
   const startStandardWatch = useCallback(() => {
@@ -88,12 +99,7 @@ export function useGeolocationWatch(
       console.log("Starting standard-accuracy location watch");
       
       watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          onLocationUpdate(latitude, longitude, accuracy);
-          // Reset error count on successful update
-          errorCountRef.current = 0;
-        },
+        handlePosition,
         (error) => {
           console.error("Standard watch position error:", error);
           errorCountRef.current += 1;
@@ -109,7 +115,7 @@ export function useGeolocationWatch(
         getGeolocationOptions(false)
       );
     }
-  }, [onLocationUpdate, toast, getGeolocationOptions]);
+  }, [handlePosition, toast, getGeolocationOptions]);
 
   // Cleanup function
   const stopLocationWatch = useCallback(() => {

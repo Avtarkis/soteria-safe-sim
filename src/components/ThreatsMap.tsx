@@ -117,18 +117,6 @@ const ThreatsMap = () => {
               clearSelectedThreat={clearSelectedThreat}
             />
           )}
-          
-          {/* High Precision Tracking Button */}
-          <div className="absolute bottom-4 left-4 z-40">
-            <Button 
-              onClick={activateHighPrecisionMode}
-              variant="secondary" 
-              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
-            >
-              <Navigation className="h-4 w-4" />
-              High Precision Tracking
-            </Button>
-          </div>
         </div>
 
         <div className="lg:col-span-1">
@@ -139,6 +127,17 @@ const ThreatsMap = () => {
               showUserLocation={showUserLocation}
               toggleUserLocation={toggleUserLocation}
             />
+            
+            <div className="mb-2">
+              <Button 
+                onClick={activateHighPrecisionMode}
+                variant="secondary" 
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
+              >
+                <Navigation className="h-4 w-4" />
+                High Precision Tracking
+              </Button>
+            </div>
             
             <RiskAssessmentCard />
             
