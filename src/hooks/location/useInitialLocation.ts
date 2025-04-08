@@ -21,7 +21,7 @@ export function useInitialLocation({
       initializedRef.current = true;
       
       try {
-        // First try high accuracy
+        // Always start with high accuracy mode
         console.log("Attempting initial high-accuracy location");
         startHighAccuracyWatch();
         
@@ -29,12 +29,17 @@ export function useInitialLocation({
         const fallbackTimer = setTimeout(() => {
           console.log("Falling back to standard accuracy");
           startStandardWatch();
-        }, 5000);
+        }, 10000); // Increased timeout for high accuracy mode
         
         // And a final fallback to default location
         const defaultLocationTimer = setTimeout(() => {
           useDefaultLocation();
-        }, 15000);
+        }, 20000); // Increased timeout before using default
+        
+        // Dispatch high precision mode activation event
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+        }, 2000);
         
         // Cleanup function
         return () => {

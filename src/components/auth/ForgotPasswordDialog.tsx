@@ -29,7 +29,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ isOpen, onC
       if (error) {
         toast({
           title: "Password Reset Failed",
-          description: error,
+          description: error.message || "Something went wrong",
           variant: "destructive",
         });
       } else {

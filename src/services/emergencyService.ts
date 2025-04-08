@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 interface EmergencyNumber {
@@ -48,6 +47,7 @@ export const emergencyService = {
         'MX': { country: 'Mexico', countryCode: 'MX', police: '911', ambulance: '911', fire: '911' },
         'ZA': { country: 'South Africa', countryCode: 'ZA', police: '10111', ambulance: '10177', fire: '10177' },
         'RU': { country: 'Russia', countryCode: 'RU', police: '102', ambulance: '103', fire: '101' },
+        'NG': { country: 'Nigeria', countryCode: 'NG', police: '112', ambulance: '112', fire: '112' },
       };
       
       // Check if we have reliable data for this country
@@ -81,6 +81,7 @@ export const emergencyService = {
         'NZ': { country: 'New Zealand', countryCode: 'NZ', police: '111', ambulance: '111', fire: '111' },
         'IN': { country: 'India', countryCode: 'IN', police: '100', ambulance: '102', fire: '101' },
         'CA': { country: 'Canada', countryCode: 'CA', police: '911', ambulance: '911', fire: '911' },
+        'NG': { country: 'Nigeria', countryCode: 'NG', police: '112', ambulance: '112', fire: '112' },
       };
       
       // Use country-specific fallback or European standard 112 for any European country

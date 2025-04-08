@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 // Define types for our context
 type User = {
   id: string;
-  email: string;
+  email: string | undefined;
 } | null;
 
 interface AuthContextType {
@@ -41,7 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+        setUser(session?.user ? {
+          id: session.user.id,
+          email: session.user.email || undefined
+        } : null);
       } catch (error) {
         console.error('Error fetching session:', error);
         toast({
@@ -60,7 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN') {
-          setUser(session?.user || null);
+          setUser(session?.user ? {
+            id: session.user.id,
+            email: session.user.email || undefined
+          } : null);
+          
           toast({
             title: 'Welcome back!',
             description: 'You have successfully signed in',

@@ -20,7 +20,7 @@ export function useGeolocationWatch(
   const getGeolocationOptions = useCallback((highAccuracy = false): GeolocationOptions => {
     return {
       enableHighAccuracy: highAccuracy,
-      timeout: highAccuracy ? 10000 : 15000,
+      timeout: highAccuracy ? 20000 : 15000, // Increased timeout for high accuracy
       maximumAge: highAccuracy ? 0 : 30000
     };
   }, []);

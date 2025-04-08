@@ -67,6 +67,16 @@ export const useEmergencyServices = (userLocation: [number, number] | null) => {
     try {
       const [lat, lng] = location;
       
+      // Nigeria - Added specific fallback for Nigeria
+      if (lat > 4 && lat < 14 && lng > 2 && lng < 15) {
+        return {
+          country: "Nigeria",
+          countryCode: "NG",
+          ambulance: "112",
+          police: "112",
+          fire: "112"
+        };
+      }
       // North America (US/Canada)
       if (lat > 24 && lat < 50 && lng > -125 && lng < -66) {
         return {
