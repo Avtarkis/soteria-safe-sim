@@ -60,7 +60,18 @@ export const useMapInitialization = (
         // Add performance optimizations
         updateWhenZooming: false,
         updateWhenIdle: true,
-      }).addTo(map);
+      });
+      
+      // Add the tile layer with a small delay to ensure the map is ready
+      setTimeout(() => {
+        tileLayer.addTo(map);
+        
+        // Force a redraw by resetting the view
+        map.setView(center, zoom);
+        
+        // Force resize for good measure
+        map.invalidateSize(true);
+      }, 100);
 
       // Store refs
       mapRef.current = map;
@@ -68,32 +79,36 @@ export const useMapInitialization = (
       mapCreated.current = true;
       
       // Force multiple resizes after creation to ensure proper rendering
-      const resizeTimes = [100, 500, 1000, 2000];
+      const resizeTimes = [100, 300, 500, 1000, 2000, 5000];
       resizeTimes.forEach(time => {
         setTimeout(() => {
           if (mapRef.current) {
             console.log(`Forcing map resize after ${time}ms`);
+            window.dispatchEvent(new Event('resize'));
             mapRef.current.invalidateSize(true);
             
-            // Also re-add the tile layer if needed
+            // For longer delays, also check if tiles need to be reloaded
             if (time > 1000) {
-              map.eachLayer((layer) => {
+              let tilesLoaded = false;
+              
+              mapRef.current.eachLayer((layer) => {
                 if ((layer as any)._url && (layer as any)._url.includes('openstreetmap')) {
-                  const currentZoom = map.getZoom();
-                  const currentCenter = map.getCenter();
-                  map.removeLayer(layer);
-                  
-                  // Re-add the tile layer
-                  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                    maxZoom: 19,
-                    updateWhenIdle: true,
-                  }).addTo(map);
-                  
-                  // Ensure view is maintained
-                  map.setView(currentCenter, currentZoom);
+                  tilesLoaded = true;
                 }
               });
+              
+              // If no tiles are loaded after a delay, try to add them again
+              if (!tilesLoaded) {
+                console.log('No tiles detected, re-adding tile layer');
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                  maxZoom: 19,
+                  updateWhenIdle: true,
+                }).addTo(mapRef.current);
+                
+                // Ensure view is maintained
+                mapRef.current.setView(center, zoom);
+              }
             }
           }
         }, time);

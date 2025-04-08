@@ -70,7 +70,7 @@ const ThreatsMap = () => {
     
     toast({
       title: "High Precision Mode",
-      description: "Activating enhanced location precision...",
+      description: "Activating enhanced location precision... every second counts.",
     });
     
     // If location tracking is not on, turn it on

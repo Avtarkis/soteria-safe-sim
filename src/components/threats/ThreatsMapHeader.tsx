@@ -1,27 +1,52 @@
 
 import React from 'react';
-import { MapIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Navigation } from 'lucide-react';
 
 interface ThreatsMapHeaderProps {
-  destination: string | null;
+  destination?: { name: string; coordinates: [number, number] } | null;
 }
 
 const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
   return (
-    <div className="space-y-2 mb-6">
+    <div className="pt-4 pb-6 space-y-2">
       <div className="flex items-center gap-3">
-        <MapIcon className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-        <h1 className="text-3xl font-bold tracking-tight">Threat Map</h1>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0284c7" className="h-8 w-8">
+          <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+          <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+        </svg>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Threat Map</h1>
+          <p className="text-sm text-muted-foreground">Where every second counts.</p>
+        </div>
       </div>
-      <p className="text-muted-foreground">
-        Real-time global threat visualization with AI risk assessment.
-      </p>
       
-      {destination && (
-        <div className="mt-2 p-3 bg-primary/10 rounded-md">
-          <p className="text-sm font-medium">
-            Currently showing safest route to your {destination} location.
-          </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Real-time visualization of threats in your area.
+        </p>
+        
+        {destination && (
+          <div className="flex items-center">
+            <div className="hidden sm:block mr-2 text-sm text-right">
+              <span className="font-medium">{destination.name}</span>
+              <div className="text-muted-foreground text-xs">
+                {destination.coordinates[0].toFixed(4)}, {destination.coordinates[1].toFixed(4)}
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="h-8">
+              <Navigation className="h-3.5 w-3.5 mr-1.5" />
+              <span className="sm:hidden">Destination</span>
+              <span className="hidden sm:inline">Navigate</span>
+            </Button>
+          </div>
+        )}
+      </div>
+      
+      {!destination && (
+        <div className="flex items-center text-amber-500 mt-1 text-sm">
+          <AlertTriangle className="h-4 w-4 mr-1.5" />
+          <span>No destination set. Safety data will be based on your current location.</span>
         </div>
       )}
     </div>

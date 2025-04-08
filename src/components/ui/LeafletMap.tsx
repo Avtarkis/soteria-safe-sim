@@ -134,11 +134,12 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     
     window.addEventListener('resize', handleResize);
     
-    // Also do an immediate resize and a delayed one for reliability
+    // Also do an immediate resize and multiple delayed ones for reliability
     if (mapRef.current && mapCreated) {
       setTimeout(handleResize, 100);
       setTimeout(handleResize, 500);
-      setTimeout(handleResize, 1000); // Added an extra resize check
+      setTimeout(handleResize, 1000);
+      setTimeout(handleResize, 3000); // Added an extra longer resize check
     }
     
     return () => {
@@ -183,38 +184,41 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     };
   }, []);
 
-  // Fix tile layer authentication issue
+  // Fix tile layer authentication issue and ensure tiles load properly
   useEffect(() => {
     if (!mapRef.current || !mapCreated) return;
 
     // Use OpenStreetMap tiles which don't require authentication
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-      // Add better performance options
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      noWrap: false // Allow world repeat
-    }).addTo(mapRef.current);
-
-    // Force a reload of the tiles by re-adding the layer
-    setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.removeLayer(tileLayer);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-          updateWhenIdle: true,
-          updateWhenZooming: false,
-          noWrap: false
-        }).addTo(mapRef.current);
-      }
-    }, 1000);
+    const loadTileLayer = () => {
+      if (!mapRef.current) return;
+      
+      // Remove any existing tile layers first
+      mapRef.current.eachLayer((layer) => {
+        if ((layer as any)._url && (layer as any)._url.includes('openstreetmap')) {
+          mapRef.current!.removeLayer(layer);
+        }
+      });
+      
+      // Add a new tile layer with better performance options
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        noWrap: false // Allow world repeat
+      }).addTo(mapRef.current);
+    };
+    
+    // Load tiles initially
+    loadTileLayer();
+    
+    // Force reload tiles multiple times to ensure they appear
+    const timeouts = [500, 1000, 2000, 5000].map(timeout => 
+      setTimeout(loadTileLayer, timeout)
+    );
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.removeLayer(tileLayer);
-      }
+      timeouts.forEach(clearTimeout);
     };
   }, [mapCreated]);
 
@@ -225,18 +229,20 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     // Redraw the map when center changes
     mapRef.current.setView(center, zoom, { animate: true });
     
-    // Schedule a resize after view change
-    setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize(true);
-      }
-    }, 200);
+    // Schedule multiple resizes after view change for reliability
+    [200, 500, 1000, 3000].forEach(timeout => {
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize(true);
+        }
+      }, timeout);
+    });
   }, [center[0], center[1], zoom, mapCreated]);
 
-  // Force a map reload if it doesn't load properly
+  // Enhanced loading monitoring and error recovery
   useEffect(() => {
     let reloadAttempts = 0;
-    const maxReloadAttempts = 3;
+    const maxReloadAttempts = 5; // Increased from 3
     
     const checkMapTiles = () => {
       // Check if map container has any tile images loaded
@@ -252,7 +258,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
           mapRef.current.invalidateSize(true);
           
           // Re-add the tile layer
-          const currentLayers = mapRef.current.eachLayer((layer) => {
+          mapRef.current.eachLayer((layer) => {
             if ((layer as any)._url && (layer as any)._url.includes('openstreetmap')) {
               mapRef.current!.removeLayer(layer);
             }
@@ -260,21 +266,31 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
           
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
+            maxZoom: 19,
+            updateWhenIdle: true
           }).addTo(mapRef.current);
+          
+          // If we're at the last attempt, try the nuclear option of forcing a complete rerender
+          if (reloadAttempts === maxReloadAttempts - 1) {
+            console.log("Forcing complete map rerender");
+            setMapKey(Date.now()); // This will cause the component to fully remount
+          }
         }
       }
     };
     
     // Check shortly after initial render
-    const initialCheckTimeout = setTimeout(checkMapTiles, 2000);
+    const initialCheckTimeout = setTimeout(checkMapTiles, 1000);
     
-    // Set up additional checks
-    const intervalCheck = setInterval(checkMapTiles, 5000);
+    // Set up additional checks with increasing frequency for earlier attempts
+    const intervalChecks = [
+      setInterval(checkMapTiles, 2000), // Check every 2 seconds initially
+      setTimeout(() => setInterval(checkMapTiles, 5000), 10000) // Then every 5 seconds after 10 seconds
+    ];
     
     return () => {
       clearTimeout(initialCheckTimeout);
-      clearInterval(intervalCheck);
+      intervalChecks.forEach(interval => clearInterval(interval));
     };
   }, [mapCreated]);
 

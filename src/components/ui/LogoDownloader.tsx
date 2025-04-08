@@ -2,8 +2,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const LogoDownloader = () => {
+  const { toast } = useToast();
   const handleDownload = () => {
     // Create an SVG string for download
     const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0284c7">
@@ -35,6 +37,11 @@ const LogoDownloader = () => {
     // Clean up
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Logo Downloaded",
+      description: "Your Soteria logo has been downloaded successfully.",
+    });
   };
   
   return (
