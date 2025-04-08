@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/useAuth';
 
 // Layout
-import Layout from '@/components/layout/Layout';
+import Layout from '@/components/Layout';
 
 // Pages
 import HomePage from '@/pages/HomePage';
@@ -14,6 +14,7 @@ import ThreatsMap from '@/components/ThreatsMap';
 import TravelPage from '@/pages/TravelPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
+import Dashboard from '@/components/Dashboard';
 
 function App() {
   return (
@@ -22,7 +23,8 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
+              <Route index element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/map" element={<ThreatsMap />} />
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/login" element={<LoginPage />} />

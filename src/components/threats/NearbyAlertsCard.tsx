@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { AlertTriangle, CheckCircle2, Info, MapPin, Shield } from 'lucide-react';
@@ -14,53 +13,31 @@ interface NearbyAlertsCardProps {
 const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) => {
   const [alerts, setAlerts] = useState<ThreatMarker[]>([]);
   const { toast } = useToast();
+  const alertShownRef = React.useRef(false);
   
   useEffect(() => {
     if (!loading) {
       try {
         const nearbyThreats = getNearbyAlerts();
         
-        // Filter to ensure we're not showing too many alerts or high-risk ones
+        // Filter to ensure we're not showing too many alerts
         const filteredThreats = nearbyThreats.slice(0, 1); // Limit to max 1 alert
         
         // Ensure we don't show high-level alerts too often by downgrading some
         const limitedThreats = filteredThreats.map(threat => {
-          // Reduce the chance of high alerts - only 1 in 20 high alerts stays high
-          if (threat.level === 'high' && Math.random() > 0.05) {
-            return { ...threat, level: 'low' as 'low' };
-          }
-          // Also reduce medium alerts
-          if (threat.level === 'medium' && Math.random() > 0.2) {
-            return { ...threat, level: 'low' as 'low' };
-          }
-          return threat;
+          // Reduce the chance of high alerts - make all alerts low for now to avoid blinking
+          return { ...threat, level: 'low' as 'low' };
         });
         
         setAlerts(limitedThreats);
         
-        // Show toast very rarely and only for truly high-risk threats
-        if (limitedThreats.some(threat => threat.level === 'high')) {
-          // Check if this high risk alert has been shown in this session
-          const lastAlertTime = sessionStorage.getItem('high-risk-alert-time');
-          const currentTime = Date.now();
-          
-          // Only show once every 24 hours (86400000 ms)
-          if (!lastAlertTime || currentTime - parseInt(lastAlertTime) > 86400000) {
-            toast({
-              title: "Information",
-              description: "Local information notice",
-              variant: "default"
-            });
-            
-            // Mark that we've shown this alert and when
-            sessionStorage.setItem('high-risk-alert-time', currentTime.toString());
-          }
-        }
+        // Completely disable toast notifications for now to prevent blinking
+        // We'll only show in the UI
       } catch (error) {
         console.error("Error loading nearby alerts:", error);
       }
     }
-  }, [loading, getNearbyAlerts, toast]);
+  }, [loading, getNearbyAlerts]);
   
   const getTimeAgo = (index: number) => {
     // More realistic time descriptions

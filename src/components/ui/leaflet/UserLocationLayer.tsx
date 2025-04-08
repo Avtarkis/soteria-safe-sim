@@ -24,24 +24,52 @@ const UserLocationLayer = ({
     if (!map || !userLocation) {
       // Clean up existing markers if location is not available
       if (userMarkerRef.current) {
-        map?.removeLayer(userMarkerRef.current);
-        userMarkerRef.current = null;
+        try {
+          if (map && map.hasLayer(userMarkerRef.current)) {
+            map.removeLayer(userMarkerRef.current);
+          }
+          userMarkerRef.current = null;
+        } catch (error) {
+          console.error("Error removing user marker:", error);
+          userMarkerRef.current = null;
+        }
       }
       if (accuracyCircleRef.current) {
-        map?.removeLayer(accuracyCircleRef.current);
-        accuracyCircleRef.current = null;
+        try {
+          if (map && map.hasLayer(accuracyCircleRef.current)) {
+            map.removeLayer(accuracyCircleRef.current);
+          }
+          accuracyCircleRef.current = null;
+        } catch (error) {
+          console.error("Error removing accuracy circle:", error);
+          accuracyCircleRef.current = null;
+        }
       }
       return;
     }
     
     // Remove existing markers if present
     if (userMarkerRef.current) {
-      map.removeLayer(userMarkerRef.current);
-      userMarkerRef.current = null;
+      try {
+        if (map.hasLayer(userMarkerRef.current)) {
+          map.removeLayer(userMarkerRef.current);
+        }
+        userMarkerRef.current = null;
+      } catch (error) {
+        console.error("Error removing user marker:", error);
+        userMarkerRef.current = null;
+      }
     }
     if (accuracyCircleRef.current) {
-      map.removeLayer(accuracyCircleRef.current);
-      accuracyCircleRef.current = null;
+      try {
+        if (map.hasLayer(accuracyCircleRef.current)) {
+          map.removeLayer(accuracyCircleRef.current);
+        }
+        accuracyCircleRef.current = null;
+      } catch (error) {
+        console.error("Error removing accuracy circle:", error);
+        accuracyCircleRef.current = null;
+      }
     }
     
     try {
@@ -62,7 +90,7 @@ const UserLocationLayer = ({
       
       // Color the accuracy circle based on safety level
       const circleColor = safetyLevel === 'safe' ? '#4F46E5' : 
-                        safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
+                         safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
       
       // Add accuracy circle
       accuracyCircleRef.current = L.circle(latlng, {
@@ -80,12 +108,26 @@ const UserLocationLayer = ({
     return () => {
       if (map) {
         if (userMarkerRef.current) {
-          map.removeLayer(userMarkerRef.current);
-          userMarkerRef.current = null;
+          try {
+            if (map.hasLayer(userMarkerRef.current)) {
+              map.removeLayer(userMarkerRef.current);
+            }
+            userMarkerRef.current = null;
+          } catch (error) {
+            console.error("Error unmounting user marker:", error);
+            userMarkerRef.current = null;
+          }
         }
         if (accuracyCircleRef.current) {
-          map.removeLayer(accuracyCircleRef.current);
-          accuracyCircleRef.current = null;
+          try {
+            if (map.hasLayer(accuracyCircleRef.current)) {
+              map.removeLayer(accuracyCircleRef.current);
+            }
+            accuracyCircleRef.current = null;
+          } catch (error) {
+            console.error("Error unmounting accuracy circle:", error);
+            accuracyCircleRef.current = null;
+          }
         }
       }
     };

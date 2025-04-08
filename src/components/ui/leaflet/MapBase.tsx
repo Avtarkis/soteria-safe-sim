@@ -103,6 +103,18 @@ const MapBase = ({
       if (mapRef.current) {
         console.log("Cleaning up map");
         try {
+          // First remove all layers to prevent '_removePath' errors
+          mapRef.current.eachLayer((layer) => {
+            try {
+              if (mapRef.current && mapRef.current.hasLayer(layer)) {
+                mapRef.current.removeLayer(layer);
+              }
+            } catch (e) {
+              console.error("Error removing layer:", e);
+            }
+          });
+          
+          // Then remove the map itself
           mapRef.current.remove();
         } catch (error) {
           console.error("Error removing map:", error);

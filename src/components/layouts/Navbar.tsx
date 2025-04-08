@@ -39,8 +39,9 @@ const Navbar = () => {
   };
   
   const isActive = (path: string) => {
-    // Check if we're on the dashboard and the path is /
-    if (path === '/' && (location.pathname === '/' || location.pathname === '/dashboard')) {
+    // Check if we're on the dashboard and the path is / or /dashboard
+    if ((path === '/' || path === '/dashboard') && 
+        (location.pathname === '/' || location.pathname === '/dashboard')) {
       return true;
     }
     
@@ -49,7 +50,7 @@ const Navbar = () => {
   };
   
   const links = [
-    { to: '/', icon: PanelLeft, text: 'Dashboard' },
+    { to: '/dashboard', icon: PanelLeft, text: 'Dashboard' },
     { to: '/map', icon: MapPin, text: 'Threat Map' },
     { to: '/alerts', icon: AlertTriangle, text: 'Alerts' },
     { to: '/emergency', icon: Shield, text: 'Emergency' },

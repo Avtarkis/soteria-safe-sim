@@ -13,6 +13,7 @@ export class GeoLocationWatcher {
   private retryAttempts: number = 0;
   private maxRetries: number = 3;
   private retryTimeoutId: number | null = null;
+  private highPrecisionMode: boolean = false;
 
   constructor(options: GeoLocationWatcherOptions) {
     this.options = options;
@@ -22,8 +23,11 @@ export class GeoLocationWatcher {
    * Start high-precision location watch
    */
   public startHighAccuracyWatch(): void {
+    if (this.highPrecisionMode) return; // Prevent multiple activations
+    
     this.stopWatch();
     this.retryAttempts = 0;
+    this.highPrecisionMode = true;
     
     if (!navigator.geolocation) {
       console.error("Geolocation not supported by this browser");
@@ -34,6 +38,22 @@ export class GeoLocationWatcher {
       // Create a custom event that other components can listen for
       document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
       
+      // Get initial position first
+      navigator.geolocation.getCurrentPosition(
+        this.handlePositionUpdate,
+        (error) => {
+          this.handleError(error);
+          // Immediately try again with standard accuracy if high accuracy fails initially
+          this.startStandardWatch();
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000, 
+          maximumAge: 0 
+        }
+      );
+      
+      // Then start watching with less frequent updates (increased maximumAge)
       this.watchId = navigator.geolocation.watchPosition(
         this.handlePositionUpdate,
         (error) => {
@@ -43,26 +63,7 @@ export class GeoLocationWatcher {
         { 
           enableHighAccuracy: true, 
           timeout: 15000, 
-          maximumAge: 0 
-        }
-      );
-      
-      // Also get initial position
-      navigator.geolocation.getCurrentPosition(
-        this.handlePositionUpdate,
-        (error) => {
-          this.handleError(error);
-          // Immediately try again with standard accuracy if high accuracy fails initially
-          navigator.geolocation.getCurrentPosition(
-            this.handlePositionUpdate,
-            this.handleError,
-            { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
-          );
-        },
-        { 
-          enableHighAccuracy: true, 
-          timeout: 10000, 
-          maximumAge: 0 
+          maximumAge: 10000 // Increased to reduce update frequency 
         }
       );
       
@@ -115,6 +116,7 @@ export class GeoLocationWatcher {
    */
   public startStandardWatch(): void {
     this.stopWatch();
+    this.highPrecisionMode = false;
     
     if (!navigator.geolocation) {
       console.error("Geolocation not supported by this browser");
@@ -135,7 +137,7 @@ export class GeoLocationWatcher {
         { 
           enableHighAccuracy: false, 
           timeout: 30000, 
-          maximumAge: 60000 
+          maximumAge: 60000 // Increased to reduce update frequency
         }
       );
       

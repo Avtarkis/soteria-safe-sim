@@ -1,92 +1,96 @@
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
 
 interface MarkerLayerProps {
-  map: L.Map | null;
+  map: L.Map;
   markers: ThreatMarker[];
   onMarkerClick?: (marker: ThreatMarker) => void;
 }
 
-const MarkerLayer = ({
-  map,
-  markers,
-  onMarkerClick
-}: MarkerLayerProps) => {
-  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
+  const markerLayerRef = useRef<L.LayerGroup | null>(null);
   
-  // Create markers layer when component mounts
+  // Create and manage marker layer
   useEffect(() => {
+    // Check if map is initialized
     if (!map) return;
     
-    // Create markers layer if not already created
-    if (!markersLayerRef.current) {
-      markersLayerRef.current = L.layerGroup().addTo(map);
+    // Create a new layer group if it doesn't exist
+    if (!markerLayerRef.current) {
+      markerLayerRef.current = L.layerGroup().addTo(map);
     }
     
-    // Cleanup when component unmounts
+    // Get current layer group
+    const markerLayer = markerLayerRef.current;
+    
+    // Clear existing markers from the layer
+    try {
+      // Clear any existing markers
+      markerLayer.clearLayers();
+      
+      // Add all markers to the layer
+      markers.forEach(marker => {
+        try {
+          const { position, level, title, details } = marker;
+          
+          // Determine marker color based on threat level
+          const markerColor = level === 'high' ? 'red' : 
+                              level === 'medium' ? 'orange' : 'blue';
+          
+          // Create custom icon for marker
+          const icon = L.divIcon({
+            className: `custom-marker ${level}-marker`,
+            html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+          
+          // Create and add marker to layer
+          const leafletMarker = L.marker(position, { icon }).addTo(markerLayer);
+          
+          // Add popup with threat details
+          leafletMarker.bindPopup(`
+            <div class="threat-popup">
+              <h3>${title}</h3>
+              <p>${details}</p>
+              <span class="threat-level ${level}">Risk Level: ${level.toUpperCase()}</span>
+            </div>
+          `);
+          
+          // Add click handler if provided
+          if (onMarkerClick) {
+            leafletMarker.on('click', () => {
+              onMarkerClick(marker);
+            });
+          }
+        } catch (error) {
+          console.error("Error adding marker:", error);
+        }
+      });
+    } catch (error) {
+      console.error("Error managing marker layer:", error);
+    }
+    
+    // Cleanup function
     return () => {
-      if (markersLayerRef.current) {
-        markersLayerRef.current.clearLayers();
-        map.removeLayer(markersLayerRef.current);
-        markersLayerRef.current = null;
+      try {
+        if (map && markerLayerRef.current) {
+          // First check if map still exists and if the layer is on the map
+          if (map.hasLayer(markerLayerRef.current)) {
+            map.removeLayer(markerLayerRef.current);
+          }
+          markerLayerRef.current = null;
+        }
+      } catch (error) {
+        console.error("Error cleaning up marker layer:", error);
+        markerLayerRef.current = null;
       }
     };
-  }, [map]);
-  
-  // Update markers when they change
-  useEffect(() => {
-    if (!map || !markersLayerRef.current || markers.length === 0) return;
-
-    // Clear existing markers
-    markersLayerRef.current.clearLayers();
-    
-    markers.forEach(marker => {
-      // Set marker color based on threat level and type
-      let markerColor = marker.level === 'high' ? 'red' : 
-                        marker.level === 'medium' ? 'orange' : 'blue';
-      
-      if (marker.type) {
-        if (marker.type === 'cyber') {
-          markerColor = marker.level === 'high' ? '#ff3399' : 
-                       marker.level === 'medium' ? '#ff66b2' : '#ff99cc';
-        } else if (marker.type === 'environmental') {
-          markerColor = marker.level === 'high' ? '#33cc33' : 
-                       marker.level === 'medium' ? '#66cc66' : '#99cc99';
-        }
-      }
-      
-      const circleRadius = marker.level === 'high' ? 20 : 
-                          marker.level === 'medium' ? 15 : 10;
-      
-      const circle = L.circle(marker.position, {
-        color: markerColor,
-        fillColor: markerColor,
-        fillOpacity: 0.2,
-        radius: circleRadius * 50
-      }).addTo(markersLayerRef.current!);
-      
-      const icon = L.divIcon({
-        className: `threat-marker-${marker.level}`,
-        html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      });
-      
-      const mapMarker = L.marker(marker.position, { icon }).addTo(markersLayerRef.current!);
-      
-      const threatType = marker.type ? `<br>${marker.type.toUpperCase()} threat` : '';
-      mapMarker.bindPopup(`<b>${marker.title}</b><br>${marker.level.toUpperCase()} threat level${threatType}`);
-      
-      if (onMarkerClick) {
-        mapMarker.on('click', () => onMarkerClick(marker));
-        circle.on('click', () => onMarkerClick(marker));
-      }
-    });
   }, [map, markers, onMarkerClick]);
   
-  return null; // This is a non-visual component
+  return null; // This is a non-visual component that manipulates the map
 };
 
 export default MarkerLayer;
