@@ -1,53 +1,82 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AuthScreen from '@/components/AuthScreen';
 import SignIn from '@/components/SignIn';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import SignUp from '@/components/SignUp';
+import ForgotPassword from '@/components/ForgotPassword';
 
 const Index = () => {
-  const [showDummyAuth, setShowDummyAuth] = useState(false);
-  
-  // Toggle between standard auth screen and dummy auth
-  const toggleAuth = () => {
-    setShowDummyAuth(prev => !prev);
-  };
-  
+  const [activeForm, setActiveForm] = useState<'signIn' | 'signUp' | 'forgotPassword'>('signIn');
+
+  const toggleSignUp = () => setActiveForm('signUp');
+  const toggleSignIn = () => setActiveForm('signIn');
+  const toggleForgotPassword = () => setActiveForm('forgotPassword');
+
   return (
-    <div className="container flex flex-col items-center justify-center min-h-screen p-4">
-      {showDummyAuth ? (
-        <div className="w-full max-w-md mx-auto">
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
+    <div className="min-h-screen flex flex-col">
+      {/* Hero section with logo and slogan */}
+      <div className="flex-1 flex flex-col bg-gradient-to-b from-blue-50 to-white">
+        <div className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center justify-center">
+          <div className="w-full max-w-md mx-auto">
+            
+            {/* Logo and brand */}
+            <div className="flex flex-col items-center mb-8">
+              <div className="mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0284c7" className="h-16 w-16">
-                  <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-                  <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+                  <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.75.75 0 00.674 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold">Soteria</h1>
-              <p className="text-muted-foreground mt-2">Where every second counts.</p>
-            </CardHeader>
-            <CardContent>
-              <SignIn toggleSignUp={() => {}} toggleForgotPassword={() => {}} />
-              <div className="mt-4 text-center">
-                <button onClick={toggleAuth} className="text-sm text-primary hover:underline">
-                  Return to standard login
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <>
-          <AuthScreen />
-          <div className="mt-8">
-            <button onClick={toggleAuth} className="text-sm text-primary hover:underline">
-              Try dummy authentication mode
-            </button>
+              <h1 className="text-3xl font-extrabold text-center text-gray-900">Soteria</h1>
+              <p className="text-lg text-center text-gray-600 mt-2">Where every second counts.</p>
+              <p className="text-sm text-center text-gray-500 mt-2 mb-6">
+                Personal safety and threat monitoring platform
+              </p>
+            </div>
+            
+            {/* Auth forms */}
+            <div className="bg-white p-6 rounded-lg shadow-xl">
+              {activeForm === 'signIn' && (
+                <SignIn toggleSignUp={toggleSignUp} toggleForgotPassword={toggleForgotPassword} />
+              )}
+              
+              {activeForm === 'signUp' && (
+                <SignUp toggleSignIn={toggleSignIn} />
+              )}
+              
+              {activeForm === 'forgotPassword' && (
+                <ForgotPassword toggleSignIn={toggleSignIn} />
+              )}
+            </div>
+            
+            {/* Extra info */}
+            <div className="mt-8 text-center text-sm text-gray-500">
+              <p>
+                By using Soteria, you agree to our{' '}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </a>
+              </p>
+              <p className="mt-4">
+                Every second counts in an emergency.{' '}
+                <span className="text-blue-600">Stay prepared</span>.
+              </p>
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <footer className="bg-gray-50 py-6">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-gray-500 text-sm">
+            <p>© 2025 Soteria Security. All rights reserved.</p>
+            <p className="mt-1">Where every second counts.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

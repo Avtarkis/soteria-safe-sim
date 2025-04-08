@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { DisasterAlert } from '@/types/disasters';
+import { DisasterAlert } from '@/types/disasters.d';
 
 export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const [disasterAlerts, setDisasterAlerts] = useState<DisasterAlert[]>([]);
@@ -16,6 +16,7 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
           type: 'flood',
           severity: 'medium',
           location: 'Downtown Area',
+          coordinates: [37.7749, -122.4194],
           description: 'Flash flooding possible in low-lying areas. Where every second counts, move to higher ground immediately.',
           date: new Date().toISOString(),
           source: 'National Weather Service',
@@ -27,6 +28,7 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
           type: 'fire',
           severity: 'high',
           location: 'North County',
+          coordinates: [37.8044, -122.2712],
           description: 'Rapidly spreading wildfire. Evacuation orders in effect. Where every second counts, follow evacuation routes.',
           date: new Date().toISOString(),
           source: 'Emergency Management Agency',
@@ -38,7 +40,8 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
           type: 'earthquake',
           severity: 'low',
           location: 'Regional',
-          description: 'Minor seismic activity detected. No immediate danger, but remain alert.',
+          coordinates: [37.7858, -122.4064],
+          description: 'Minor seismic activity detected. No immediate danger, but remain alert. Every second counts when preparing.',
           date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
           source: 'Geological Survey',
           active: false

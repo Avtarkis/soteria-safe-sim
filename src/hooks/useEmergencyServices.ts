@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { EmergencyService } from '@/types/emergency';
+import { EmergencyService } from '@/types/emergency.d';
 
 export const useEmergencyServices = (userLocation: [number, number] | null) => {
   const [emergencyNumbers, setEmergencyNumbers] = useState<EmergencyService[]>([]);

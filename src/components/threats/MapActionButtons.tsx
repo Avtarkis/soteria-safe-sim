@@ -61,7 +61,7 @@ const MapActionButtons = ({
     // Show notification
     toast({
       title: "High Precision Activated",
-      description: "Attempting to get your precise location...",
+      description: "Attempting to get your precise location... where every second counts.",
     });
   }, [showUserLocation, toggleUserLocation, toast]);
   
@@ -74,7 +74,7 @@ const MapActionButtons = ({
       title: showUserLocation ? "Tracking Disabled" : "Tracking Enabled",
       description: showUserLocation 
         ? "Live location tracking has been turned off." 
-        : "Your location will now be tracked in real-time.",
+        : "Your location will now be tracked in real-time. Where every second counts.",
     });
   }, [showUserLocation, toggleUserLocation, toast]);
   

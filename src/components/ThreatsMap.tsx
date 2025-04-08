@@ -16,8 +16,6 @@ import EmergencyNumbersCard from '@/components/threats/EmergencyNumbersCard';
 import NearbyAlertsCard from '@/components/threats/NearbyAlertsCard';
 import DisasterAlertsCard from '@/components/threats/DisasterAlertsCard';
 import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
-import { Button } from '@/components/ui/button';
-import { Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ThreatsMap = () => {
@@ -128,14 +126,7 @@ const ThreatsMap = () => {
               toggleUserLocation={toggleUserLocation}
             />
             
-            <Button 
-              onClick={activateHighPrecisionMode}
-              variant="secondary" 
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
-            >
-              <Navigation className="h-4 w-4" />
-              <span>High Precision Tracking</span>
-            </Button>
+            {/* Removed duplicate High Precision Tracking button */}
             
             <RiskAssessmentCard />
             
