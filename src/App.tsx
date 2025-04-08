@@ -15,11 +15,15 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { isUsingFallbackValues } from '@/lib/supabase';
 import { AuthProvider } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import CyberSecurity from '@/components/CyberSecurity';
+import Subscription from '@/components/Subscription';
+import EmergencyResponse from '@/components/EmergencyResponse';
+import FamilyMonitoring from '@/components/family/FamilyMonitoring';
 
-// Create empty placeholder pages for the missing routes
-const FamilyPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Family Safety</h1><p>Family safety features are coming soon.</p></div>;
-const CyberSecurityPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Cyber Security</h1><p>Cyber security features are coming soon.</p></div>;
-const SubscriptionPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Subscription Management</h1><p>Subscription management features are coming soon.</p></div>;
+// Remove placeholder pages since we'll use real components
+// const FamilyPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Family Safety</h1><p>Family safety features are coming soon.</p></div>;
+// const CyberSecurityPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Cyber Security</h1><p>Cyber security features are coming soon.</p></div>;
+// const SubscriptionPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Subscription Management</h1><p>Subscription management features are coming soon.</p></div>;
 
 // Extend the Window interface to include our custom property
 declare global {
@@ -51,16 +55,16 @@ function App() {
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="/map" element={<ThreatsMap />} />
               <Route path="/alerts" element={<AlertsPage />} />
-              <Route path="/emergency" element={<EmergencyPage />} />
+              <Route path="/emergency" element={<EmergencyResponse />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               
-              {/* Add missing routes */}
-              <Route path="/family" element={<FamilyPage />} />
-              <Route path="/cyber" element={<CyberSecurityPage />} />
-              <Route path="/subscription" element={<SubscriptionPage />} />
+              {/* Update to use actual components */}
+              <Route path="/family" element={<FamilyMonitoring />} />
+              <Route path="/cyber" element={<CyberSecurity />} />
+              <Route path="/subscription" element={<Subscription />} />
             </Route>
 
             {/* Fallback route for 404 errors */}
