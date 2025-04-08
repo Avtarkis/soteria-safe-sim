@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart } from 'lucide-react';
@@ -17,17 +17,39 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Clean up loading state if navigation gets stuck
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   const handleNavigation = (path: string) => {
     // Close mobile menu if open
     if (open) setOpen(false);
     
-    // Navigate to the path
-    navigate(path);
+    // Set loading state
+    setIsLoading(true);
     
-    // Optional: Show toast for navigation feedback
+    // Navigate to the path with a small delay to allow UI to update
+    setTimeout(() => {
+      navigate(path);
+      
+      // Clear loading state after navigation
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+    }, 100);
+    
+    // Show toast for navigation feedback
     toast({
-      title: `Navigating to ${path.charAt(0).toUpperCase() + path.slice(1)}`,
+      title: `Navigating to ${path.slice(1).charAt(0).toUpperCase() + path.slice(2)}`,
       description: "Loading page...",
       duration: 1500,
     });
@@ -35,17 +57,23 @@ const Navbar = () => {
 
   const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
     const isActive = location.pathname === to;
+    const isCurrentlyLoading = isLoading && to === location.pathname;
     
     return (
       <button
         onClick={() => handleNavigation(to)}
+        disabled={isCurrentlyLoading}
         className={cn(
           "flex items-center gap-4 py-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground rounded-lg w-full text-left",
-          isActive ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'
+          isActive ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground',
+          isCurrentlyLoading && 'opacity-70 cursor-not-allowed'
         )}
       >
         {icon}
         <span>{label}</span>
+        {isCurrentlyLoading && (
+          <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        )}
       </button>
     );
   };

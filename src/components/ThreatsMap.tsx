@@ -16,10 +16,12 @@ import EmergencyNumbersCard from '@/components/threats/EmergencyNumbersCard';
 import NearbyAlertsCard from '@/components/threats/NearbyAlertsCard';
 import DisasterAlertsCard from '@/components/threats/DisasterAlertsCard';
 import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
+import { Button } from '@/components/ui/button';
+import { Crosshair } from 'lucide-react';
 
 const ThreatsMap = () => {
   // Get user location
-  const { userLocation, locationAccuracy } = useUserLocation();
+  const { userLocation, locationAccuracy, setUserLocation, setLocationAccuracy } = useUserLocation();
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   // Get threat data with memoization to prevent unnecessary rerenders
@@ -59,6 +61,12 @@ const ThreatsMap = () => {
     }
   }, [showLegend, setShowLegend]);
   
+  // High precision mode handler
+  const activateHighPrecisionMode = useCallback(() => {
+    // Dispatch high precision activation event
+    document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+  }, []);
+  
   // Memoize the filtered markers to prevent unnecessary recalculations
   const filteredMarkers = useMemo(() => 
     getFilteredMarkers(threatMarkers), 
@@ -97,6 +105,18 @@ const ThreatsMap = () => {
               clearSelectedThreat={clearSelectedThreat}
             />
           )}
+          
+          {/* High Precision Tracking Button */}
+          <div className="absolute bottom-4 left-4 z-40">
+            <Button 
+              onClick={activateHighPrecisionMode}
+              variant="secondary" 
+              className="flex items-center gap-2 bg-opacity-90 backdrop-blur-sm"
+            >
+              <Crosshair className="h-4 w-4" />
+              High Precision Tracking
+            </Button>
+          </div>
         </div>
 
         <div className="lg:col-span-1">
