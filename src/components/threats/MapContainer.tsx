@@ -28,6 +28,7 @@ const MapContainer = ({
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mapInitializedRef = useRef(false);
   const highPrecisionAttemptedRef = useRef(false);
+  const mapContainerKey = useRef(`map-container-${Date.now()}`); // Unique key to help with re-rendering
   
   // Enhanced map sizing effect
   useEffect(() => {
@@ -122,7 +123,11 @@ const MapContainer = ({
 
   return (
     <>
-      <div className="h-full w-full relative" style={{ minHeight: '300px' }}>
+      <div 
+        className="h-full w-full relative" 
+        style={{ minHeight: '300px' }}
+        key={mapContainerKey.current}
+      >
         <LeafletMap 
           markers={filteredMarkers}
           onMarkerClick={handleThreatClick}

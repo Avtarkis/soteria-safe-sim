@@ -182,6 +182,38 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     };
   }, []);
 
+  // Fix tile layer authentication issue
+  useEffect(() => {
+    if (!mapRef.current || !mapCreated) return;
+
+    // Use OpenStreetMap tiles which don't require authentication
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(mapRef.current);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.removeLayer(tileLayer);
+      }
+    };
+  }, [mapCreated]);
+
+  // Force map redraw when center or zoom changes significantly
+  useEffect(() => {
+    if (!mapRef.current || !mapCreated) return;
+    
+    // Redraw the map when center changes
+    mapRef.current.setView(center, zoom, { animate: true });
+    
+    // Schedule a resize after view change
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize(true);
+      }
+    }, 200);
+  }, [center[0], center[1], zoom, mapCreated]);
+
   return (
     <div 
       ref={mapContainerRef} 

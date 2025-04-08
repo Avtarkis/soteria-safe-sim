@@ -129,3 +129,8 @@ export type SecurityLog = Database['public']['Tables']['security_logs']['Row'];
 export const isUsingFallbackValues = () => {
   return isUsingHardcodedValues;
 };
+
+// Expose the function to the window object for use in HTML scripts
+if (typeof window !== 'undefined') {
+  (window as any).isUsingFallbackValues = isUsingFallbackValues;
+}

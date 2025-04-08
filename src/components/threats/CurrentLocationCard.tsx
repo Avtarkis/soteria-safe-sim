@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
-import { MapPin, Locate, AlertTriangle, Check } from 'lucide-react';
+import { MapPin, Locate, AlertTriangle, Check, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -120,15 +120,50 @@ const CurrentLocationCard = ({
                 className="text-xs"
                 onClick={handleHighPrecisionTracking}
               >
-                <Locate className="h-3 w-3 mr-1" />
+                <Navigation className="h-3 w-3 mr-1" />
                 High Precision
+              </Button>
+            </div>
+            
+            <div className="mt-3 pt-3 border-t border-border">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  // First activate high precision mode
+                  document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+                  
+                  // Then center map on the location
+                  document.dispatchEvent(new CustomEvent('centerMapOnUserLocation'));
+                  
+                  toast({
+                    title: "Map Centered",
+                    description: "Map centered on your exact location",
+                  });
+                }}
+              >
+                <MapPin className="h-3.5 w-3.5 mr-1.5" />
+                Center Map on My Location
               </Button>
             </div>
           </>
         ) : (
-          <div className="flex items-center text-sm text-muted-foreground">
-            <AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
-            Location not available. Please enable location services.
+          <div className="space-y-3">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+              Location not available. Please enable location services.
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleHighPrecisionTracking}
+            >
+              <Locate className="h-3.5 w-3.5 mr-1.5" />
+              Try High Precision Tracking
+            </Button>
           </div>
         )}
       </CardContent>

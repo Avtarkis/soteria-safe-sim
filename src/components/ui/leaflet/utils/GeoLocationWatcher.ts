@@ -10,6 +10,9 @@ interface GeoLocationWatcherOptions {
 export class GeoLocationWatcher {
   private options: GeoLocationWatcherOptions;
   private watchId: number | null = null;
+  private retryAttempts: number = 0;
+  private maxRetries: number = 3;
+  private retryTimeoutId: number | null = null;
 
   constructor(options: GeoLocationWatcherOptions) {
     this.options = options;
@@ -20,6 +23,7 @@ export class GeoLocationWatcher {
    */
   public startHighAccuracyWatch(): void {
     this.stopWatch();
+    this.retryAttempts = 0;
     
     if (!navigator.geolocation) {
       console.error("Geolocation not supported by this browser");
@@ -27,9 +31,15 @@ export class GeoLocationWatcher {
     }
     
     try {
+      // Create a custom event that other components can listen for
+      document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
+      
       this.watchId = navigator.geolocation.watchPosition(
         this.handlePositionUpdate,
-        this.handleError,
+        (error) => {
+          this.handleError(error);
+          this.retryHighAccuracyWithBackoff();
+        },
         { 
           enableHighAccuracy: true, 
           timeout: 15000, 
@@ -40,7 +50,15 @@ export class GeoLocationWatcher {
       // Also get initial position
       navigator.geolocation.getCurrentPosition(
         this.handlePositionUpdate,
-        this.handleError,
+        (error) => {
+          this.handleError(error);
+          // Immediately try again with standard accuracy if high accuracy fails initially
+          navigator.geolocation.getCurrentPosition(
+            this.handlePositionUpdate,
+            this.handleError,
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+          );
+        },
         { 
           enableHighAccuracy: true, 
           timeout: 10000, 
@@ -51,6 +69,44 @@ export class GeoLocationWatcher {
       console.log("Started high-precision geolocation watch");
     } catch (error) {
       console.error("Error starting geolocation watch:", error);
+      this.startStandardWatch(); // Fallback to standard watch
+    }
+  }
+
+  /**
+   * Retry high accuracy watch with exponential backoff
+   */
+  private retryHighAccuracyWithBackoff(): void {
+    if (this.retryAttempts < this.maxRetries) {
+      this.retryAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, this.retryAttempts), 10000);
+      
+      console.log(`Retrying high accuracy location in ${delay}ms (attempt ${this.retryAttempts})`);
+      
+      if (this.retryTimeoutId !== null) {
+        window.clearTimeout(this.retryTimeoutId);
+      }
+      
+      this.retryTimeoutId = window.setTimeout(() => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            this.handlePositionUpdate,
+            (error) => {
+              this.handleError(error);
+              if (this.retryAttempts >= this.maxRetries) {
+                console.log("Max retries reached, falling back to standard accuracy");
+                this.startStandardWatch();
+              } else {
+                this.retryHighAccuracyWithBackoff();
+              }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        }
+      }, delay);
+    } else {
+      // After max retries, fall back to standard accuracy
+      this.startStandardWatch();
     }
   }
 
@@ -66,6 +122,13 @@ export class GeoLocationWatcher {
     }
     
     try {
+      // Try to get a quick initial position
+      navigator.geolocation.getCurrentPosition(
+        this.handlePositionUpdate,
+        this.handleError,
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+      );
+      
       this.watchId = navigator.geolocation.watchPosition(
         this.handlePositionUpdate,
         this.handleError,
@@ -79,6 +142,9 @@ export class GeoLocationWatcher {
       console.log("Started standard geolocation watch");
     } catch (error) {
       console.error("Error starting geolocation watch:", error);
+      // If even standard watch fails, use default location
+      const defaultLocation = this.useDefaultLocation();
+      this.options.onPositionUpdate(defaultLocation);
     }
   }
 
@@ -86,6 +152,12 @@ export class GeoLocationWatcher {
    * Stop watching location
    */
   public stopWatch(): void {
+    // Clear retry timeout if exists
+    if (this.retryTimeoutId !== null) {
+      window.clearTimeout(this.retryTimeoutId);
+      this.retryTimeoutId = null;
+    }
+    
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
@@ -103,6 +175,9 @@ export class GeoLocationWatcher {
       const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
       const accuracy = position.coords.accuracy;
       
+      // Reset retry attempts on successful update
+      this.retryAttempts = 0;
+      
       // Create a synthetic location event
       const locationEvent = {
         latlng,
@@ -114,6 +189,11 @@ export class GeoLocationWatcher {
         )
       } as L.LocationEvent;
       
+      // Dispatch an event that other components can listen for
+      document.dispatchEvent(new CustomEvent('userLocationUpdated', {
+        detail: { lat: position.coords.latitude, lng: position.coords.longitude, accuracy }
+      }));
+      
       this.options.onPositionUpdate(locationEvent);
     } catch (error) {
       console.error("Error processing geolocation update:", error);
@@ -124,6 +204,7 @@ export class GeoLocationWatcher {
    * Handle errors from browser API
    */
   private handleError = (error: GeolocationPositionError): void => {
+    console.error("Geolocation error:", error.message);
     this.options.onError(error);
   };
 
@@ -131,9 +212,29 @@ export class GeoLocationWatcher {
    * Use default location if geolocation fails
    */
   public useDefaultLocation(): L.LocationEvent {
-    // Default to a recognizable location (San Francisco)
-    const defaultLat = 37.7749;
-    const defaultLng = -122.4194;
+    // Try to determine location based on browser language or timezone if available
+    let defaultLat = 37.7749;
+    let defaultLng = -122.4194;
+    
+    try {
+      // Try to guess region from timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      if (timezone.includes('Europe')) {
+        defaultLat = 51.5074; // London
+        defaultLng = -0.1278;
+      } else if (timezone.includes('Asia')) {
+        defaultLat = 35.6762; // Tokyo
+        defaultLng = 139.6503;
+      } else if (timezone.includes('Australia')) {
+        defaultLat = -33.8688; // Sydney
+        defaultLng = 151.2093;
+      }
+      
+      console.log("Using location based on timezone:", timezone, defaultLat, defaultLng);
+    } catch (e) {
+      console.log("Could not determine location from timezone, using fallback");
+    }
     
     console.log("Using default location:", defaultLat, defaultLng);
     

@@ -21,7 +21,7 @@
     <base href="/" />
     
     <!-- Improved error recovery scripts for production -->
-    <script>
+    <script type="text/javascript">
       window.addEventListener('error', function(e) {
         console.error('Global error caught:', e.message);
         // Only show error UI if the body is empty
@@ -52,10 +52,8 @@
       
       // Function to detect Supabase environment variables
       function checkForEnvVars() {
-        if (typeof import !== 'undefined' && import.meta && import.meta.env) {
-          if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-            console.warn('Missing Supabase environment variables. App will use fallbacks.');
-          }
+        if (typeof window.isUsingFallbackValues === 'function' && window.isUsingFallbackValues()) {
+          console.warn('Missing Supabase environment variables. App will use fallbacks.');
         }
       }
       
@@ -154,7 +152,7 @@
       <button onclick="this.parentElement.style.display='none'" style="float:right; background:none; border:none; color:white; cursor:pointer">✕</button>
     </div>
     
-    <script>
+    <script type="text/javascript">
       // Show environment warning if using fallbacks after app loads
       window.addEventListener('load', function() {
         setTimeout(function() {

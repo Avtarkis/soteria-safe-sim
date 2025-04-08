@@ -17,9 +17,11 @@ import NearbyAlertsCard from '@/components/threats/NearbyAlertsCard';
 import DisasterAlertsCard from '@/components/threats/DisasterAlertsCard';
 import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
 import { Button } from '@/components/ui/button';
-import { Crosshair } from 'lucide-react';
+import { Crosshair, Navigation } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const ThreatsMap = () => {
+  const { toast } = useToast();
   // Get user location
   const { userLocation, locationAccuracy, setUserLocation, setLocationAccuracy } = useUserLocation();
   const [isMapInitialized, setIsMapInitialized] = useState(false);
@@ -65,7 +67,17 @@ const ThreatsMap = () => {
   const activateHighPrecisionMode = useCallback(() => {
     // Dispatch high precision activation event
     document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
-  }, []);
+    
+    toast({
+      title: "High Precision Mode",
+      description: "Activating enhanced location precision...",
+    });
+    
+    // If location tracking is not on, turn it on
+    if (!showUserLocation) {
+      toggleUserLocation();
+    }
+  }, [showUserLocation, toggleUserLocation, toast]);
   
   // Memoize the filtered markers to prevent unnecessary recalculations
   const filteredMarkers = useMemo(() => 
@@ -111,9 +123,9 @@ const ThreatsMap = () => {
             <Button 
               onClick={activateHighPrecisionMode}
               variant="secondary" 
-              className="flex items-center gap-2 bg-opacity-90 backdrop-blur-sm"
+              className="flex items-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
             >
-              <Crosshair className="h-4 w-4" />
+              <Navigation className="h-4 w-4" />
               High Precision Tracking
             </Button>
           </div>

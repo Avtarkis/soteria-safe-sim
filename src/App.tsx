@@ -1,53 +1,48 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import Layout from '@/components/Layout';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import AuthScreen from '@/components/AuthScreen';
-import Dashboard from '@/components/Dashboard';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+import HomePage from '@/pages/HomePage';
 import ThreatsMap from '@/components/ThreatsMap';
-import EmergencyResponse from '@/components/EmergencyResponse';
-import CyberSecurity from '@/components/CyberSecurity';
-import Subscription from '@/components/Subscription';
-import FamilyMonitoring from '@/components/family/FamilyMonitoring';
-import NotFound from '@/pages/NotFound';
+import AlertsPage from '@/pages/AlertsPage';
+import EmergencyPage from '@/pages/EmergencyPage';
+import SettingsPage from '@/pages/SettingsPage';
+import TravelPage from '@/pages/TravelPage';
+import ProfilePage from '@/pages/ProfilePage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import { Toaster } from '@/components/ui/toaster';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { isUsingFallbackValues } from '@/lib/supabase';
-import './App.css';
-
-// Make the helper function globally available with proper TypeScript declaration
-declare global {
-  interface Window {
-    isUsingFallbackValues: () => boolean;
-  }
-}
-
-// Assign the function to window object
-window.isUsingFallbackValues = isUsingFallbackValues;
 
 function App() {
+  // Expose isUsingFallbackValues to window
+  useEffect(() => {
+    // Make the function available to the window object for scripts in index.html
+    (window as any).isUsingFallbackValues = isUsingFallbackValues;
+    
+    // Show warning if using fallback values
+    if (isUsingFallbackValues()) {
+      console.warn("Using fallback Supabase credentials. Consider setting proper environment variables.");
+    }
+  }, []);
+
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <AuthProvider>
-        {/* Use basename to ensure proper routing in production */}
-        <Router basename="/">
-          <Routes>
-            <Route path="/auth" element={<AuthScreen />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route element={<Layout />}>
-              <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
-              <Route path="emergency" element={<ProtectedRoute><EmergencyResponse /></ProtectedRoute>} />
-              <Route path="cyber" element={<ProtectedRoute><CyberSecurity /></ProtectedRoute>} />
-              <Route path="subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-              <Route path="family" element={<ProtectedRoute><FamilyMonitoring /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </Router>
+    <ThemeProvider defaultTheme="dark" storageKey="soteria-theme">
+      <Router>
+        <Routes>
+          <Route path="/" element={<DashboardLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="/map" element={<ThreatsMap />} />
+            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/emergency" element={<EmergencyPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/travel" element={<TravelPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+          </Route>
+        </Routes>
         <Toaster />
-      </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 }

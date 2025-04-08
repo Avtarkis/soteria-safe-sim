@@ -34,124 +34,91 @@ export const useMapInitialization = (
         mapRef.current = L.map(mapContainerRef.current, {
           center: center,
           zoom: zoom,
-          minZoom: 3,
-          maxZoom: 19,
           zoomControl: true,
           attributionControl: true,
-          preferCanvas: true // Better performance for markers
+          fadeAnimation: true,
+          zoomAnimation: true,
+          markerZoomAnimation: true,
         });
         
-        // Add the detailed OpenStreetMap tile layer for better street names
+        // Add a tile layer - using OpenStreetMap which doesn't require authentication
         tilesRef.current = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
-          className: 'map-tiles', // Add class for potential CSS targeting
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mapRef.current);
         
-        // Create a layer group for the markers
+        // Create a layer for markers
         markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
         
-        // Add scale control to show distances
-        L.control.scale().addTo(mapRef.current);
+        // Mark the map as created
+        setMapCreated(true);
+        console.log("Map initialized successfully");
         
-        // Add zoom control in a specific position
-        L.control.zoom({
-          position: 'bottomright'
-        }).addTo(mapRef.current);
-        
-        // Setup event listeners
-        mapRef.current.on('load', () => {
-          console.log("Map load event fired");
-          setMapCreated(true);
-        });
-        
-        mapRef.current.on('zoomend', () => {
-          console.log(`Map zoom changed to ${mapRef.current?.getZoom()}`);
-        });
-        
-        // Listen for high precision mode to switch to detailed tiles
-        document.addEventListener('highPrecisionModeActivated', handleHighPrecision);
-        
-        // Ensure the map is properly sized
-        setTimeout(() => {
-          if (mapRef.current) {
-            window.dispatchEvent(new Event('resize'));
-            mapRef.current.invalidateSize(true);
-            
-            // Force another resize after animation frames have completed
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                if (mapRef.current) {
-                  mapRef.current.invalidateSize(true);
-                  setMapCreated(true);
-                  console.log("Map initialized successfully");
-                }
-              }, 100);
-            });
-          }
-        }, 200);
+        // Reset initialization attempts
+        mapInitializationAttempts.current = 0;
       } catch (error) {
         console.error("Error initializing map:", error);
-        mapInitializationAttempts.current += 1;
         
-        // Try again if we haven't tried too many times already
+        // Track failed attempts
+        mapInitializationAttempts.current++;
+        
+        // If we've tried too many times, stop trying
         if (mapInitializationAttempts.current < 3) {
           console.log(`Retrying map initialization (attempt ${mapInitializationAttempts.current + 1})...`);
           setTimeout(initializeMap, 1000);
+        } else {
+          console.error("Failed to initialize map after multiple attempts");
         }
       }
     };
-    
-    // Function to switch to high-precision tiles
-    const handleHighPrecision = () => {
-      console.log("High precision mode activated for map tiles");
-      try {
-        if (mapRef.current && tilesRef.current) {
-          // For high precision, use a more detailed tile layer
-          mapRef.current.removeLayer(tilesRef.current);
-          
-          // Use Stadia Maps for more detailed street views
-          tilesRef.current = L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 20,
-            className: 'map-tiles-high-precision',
-          }).addTo(mapRef.current);
-          
-          // Ensure map is correctly sized after tile change
-          setTimeout(() => {
-            if (mapRef.current) {
-              mapRef.current.invalidateSize(true);
-            }
-          }, 100);
-        }
-      } catch (error) {
-        console.error("Error switching to high-precision tiles:", error);
-      }
-    };
-    
+
     // Initialize the map
     initializeMap();
-    
-    // Update map view if center or zoom changes
-    if (mapRef.current && mapCreated) {
-      mapRef.current.setView(center, zoom);
-    }
 
+    // Cleanup function
     return () => {
-      // Remove event listeners
-      document.removeEventListener('highPrecisionModeActivated', handleHighPrecision);
-      
       if (mapRef.current) {
         try {
-          mapRef.current.stopLocate(); // Stop watching location
-          mapRef.current.remove(); // Remove map instance
+          console.log("Cleaning up map instance");
+          
+          // First remove layers
+          if (markersLayerRef.current) {
+            markersLayerRef.current.clearLayers();
+            mapRef.current.removeLayer(markersLayerRef.current);
+          }
+          
+          if (tilesRef.current) {
+            mapRef.current.removeLayer(tilesRef.current);
+          }
+          
+          // Then remove the map
+          mapRef.current.remove();
           mapRef.current = null;
+          markersLayerRef.current = null;
+          tilesRef.current = null;
+          
+          setMapCreated(false);
         } catch (error) {
           console.error("Error cleaning up map:", error);
         }
       }
     };
-  }, [center, zoom, mapContainerRef]);
+  }, [mapContainerRef, center, zoom]);
+
+  // Properly handle window resize for responsive maps
+  useEffect(() => {
+    const handleWindowResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, []);
 
   return {
     mapRef,
