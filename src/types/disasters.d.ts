@@ -1,15 +1,21 @@
 
+// Disaster Alerts Types
+export type DisasterAlertType = 'earthquake' | 'flood' | 'fire' | 'hurricane' | 'tornado' | 'other';
+export type DisasterAlertSeverity = 'low' | 'medium' | 'high';
+
 export interface DisasterAlert {
   id: string;
   title: string;
-  type: 'earthquake' | 'flood' | 'fire' | 'hurricane' | 'tornado' | 'other';
-  severity: 'low' | 'medium' | 'high';
+  type: DisasterAlertType;
+  severity: DisasterAlertSeverity;
   location: string;
   coordinates?: [number, number];
   description: string;
   date: string;
   source: string;
   active: boolean;
+  country?: string;
+  region?: string;
 }
 
 export interface WeatherAlert {
@@ -23,4 +29,12 @@ export interface WeatherAlert {
   source: string;
   expires?: string;
   active: boolean;
+}
+
+export interface EmergencyService {
+  id: string;
+  name: string;
+  type: 'police' | 'fire' | 'medical' | 'general';
+  phoneNumber: string;
+  response_time?: number;
 }

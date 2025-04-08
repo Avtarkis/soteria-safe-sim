@@ -92,6 +92,9 @@ const ThreatsMap = () => {
 
   // Update destination object for proper formatting
   const formattedDestination = useMemo(() => {
+    if (!destination) {
+      return { name: 'Current Location', coordinates: [0, 0] as [number, number] };
+    }
     if (typeof destination === 'string') {
       return {
         name: destination,

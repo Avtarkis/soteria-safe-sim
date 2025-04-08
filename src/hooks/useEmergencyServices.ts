@@ -1,89 +1,71 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { EmergencyService } from '@/types/emergency.d';
-
-interface EmergencyNumbers {
-  country: string;
-  ambulance: string;
-  police: string;
-  fire: string;
-  general: string;
-}
+import { EmergencyService } from '@/types/disasters.d';
 
 export const useEmergencyServices = (userLocation: [number, number] | null) => {
-  const [emergencyNumbers, setEmergencyNumbers] = useState<EmergencyNumbers>({
-    country: 'United States',
-    ambulance: '911',
-    police: '911',
-    fire: '911',
-    general: '911'
-  });
-  
-  const [emergencyServices, setEmergencyServices] = useState<EmergencyService[]>([]);
+  const [emergencyNumbers, setEmergencyNumbers] = useState<EmergencyService[]>([]);
   
   const loadEmergencyServices = useCallback(async (forceRefresh = false) => {
     try {
-      // For demo purposes, we'll generate some sample emergency services
-      // In a real application, this would fetch from an API
+      // For demo purposes, we'll return some sample emergency services
+      // In a real application, this would fetch from an API based on location
       const sampleServices: EmergencyService[] = [
         {
+          id: '1',
           name: 'Emergency Services',
           type: 'general',
           phoneNumber: '911',
           response_time: 5
         },
         {
-          name: 'Local Police Department',
+          id: '2',
+          name: 'Police Department',
           type: 'police',
-          phoneNumber: '555-1234',
-          response_time: 8
+          phoneNumber: '911',
+          response_time: 7
         },
         {
+          id: '3',
           name: 'Fire Department',
           type: 'fire',
-          phoneNumber: '555-4321',
+          phoneNumber: '911',
           response_time: 6
         },
         {
+          id: '4',
           name: 'Medical Emergency',
           type: 'medical',
-          phoneNumber: '555-9876',
-          response_time: 10
+          phoneNumber: '911',
+          response_time: 8
         }
       ];
       
-      // Update emergency numbers based on location
-      // For demo, we'll use US numbers
-      const numbersData = {
-        country: 'United States',
-        ambulance: '911',
-        police: '911',
-        fire: '911',
-        general: '911'
-      };
-      
-      // If we had location data, we could customize the numbers
+      // Modify emergency services based on user location
       if (userLocation) {
-        // This would normally use a geocoding API to determine the country
-        // and then get the appropriate emergency numbers
+        // This would normally use reverse geocoding to determine country
+        // For demo, we'll just check rough coordinates
         
-        // Example logic for demonstration:
-        if (userLocation[0] > 49 && userLocation[0] < 60 && userLocation[1] > -130 && userLocation[1] < -110) {
-          // Canada
-          numbersData.country = 'Canada';
-        } else if (userLocation[0] > 35 && userLocation[0] < 58 && userLocation[1] > -10 && userLocation[1] < 40) {
-          // Europe
-          numbersData.country = 'Europe';
-          numbersData.ambulance = '112';
-          numbersData.police = '112';
-          numbersData.fire = '112';
-          numbersData.general = '112';
+        // UK
+        if (userLocation[0] > 50 && userLocation[0] < 60 && userLocation[1] > -5 && userLocation[1] < 5) {
+          sampleServices.forEach(service => {
+            service.phoneNumber = '999';
+          });
+        }
+        // Australia
+        else if (userLocation[0] < -20 && userLocation[0] > -40 && userLocation[1] > 110 && userLocation[1] < 160) {
+          sampleServices.forEach(service => {
+            service.phoneNumber = '000';
+          });
+        }
+        // Europe
+        else if (userLocation[0] > 40 && userLocation[0] < 60 && userLocation[1] > 0 && userLocation[1] < 30) {
+          sampleServices.forEach(service => {
+            service.phoneNumber = '112';
+          });
         }
       }
       
-      setEmergencyServices(sampleServices);
-      setEmergencyNumbers(numbersData);
-      
+      setEmergencyNumbers(sampleServices);
       return sampleServices;
     } catch (error) {
       console.error('Error loading emergency services:', error);
@@ -96,7 +78,6 @@ export const useEmergencyServices = (userLocation: [number, number] | null) => {
   }, [loadEmergencyServices]);
   
   return {
-    emergencyServices,
     emergencyNumbers,
     loadEmergencyServices
   };

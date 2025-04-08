@@ -61,7 +61,7 @@ const MapActionButtons = ({
     // Show notification
     toast({
       title: "High Precision Activated",
-      description: "Attempting to get your precise location... where every second counts.",
+      description: "Attempting to get your precise location... every second counts.",
     });
   }, [showUserLocation, toggleUserLocation, toast]);
   
@@ -93,16 +93,6 @@ const MapActionButtons = ({
       >
         <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-white")} />
         <span>{showUserLocation ? "Tracking On" : "Track My Location"}</span>
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="shadow-sm bg-primary/80 text-white backdrop-blur-sm hover:bg-primary"
-        onClick={handleActivateHighPrecision}
-      >
-        <Navigation className="h-4 w-4 mr-1 animate-pulse" />
-        <span>High Precision Tracking</span>
       </Button>
       
       <Button 
