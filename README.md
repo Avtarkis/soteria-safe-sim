@@ -1,69 +1,32 @@
-# Welcome to your Lovable project
 
-## Project info
+# Soteria Safety Platform
 
-**URL**: https://lovable.dev/projects/3b89fbb7-2fdc-40cb-9cf6-31803e169841
+## Important: Environment Variables Setup
 
-## How can I edit this code?
+For the app to work correctly in both development and production, you need to set the following environment variables:
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3b89fbb7-2fdc-40cb-9cf6-31803e169841) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+VITE_SUPABASE_URL = your-supabase-project-url
+VITE_SUPABASE_ANON_KEY = your-supabase-anon-key
 ```
 
-**Edit a file directly in GitHub**
+### Setting Environment Variables in Lovable
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. In the Lovable editor, click on the gear icon (⚙️) in the top right to open Project Settings
+2. Navigate to the "Environment Variables" tab
+3. Add both variables with your Supabase project values
+4. Save your changes
+5. Redeploy your application for the changes to take effect
 
-**Use GitHub Codespaces**
+If you don't have a Supabase project yet, you can create one at [https://supabase.com](https://supabase.com) or use Lovable's built-in Supabase integration.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Troubleshooting
 
-## What technologies are used for this project?
+If you're still experiencing a blank screen or navigation issues after setting environment variables:
 
-This project is built with .
+1. Clear your browser cache or try in an incognito window
+2. Check the browser console for any errors
+3. Verify that your Supabase project is active and the API keys are correct
+4. Try rebuilding and redeploying the application
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/3b89fbb7-2fdc-40cb-9cf6-31803e169841) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+The app includes fallback values for development, but these won't work optimally in production.

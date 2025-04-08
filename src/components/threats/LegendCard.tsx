@@ -8,7 +8,9 @@ interface LegendCardProps {
 }
 
 const LegendCard = ({ showLegend }: LegendCardProps) => {
-  if (!showLegend) return null;
+  // Always display the legend unless explicitly set to false
+  // This ensures it appears on the map by default
+  if (showLegend === false) return null;
   
   return (
     <Card className={cn(
