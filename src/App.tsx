@@ -1,15 +1,10 @@
 
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import HomePage from '@/pages/HomePage';
+import Layout from '@/components/Layout';
+import Index from '@/pages/Index';
 import ThreatsMap from '@/components/ThreatsMap';
-import AlertsPage from '@/pages/AlertsPage';
-import EmergencyPage from '@/pages/EmergencyPage';
-import SettingsPage from '@/pages/SettingsPage';
-import TravelPage from '@/pages/TravelPage';
-import ProfilePage from '@/pages/ProfilePage';
-import NotificationsPage from '@/pages/NotificationsPage';
+import NotFound from '@/pages/NotFound';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { isUsingFallbackValues } from '@/lib/supabase';
@@ -30,15 +25,10 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="soteria-theme">
       <Router>
         <Routes>
-          <Route path="/" element={<DashboardLayout />}>
-            <Route index element={<HomePage />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Index />} />
             <Route path="/map" element={<ThreatsMap />} />
-            <Route path="/alerts" element={<AlertsPage />} />
-            <Route path="/emergency" element={<EmergencyPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/travel" element={<TravelPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
         <Toaster />
