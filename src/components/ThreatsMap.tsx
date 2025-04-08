@@ -17,7 +17,7 @@ import NearbyAlertsCard from '@/components/threats/NearbyAlertsCard';
 import DisasterAlertsCard from '@/components/threats/DisasterAlertsCard';
 import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
 import { Button } from '@/components/ui/button';
-import { Crosshair, Navigation } from 'lucide-react';
+import { Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ThreatsMap = () => {
@@ -128,16 +128,14 @@ const ThreatsMap = () => {
               toggleUserLocation={toggleUserLocation}
             />
             
-            <div className="mb-2">
-              <Button 
-                onClick={activateHighPrecisionMode}
-                variant="secondary" 
-                className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
-              >
-                <Navigation className="h-4 w-4" />
-                High Precision Tracking
-              </Button>
-            </div>
+            <Button 
+              onClick={activateHighPrecisionMode}
+              variant="secondary" 
+              className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
+            >
+              <Navigation className="h-4 w-4" />
+              <span>High Precision Tracking</span>
+            </Button>
             
             <RiskAssessmentCard />
             

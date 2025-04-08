@@ -20,6 +20,12 @@ export const useMapInitialization = (
     try {
       console.log('Initializing map with center:', center, 'zoom:', zoom);
       
+      // Try clearing any existing map instance first
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      
       // Create map with faster rendering options
       const map = L.map(mapContainerRef.current, {
         center,
@@ -48,7 +54,7 @@ export const useMapInitialization = (
       const markersLayer = L.layerGroup().addTo(map);
 
       // Use OpenStreetMap tiles which don't require authentication
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
         // Add performance optimizations
@@ -61,12 +67,37 @@ export const useMapInitialization = (
       markersLayerRef.current = markersLayer;
       mapCreated.current = true;
       
-      // Force a resize after creation
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize(true);
-        }
-      }, 100);
+      // Force multiple resizes after creation to ensure proper rendering
+      const resizeTimes = [100, 500, 1000, 2000];
+      resizeTimes.forEach(time => {
+        setTimeout(() => {
+          if (mapRef.current) {
+            console.log(`Forcing map resize after ${time}ms`);
+            mapRef.current.invalidateSize(true);
+            
+            // Also re-add the tile layer if needed
+            if (time > 1000) {
+              map.eachLayer((layer) => {
+                if ((layer as any)._url && (layer as any)._url.includes('openstreetmap')) {
+                  const currentZoom = map.getZoom();
+                  const currentCenter = map.getCenter();
+                  map.removeLayer(layer);
+                  
+                  // Re-add the tile layer
+                  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                    maxZoom: 19,
+                    updateWhenIdle: true,
+                  }).addTo(map);
+                  
+                  // Ensure view is maintained
+                  map.setView(currentCenter, currentZoom);
+                }
+              });
+            }
+          }
+        }, time);
+      });
       
       // Listen for center event
       document.addEventListener('centerMapOnUserLocation', ((e: CustomEvent) => {
@@ -75,17 +106,39 @@ export const useMapInitialization = (
           mapRef.current.setView([lat, lng], 16, { animate: true });
         }
       }) as EventListener);
+      
+      // Listen for window resize events to re-invalidate the map size
+      const handleWindowResize = () => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize(true);
+        }
+      };
+      window.addEventListener('resize', handleWindowResize);
 
       return () => {
+        window.removeEventListener('resize', handleWindowResize);
         if (mapRef.current) {
           mapRef.current.remove();
           mapRef.current = null;
+          mapCreated.current = false;
         }
         
         document.removeEventListener('centerMapOnUserLocation', ((e: CustomEvent) => {}) as EventListener);
       };
     } catch (error) {
       console.error('Error initializing map:', error);
+      
+      // Try to reinitialize after a short delay if there was an error
+      setTimeout(() => {
+        if (!mapCreated.current && mapContainerRef.current) {
+          console.log('Attempting to reinitialize map after error');
+          mapCreated.current = false; // Ensure flag is reset
+          
+          // The useEffect will run again on the next render
+          // Force a re-render by dispatching a custom event
+          document.dispatchEvent(new CustomEvent('mapInitError'));
+        }
+      }, 2000);
     }
   }, [mapContainerRef, center, zoom]);
 
