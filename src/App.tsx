@@ -16,14 +16,8 @@ import NotFound from '@/pages/NotFound';
 import { isUsingFallbackValues } from '@/lib/supabase';
 import './App.css';
 
-// Properly declare the global window property
-declare global {
-  interface Window {
-    isUsingFallbackValues: () => boolean;
-  }
-}
-
-// Make the supabase helper function available to the global scope for error handling
+// Make the supabase helper function available for error handling
+// Note: We're now setting this without using the global Window interface
 window.isUsingFallbackValues = isUsingFallbackValues;
 
 function App() {

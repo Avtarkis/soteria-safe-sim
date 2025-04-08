@@ -1,14 +1,17 @@
+
 import { createClient } from '@supabase/supabase-js';
 
-// Try to get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://momujszivwegjajwzngy.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbXVqc3ppdndlZ2phand6bmd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMTgyMTcsImV4cCI6MjA1OTY5NDIxN30.u12Ut80z2iNxmyTH2_m96lroygpARxv9s3AKjDfBLMQ';
+// Use hardcoded values directly defined in vite.config.ts
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Check if we're missing environment variables but we have hardcoded fallbacks
-const isUsingHardcodedValues = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Check if we're missing environment variables
+const isUsingHardcodedValues = !supabaseUrl || !supabaseAnonKey;
 
 if (isUsingHardcodedValues) {
-  console.warn('Using hardcoded Supabase credentials. For production, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Lovable environment variables.');
+  console.warn('Using hardcoded Supabase credentials.');
+} else {
+  console.log('Using environment variable Supabase credentials.');
 }
 
 // Define types for our database
