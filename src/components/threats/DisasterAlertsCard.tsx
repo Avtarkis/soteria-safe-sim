@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface DisasterAlertsCardProps {
   disasterAlerts: any[];
@@ -23,12 +23,15 @@ const DisasterAlertsCard = ({ disasterAlerts }: DisasterAlertsCardProps) => {
           {disasterAlerts.slice(0, 3).map((alert, index) => (
             <div key={`disaster-${index}`} className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/30">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <AlertCircle className="h-4 w-4 text-orange-500" />
               </div>
               <div>
                 <p className="text-sm font-medium">{alert.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {alert.country} • {alert.type}
+                  {alert.location} • {alert.region}, {alert.country}
+                </p>
+                <p className="text-xs mt-1 text-orange-600">
+                  Where every second counts - stay alert and be prepared.
                 </p>
               </div>
             </div>

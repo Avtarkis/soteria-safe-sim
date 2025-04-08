@@ -1,15 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SignIn from '@/components/SignIn';
 import SignUp from '@/components/SignUp';
 import ForgotPassword from '@/components/ForgotPassword';
 
 const Index = () => {
   const [activeForm, setActiveForm] = useState<'signIn' | 'signUp' | 'forgotPassword'>('signIn');
+  const [formLoaded, setFormLoaded] = useState(false);
+
+  // Ensure form stays visible after loading
+  useEffect(() => {
+    setFormLoaded(true);
+  }, []);
 
   const toggleSignUp = () => setActiveForm('signUp');
   const toggleSignIn = () => setActiveForm('signIn');
   const toggleForgotPassword = () => setActiveForm('forgotPassword');
+
+  if (!formLoaded) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

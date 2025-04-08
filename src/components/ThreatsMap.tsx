@@ -90,9 +90,20 @@ const ThreatsMap = () => {
     }
   }, [loading, isMapInitialized]);
 
+  // Update destination object for proper formatting
+  const formattedDestination = useMemo(() => {
+    if (typeof destination === 'string') {
+      return {
+        name: destination,
+        coordinates: [0, 0] as [number, number] // Default coordinates if string
+      };
+    }
+    return destination;
+  }, [destination]);
+
   return (
     <div className="container pb-10 animate-fade-in">
-      <ThreatsMapHeader destination={destination} />
+      <ThreatsMapHeader destination={formattedDestination} />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 relative">
@@ -125,8 +136,6 @@ const ThreatsMap = () => {
               showUserLocation={showUserLocation}
               toggleUserLocation={toggleUserLocation}
             />
-            
-            {/* Removed duplicate High Precision Tracking button */}
             
             <RiskAssessmentCard />
             

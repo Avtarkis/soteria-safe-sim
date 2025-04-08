@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
-import { Phone, AlertTriangle, Ambulance } from 'lucide-react';
+import { Phone, AlertTriangle, Ambulance, ShieldAlert } from 'lucide-react';
 
 interface EmergencyNumbersCardProps {
-  emergencyNumbers: any | null;
+  emergencyNumbers: any;
 }
 
 const EmergencyNumbersCard = ({ emergencyNumbers }: EmergencyNumbersCardProps) => {
@@ -21,7 +21,8 @@ const EmergencyNumbersCard = ({ emergencyNumbers }: EmergencyNumbersCardProps) =
       </CardHeader>
       <CardContent>
         <p className="text-sm font-medium mb-3">
-          {emergencyNumbers.country} Emergency Numbers:
+          {emergencyNumbers.country} Emergency Numbers
+          <span className="text-xs block text-muted-foreground mt-1">Where every second counts</span>
         </p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between items-center pb-2 border-b border-muted">
@@ -44,7 +45,7 @@ const EmergencyNumbersCard = ({ emergencyNumbers }: EmergencyNumbersCardProps) =
           </div>
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-1.5">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <ShieldAlert className="h-4 w-4 text-red-500" />
               Fire
             </span>
             <Button variant="destructive" size="sm" className="h-7 px-2">

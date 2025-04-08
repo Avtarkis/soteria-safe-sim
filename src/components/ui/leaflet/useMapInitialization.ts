@@ -13,18 +13,26 @@ export const useMapInitialization = (
   const mapRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const mapCreated = useRef(false);
+  const initAttempted = useRef(false);
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapCreated.current) return;
+    if (!mapContainerRef.current || mapCreated.current || initAttempted.current) return;
+    
+    // Mark that we've attempted initialization to prevent multiple attempts
+    initAttempted.current = true;
 
     try {
       console.log('Initializing map with center:', center, 'zoom:', zoom);
       
       // Important: Wait for the DOM to be fully ready
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         // Try clearing any existing map instance first
         if (mapRef.current) {
-          mapRef.current.remove();
+          try {
+            mapRef.current.remove();
+          } catch (e) {
+            console.error("Error removing existing map:", e);
+          }
           mapRef.current = null;
         }
         
@@ -37,17 +45,19 @@ export const useMapInitialization = (
         // Ensure the container has dimensions
         mapContainerRef.current.style.height = mapContainerRef.current.style.height || '400px';
         
-        // Create map with faster rendering options
+        // Create map with faster rendering options and limit update frequency
         const map = L.map(mapContainerRef.current, {
           center,
           zoom,
           zoomControl: false,
           attributionControl: false,
-          preferCanvas: true, // Use canvas renderer for better performance
-          renderer: L.canvas({ padding: 0.5 }), // More efficient rendering
-          fadeAnimation: false, // Disable animations for faster loading
-          markerZoomAnimation: true,
-          inertia: false, // Disable inertia for faster response
+          preferCanvas: true,
+          renderer: L.canvas({ padding: 0.5 }),
+          fadeAnimation: false,
+          markerZoomAnimation: false,
+          zoomAnimation: false,
+          inertia: false,
+          maxBoundsViscosity: 1.0
         });
 
         // Add attribution in a more compact form
@@ -71,6 +81,7 @@ export const useMapInitialization = (
           // Add performance optimizations
           updateWhenZooming: false,
           updateWhenIdle: true,
+          noWrap: true
         });
         
         // Add the tile layer immediately - this helps with visibility
@@ -85,46 +96,66 @@ export const useMapInitialization = (
         markersLayerRef.current = markersLayer;
         mapCreated.current = true;
         
-        // Force multiple resizes after creation for reliability
-        const resizeTimes = [100, 300, 500, 1000, 2000];
-        resizeTimes.forEach(time => {
-          setTimeout(() => {
-            if (mapRef.current) {
-              console.log(`Forcing map resize after ${time}ms`);
-              window.dispatchEvent(new Event('resize'));
-              mapRef.current.invalidateSize(true);
-            }
-          }, time);
-        });
+        // Force only ONE resize after creation
+        setTimeout(() => {
+          if (mapRef.current) {
+            window.dispatchEvent(new Event('resize'));
+            mapRef.current.invalidateSize(true);
+          }
+        }, 500);
         
-        // Listen for center event
-        document.addEventListener('centerMapOnUserLocation', ((e: CustomEvent) => {
-          if (mapRef.current && e.detail) {
-            const { lat, lng } = e.detail;
-            mapRef.current.setView([lat, lng], 16, { animate: true });
+        // Disable frequent refresh
+        map.off('moveend');
+        
+        // Disable automatic zooming to prevent erratic behavior
+        map.options.trackResize = false;
+        
+        // Limit the frequency of location updates
+        let lastLocationUpdate = 0;
+        document.addEventListener('userLocationUpdated', ((e: CustomEvent) => {
+          const now = Date.now();
+          // Only process location updates every 3 seconds
+          if (now - lastLocationUpdate > 3000) {
+            lastLocationUpdate = now;
+            if (mapRef.current && e.detail) {
+              console.log("Processing location update");
+            }
           }
         }) as EventListener);
-      }, 100); // Short delay to ensure DOM is ready
+        
+        // Handle center event with rate limiting
+        let lastCenterEvent = 0;
+        document.addEventListener('centerMapOnUserLocation', ((e: CustomEvent) => {
+          const now = Date.now();
+          if (now - lastCenterEvent > 2000) {
+            lastCenterEvent = now;
+            if (mapRef.current && e.detail) {
+              const { lat, lng } = e.detail;
+              mapRef.current.setView([lat, lng], 16, { animate: false });
+            }
+          }
+        }) as EventListener);
+      }, 300);
 
       return () => {
+        clearTimeout(timer);
         if (mapRef.current) {
-          mapRef.current.remove();
+          try {
+            mapRef.current.remove();
+          } catch (e) {
+            console.error("Error removing map on cleanup:", e);
+          }
           mapRef.current = null;
           mapCreated.current = false;
+          initAttempted.current = false;
         }
         
         document.removeEventListener('centerMapOnUserLocation', ((e: CustomEvent) => {}) as EventListener);
+        document.removeEventListener('userLocationUpdated', ((e: CustomEvent) => {}) as EventListener);
       };
     } catch (error) {
       console.error('Error initializing map:', error);
-      
-      // Try to reinitialize after a short delay if there was an error
-      setTimeout(() => {
-        if (!mapCreated.current && mapContainerRef.current) {
-          console.log('Attempting to reinitialize map after error');
-          mapCreated.current = false; // Ensure flag is reset
-        }
-      }, 2000);
+      initAttempted.current = false;
     }
   }, [mapContainerRef, center, zoom]);
 

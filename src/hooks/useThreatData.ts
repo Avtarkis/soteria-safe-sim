@@ -29,7 +29,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
       
       toast({
         title: "Data Refreshed",
-        description: "Threat data has been updated with the latest information."
+        description: "Where every second counts - threat data has been updated with the latest information."
       });
     } catch (error) {
       console.error("Error refreshing data:", error);
