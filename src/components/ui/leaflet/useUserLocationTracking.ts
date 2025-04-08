@@ -11,7 +11,6 @@ import { GeoLocationWatcher } from './utils/GeoLocationWatcher';
 export const useUserLocationTracking = (
   map: L.Map | null,
   showUserLocation: boolean,
-  setUserLocation?: (location: [number, number]) => void,
   threatMarkers: any[] = []
 ) => {
   // References for tracking map objects and state
@@ -31,6 +30,37 @@ export const useUserLocationTracking = (
   // Create location handler instance
   const locationHandlerRef = useRef<LocationHandler | null>(null);
   
+  // Function to safely remove a map layer
+  const safelyRemoveLayer = useCallback((layer: L.Layer | null) => {
+    if (layer && map) {
+      try {
+        // Check if the layer is still on the map
+        if (map.hasLayer(layer)) {
+          map.removeLayer(layer);
+        }
+      } catch (error) {
+        console.error("Error removing layer:", error);
+      }
+    }
+    return null;
+  }, [map]);
+  
+  // Function to safely clean up all location layers
+  const cleanupLocationLayers = useCallback(() => {
+    if (!map) return;
+    
+    try {
+      userLocationMarkerRef.current = safelyRemoveLayer(userLocationMarkerRef.current);
+      userLocationCircleRef.current = safelyRemoveLayer(userLocationCircleRef.current);
+      streetLabelRef.current = safelyRemoveLayer(streetLabelRef.current);
+      
+      // Additional cleanup for street labels
+      cleanupStreetLabels();
+    } catch (error) {
+      console.error("Error in location layers cleanup:", error);
+    }
+  }, [map, safelyRemoveLayer]);
+  
   // Initialize location handler if not already done
   useEffect(() => {
     if (map && !locationHandlerRef.current) {
@@ -45,12 +75,17 @@ export const useUserLocationTracking = (
         safetyLevelRef,
         locationTrackingInitializedRef,
         threatMarkers,
-        setUserLocation,
+        setUserLocation: undefined,
         errorCountRef,
         lastEventTimeRef
       });
     }
-  }, [map, threatMarkers, setUserLocation]);
+    
+    return () => {
+      // Clean up location layers when component unmounts
+      cleanupLocationLayers();
+    };
+  }, [map, threatMarkers, cleanupLocationLayers]);
   
   // Create geolocation watcher
   const geoLocationWatcherRef = useRef<GeoLocationWatcher | null>(null);
@@ -67,6 +102,13 @@ export const useUserLocationTracking = (
         }
       });
     }
+    
+    return () => {
+      if (geoLocationWatcherRef.current) {
+        geoLocationWatcherRef.current.stopWatch();
+        geoLocationWatcherRef.current = null;
+      }
+    };
   }, [map]);
 
   /**
@@ -79,7 +121,12 @@ export const useUserLocationTracking = (
       // Update map if we have a current user location
       if (userLocationLatLngRef.current && map && locationHandlerRef.current) {
         const { centerMapOnUserLocation } = locationHandlerRef.current;
-        centerMapOnUserLocation();
+        // Safely call with try/catch
+        try {
+          centerMapOnUserLocation();
+        } catch (error) {
+          console.error("Error centering map on high precision mode:", error);
+        }
       }
     };
     
@@ -99,9 +146,22 @@ export const useUserLocationTracking = (
     const locationHandler = locationHandlerRef.current;
     const geoLocationWatcher = geoLocationWatcherRef.current;
     
-    // Set up event listeners
-    const handleFound = locationHandler.handleLocationFound;
-    const handleError = (e: L.ErrorEvent) => locationHandler.handleLocationError(e, watchIdRef);
+    // Set up event listeners with safe error handling
+    const handleFound = (e: L.LocationEvent) => {
+      try {
+        locationHandler.handleLocationFound(e);
+      } catch (error) {
+        console.error("Error handling location found:", error);
+      }
+    };
+    
+    const handleError = (e: L.ErrorEvent) => {
+      try {
+        locationHandler.handleLocationError(e, watchIdRef);
+      } catch (error) {
+        console.error("Error handling location error:", error);
+      }
+    };
     
     map.on('locationfound', handleFound);
     map.on('locationerror', handleError);
@@ -112,6 +172,9 @@ export const useUserLocationTracking = (
       
       highPrecisionModeRef.current = true;
       
+      // Clean up any existing state first
+      cleanupLocationLayers();
+      
       // Clear any existing tracking
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
@@ -119,18 +182,26 @@ export const useUserLocationTracking = (
       }
       
       if (map.stopLocate) {
-        map.stopLocate();
+        try {
+          map.stopLocate();
+        } catch (error) {
+          console.error("Error stopping locate:", error);
+        }
       }
       
       // Start map's built-in location tracking
-      map.locate({ 
-        setView: false,
-        maxZoom: 19, 
-        watch: true,
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      });
+      try {
+        map.locate({ 
+          setView: false,
+          maxZoom: 19, 
+          watch: true,
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      } catch (error) {
+        console.error("Error starting locate:", error);
+      }
       
       // Start browser geolocation tracking as fallback
       geoLocationWatcher.startHighAccuracyWatch();
@@ -142,34 +213,16 @@ export const useUserLocationTracking = (
     else if (!showUserLocation && isTracking) {
       console.log("Stopping location tracking");
       
-      // Remove markers
-      if (userLocationMarkerRef.current) {
-        try {
-          map.removeLayer(userLocationMarkerRef.current);
-          userLocationMarkerRef.current = null;
-        } catch (error) {
-          console.error("Error removing marker on toggle off:", error);
-        }
-      }
-      if (userLocationCircleRef.current) {
-        try {
-          map.removeLayer(userLocationCircleRef.current);
-          userLocationCircleRef.current = null;
-        } catch (error) {
-          console.error("Error removing circle on toggle off:", error);
-        }
-      }
-      if (streetLabelRef.current) {
-        try {
-          map.removeLayer(streetLabelRef.current);
-          streetLabelRef.current = null;
-        } catch (error) {
-          console.error("Error removing street label on toggle off:", error);
-        }
-      }
+      // Clean up all location markers
+      cleanupLocationLayers();
       
       // Stop location tracking
-      map.stopLocate();
+      try {
+        map.stopLocate();
+      } catch (error) {
+        console.error("Error stopping locate:", error);
+      }
+      
       geoLocationWatcher.stopWatch();
       
       if (watchIdRef.current !== null) {
@@ -196,13 +249,13 @@ export const useUserLocationTracking = (
             geoLocationWatcher.stopWatch();
           }
           
-          cleanupStreetLabels();
+          cleanupLocationLayers();
         } catch (error) {
           console.error("Error cleaning up location tracking:", error);
         }
       }
     };
-  }, [map, showUserLocation, isTracking, setUserLocation]);
+  }, [map, showUserLocation, isTracking, cleanupLocationLayers]);
 
   /**
    * Effect to handle "center map on user" requests
@@ -210,7 +263,11 @@ export const useUserLocationTracking = (
   useEffect(() => {
     const handleCenterMap = () => {
       if (locationHandlerRef.current) {
-        locationHandlerRef.current.centerMapOnUserLocation();
+        try {
+          locationHandlerRef.current.centerMapOnUserLocation();
+        } catch (error) {
+          console.error("Error centering map on user location:", error);
+        }
       }
     };
 
@@ -229,7 +286,10 @@ export const useUserLocationTracking = (
       return null;
     },
     locationAccuracy: userLocationAccuracyRef.current,
-    safetyLevel: safetyLevelRef.current
+    safetyLevel: safetyLevelRef.current,
+    userLocation: userLocationLatLngRef.current 
+      ? [userLocationLatLngRef.current.lat, userLocationLatLngRef.current.lng] as [number, number]
+      : null
   };
 };
 

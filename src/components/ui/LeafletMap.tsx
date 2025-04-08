@@ -97,8 +97,8 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     // Add a small delay to ensure map is fully initialized
     const timer = setTimeout(() => {
       try {
-        // Check if map container is valid
-        if (map && map.getContainer() && map._loaded) {
+        // Check if map container is valid using container size instead of _loaded
+        if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
           map.setView(center, zoom, { animate: false });
         }
       } catch (error) {

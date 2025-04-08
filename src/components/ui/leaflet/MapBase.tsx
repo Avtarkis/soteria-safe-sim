@@ -72,8 +72,8 @@ const MapBase = ({
       setTimeout(() => {
         if (mapRef.current) {
           try {
-            // Check if the container is properly loaded
-            if (map.getContainer() && map._loaded) {
+            // Check if the container is properly loaded - use container size check instead of _loaded
+            if (map.getContainer() && map.getContainer().clientHeight > 0) {
               window.dispatchEvent(new Event('resize'));
               map.invalidateSize(true);
               

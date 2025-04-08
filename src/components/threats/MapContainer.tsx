@@ -34,7 +34,7 @@ const MapContainer = ({
   useEffect(() => {
     // Safe resize function
     const resizeMap = () => {
-      if (mapRef.current && mapRef.current.getContainer && mapRef.current._loaded) {
+      if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
         try {
           console.log('Resizing map to ensure proper display');
           window.dispatchEvent(new Event('resize'));
@@ -74,7 +74,7 @@ const MapContainer = ({
       highPrecisionAttemptedRef.current = true;
       
       // Force map update and resize safely
-      if (mapRef.current && mapRef.current._loaded) {
+      if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
         // Clear any existing timeout
         if (resizeTimeoutRef.current) {
           clearTimeout(resizeTimeoutRef.current);
@@ -83,14 +83,14 @@ const MapContainer = ({
         // Schedule multiple resize attempts to ensure map updates fully
         resizeTimeoutRef.current = setTimeout(() => {
           try {
-            if (mapRef.current && mapRef.current._loaded) {
+            if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
               console.log("Refreshing map for high precision mode");
               window.dispatchEvent(new Event('resize'));
               mapRef.current.invalidateSize(true);
               
               // Force a second update for reliability
               setTimeout(() => {
-                if (mapRef.current && mapRef.current._loaded) {
+                if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
                   mapRef.current.invalidateSize(true);
                 }
               }, 300);
@@ -106,7 +106,8 @@ const MapContainer = ({
     
     // Also listen for user location updates to refresh map
     const handleUserLocationUpdate = () => {
-      if (mapRef.current && mapInitializedRef.current && showUserLocation && mapRef.current._loaded) {
+      if (mapRef.current && mapInitializedRef.current && showUserLocation && 
+          mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
         try {
           console.log("Refreshing map for location update");
           mapRef.current.invalidateSize(true);
