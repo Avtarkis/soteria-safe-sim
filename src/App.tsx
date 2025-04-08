@@ -16,15 +16,14 @@ import NotFound from '@/pages/NotFound';
 import { isUsingFallbackValues } from '@/lib/supabase';
 import './App.css';
 
-// Make the helper function globally available without using Window interface
-// This avoids TypeScript errors while still making the function available globally
+// Make the helper function globally available with proper TypeScript declaration
 declare global {
   interface Window {
     isUsingFallbackValues: () => boolean;
   }
 }
 
-// Assign the function to window
+// Assign the function to window object
 window.isUsingFallbackValues = isUsingFallbackValues;
 
 function App() {
