@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ModeToggle } from '@/components/ModeToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import Logo from '@/components/ui/logo';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
@@ -56,7 +56,7 @@ const Header: React.FC = () => {
             ) : (
               <UserMenu user={user} />
             )}
-            <ModeToggle />
+            <ThemeToggle />
           </nav>
         </div>
       </div>
