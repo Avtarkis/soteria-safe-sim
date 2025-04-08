@@ -13,6 +13,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import useMapInitialization from './leaflet/useMapInitialization';
 import useUserLocationTracking from './leaflet/useUserLocationTracking';
 import ThreatMarkers from './leaflet/ThreatMarkers';
+import { createPulsingIcon, determineSafetyLevel } from './leaflet/UserLocationMarker';
 
 // Fix marker icon issues
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -63,10 +64,12 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     return mapRef.current as L.Map;
   }, [mapRef.current]);
 
-  // Track user location
+  // Track user location with safety level
   const { getUserLocation } = useUserLocationTracking(
     mapRef.current,
-    showUserLocation
+    showUserLocation, 
+    undefined, 
+    markers
   );
 
   // Update markers when they change
@@ -142,43 +145,42 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     };
   }, [mapCreated]);
 
-  // Add additional map layers when map is created
+  // Add CSS for pulsing effect to the document
   useEffect(() => {
-    if (mapRef.current && mapCreated) {
-      // Set the base tile layer to OpenStreetMap with more visible street names
-      const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      });
-      
-      // Add a more detailed map layer option
-      const tonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.png', {
-        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>',
-        maxZoom: 19,
-      });
-      
-      // Add satellite view option
-      const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-        maxZoom: 19,
-      });
-      
-      // Add layer control to toggle between maps
-      const baseMaps = {
-        "OpenStreetMap": baseMap,
-        "Light": tonerLite,
-        "Satellite": satellite
-      };
-      
-      L.control.layers(baseMaps).addTo(mapRef.current);
-      
-      // Set the initial base layer
-      baseMap.addTo(mapRef.current);
-      
-      // Add scale control
-      L.control.scale().addTo(mapRef.current);
+    // Add the CSS style for the pulsing marker if not already present
+    if (!document.getElementById('pulsing-marker-style')) {
+      const style = document.createElement('style');
+      style.id = 'pulsing-marker-style';
+      style.innerHTML = `
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 0.8;
+          }
+          70% {
+            transform: scale(2);
+            opacity: 0.3;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 0.8;
+          }
+        }
+        .user-marker-pulse {
+          animation: pulse 2s infinite;
+        }
+      `;
+      document.head.appendChild(style);
     }
-  }, [mapCreated]);
+    
+    return () => {
+      // Clean up the style when component unmounts
+      const styleElem = document.getElementById('pulsing-marker-style');
+      if (styleElem) {
+        styleElem.remove();
+      }
+    };
+  }, []);
 
   return (
     <div 

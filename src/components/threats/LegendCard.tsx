@@ -12,7 +12,7 @@ const LegendCard = ({ showLegend }: LegendCardProps) => {
   
   return (
     <Card className={cn(
-      "absolute bottom-4 right-4 z-10 p-3 w-64 shadow-lg",
+      "absolute bottom-4 right-4 z-50 p-3 w-64 shadow-lg",
       "bg-background/90 backdrop-blur-sm border border-border/50"
     )}>
       <div className="text-sm font-semibold mb-2">Threat Legend</div>

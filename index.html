@@ -5,11 +5,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>soteria-safe-sim</title>
-    <meta name="description" content="Lovable Generated Project" />
+    <meta name="description" content="Soteria - Personal Safety Platform" />
     <meta name="author" content="Lovable" />
 
-    <meta property="og:title" content="Lovable Generated Project" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <meta property="og:title" content="Soteria - Personal Safety Platform" />
+    <meta property="og:description" content="Monitor threats in real-time and stay safe" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
@@ -38,53 +38,91 @@
       // Prevent blank page by limiting reloads
       var reloadCount = parseInt(sessionStorage.getItem('reloadCount') || '0');
       
-      // Detect potential routing issues but limit reload attempts
-      if (window.location.search.includes('_redirected=true') && reloadCount < 2) {
-        sessionStorage.setItem('reloadCount', (reloadCount + 1).toString());
-        
-        window.addEventListener('DOMContentLoaded', function() {
-          // Give the app time to initialize routing
-          setTimeout(function() {
-            const path = window.location.hash.replace('#', '') || window.location.pathname;
-            console.log('Attempting to navigate to:', path);
-            if (window.history && window.history.pushState) {
-              window.history.pushState({}, '', path);
-              window.dispatchEvent(new Event('popstate'));
-            }
-          }, 300);
-        });
-      } else if (reloadCount >= 2) {
-        // Stop trying to reload and show a helpful message instead
+      // Don't reload more than once for safety
+      if (reloadCount > 1) {
         console.warn('Multiple reload attempts detected. Stopping automatic reloads.');
         sessionStorage.removeItem('reloadCount');
       }
       
-      // Additional check for blank page after load, but with limited reload attempts
-      window.addEventListener('load', function() {
-        if (reloadCount < 2) {
+      // Function to detect Supabase environment variables
+      function checkForEnvVars() {
+        if (!window.VITE_SUPABASE_URL || !window.VITE_SUPABASE_ANON_KEY) {
+          console.warn('Missing Supabase environment variables. App will use fallbacks.');
+        }
+      }
+      
+      // Execute after DOM is loaded
+      window.addEventListener('DOMContentLoaded', function() {
+        checkForEnvVars();
+        
+        // If first load, mark page as loaded
+        if (!sessionStorage.getItem('pageLoaded')) {
+          sessionStorage.setItem('pageLoaded', 'true');
+        }
+      });
+      
+      // Don't reload page excessively
+      if (reloadCount < 1) {
+        window.addEventListener('load', function() {
+          // Only check for blank page after a reasonable timeout
           setTimeout(function() {
-            if (document.body && (document.body.innerHTML === '' || !document.getElementById('root') || document.getElementById('root').innerHTML === '')) {
+            if (document.body && (document.body.innerHTML === '' || 
+                !document.getElementById('root') || 
+                document.getElementById('root').innerHTML === '')) {
               console.error('Blank page detected, attempting recovery');
               
-              // Increment reload count
+              // Increment reload count and reload
               sessionStorage.setItem('reloadCount', (reloadCount + 1).toString());
               window.location.reload();
             } else {
               // If page loaded successfully, reset reload counter
               sessionStorage.removeItem('reloadCount');
             }
-          }, 3000);
-        }
-      });
+          }, 5000); // Longer timeout to ensure React has time to mount
+        });
+      }
     </script>
     
     <!-- Preload critical leaflet resources to avoid missing map -->
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      body {
+        background-color: #020817;
+        color: white;
+      }
+      .loading-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #4F46E5;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback loading screen -->
+      <div class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 20px; font-family: system-ui, sans-serif;">Loading Soteria...</p>
+      </div>
+    </div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

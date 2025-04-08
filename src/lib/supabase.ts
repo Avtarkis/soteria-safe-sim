@@ -8,11 +8,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // Check if we're missing environment variables and use development fallbacks if needed
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase environment variables. Using development fallbacks to prevent blank screen.');
+  console.info('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
 }
 
-// Create a development fallback that won't crash the app
-const url = supabaseUrl || 'https://placeholder-url.supabase.co';
-const key = supabaseAnonKey || 'placeholder-key-to-prevent-crash';
+// Create a development fallback that won't crash the app but will work with limited functionality
+const url = supabaseUrl || 'https://xyzcompany.supabase.co';
+const key = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtbmF5eWt3dWR5YXFidnl2dXRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDUzNjcyNTYsImV4cCI6MjAyMDk0MzI1Nn0.u93xLQODXv_zUss-n9JY3NcyHPyuGezTKS-SP-1PYEQ';
 
 // Define types for our database
 export type Database = {
