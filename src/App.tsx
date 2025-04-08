@@ -21,6 +21,13 @@ const FamilyPage = () => <div className="container mt-8"><h1 className="text-2xl
 const CyberSecurityPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Cyber Security</h1><p>Cyber security features are coming soon.</p></div>;
 const SubscriptionPage = () => <div className="container mt-8"><h1 className="text-2xl font-bold mb-4">Subscription Management</h1><p>Subscription management features are coming soon.</p></div>;
 
+// Extend the Window interface to include our custom property
+declare global {
+  interface Window {
+    isUsingFallbackValues?: () => boolean;
+  }
+}
+
 function App() {
   // Expose isUsingFallbackValues to window
   useEffect(() => {
