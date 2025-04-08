@@ -32,33 +32,38 @@ const MapContainer = ({
   
   // Enhanced map sizing effect
   useEffect(() => {
+    // Safe resize function
     const resizeMap = () => {
-      if (mapRef.current) {
-        console.log('Resizing map to ensure proper display');
-        window.dispatchEvent(new Event('resize'));
-        mapRef.current.invalidateSize(true);
+      if (mapRef.current && mapRef.current.getContainer && mapRef.current._loaded) {
+        try {
+          console.log('Resizing map to ensure proper display');
+          window.dispatchEvent(new Event('resize'));
+          mapRef.current.invalidateSize(true);
+        } catch (error) {
+          console.error("Error resizing map:", error);
+        }
       }
     };
     
-    // Apply resize on component mount
-    resizeMap();
-    
-    // Also apply resize when window gets resized
-    window.addEventListener('resize', resizeMap);
-    
-    // And schedule multiple resize attempts for reliability
-    const timeoutId = setTimeout(() => {
+    // Apply resize on component mount with a delay to ensure DOM is ready
+    const initialResizeTimer = setTimeout(() => {
       resizeMap();
       mapInitializedRef.current = true;
       
-      // Make additional resize attempts
+      // Schedule additional resize attempts for reliability
       setTimeout(resizeMap, 300);
       setTimeout(resizeMap, 1000);
     }, 500);
     
+    // Also apply resize when window gets resized
+    window.addEventListener('resize', resizeMap);
+    
     return () => {
       window.removeEventListener('resize', resizeMap);
-      clearTimeout(timeoutId);
+      clearTimeout(initialResizeTimer);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
     };
   }, [mapRef]);
 
@@ -68,8 +73,8 @@ const MapContainer = ({
       console.log("High precision mode activated in map container");
       highPrecisionAttemptedRef.current = true;
       
-      // Force map update and resize
-      if (mapRef.current) {
+      // Force map update and resize safely
+      if (mapRef.current && mapRef.current._loaded) {
         // Clear any existing timeout
         if (resizeTimeoutRef.current) {
           clearTimeout(resizeTimeoutRef.current);
@@ -77,17 +82,21 @@ const MapContainer = ({
         
         // Schedule multiple resize attempts to ensure map updates fully
         resizeTimeoutRef.current = setTimeout(() => {
-          if (mapRef.current) {
-            console.log("Refreshing map for high precision mode");
-            window.dispatchEvent(new Event('resize'));
-            mapRef.current.invalidateSize(true);
-            
-            // Force a second update for reliability
-            setTimeout(() => {
-              if (mapRef.current) {
-                mapRef.current.invalidateSize(true);
-              }
-            }, 300);
+          try {
+            if (mapRef.current && mapRef.current._loaded) {
+              console.log("Refreshing map for high precision mode");
+              window.dispatchEvent(new Event('resize'));
+              mapRef.current.invalidateSize(true);
+              
+              // Force a second update for reliability
+              setTimeout(() => {
+                if (mapRef.current && mapRef.current._loaded) {
+                  mapRef.current.invalidateSize(true);
+                }
+              }, 300);
+            }
+          } catch (error) {
+            console.error("Error refreshing map in high precision mode:", error);
           }
         }, 200);
       }
@@ -97,9 +106,13 @@ const MapContainer = ({
     
     // Also listen for user location updates to refresh map
     const handleUserLocationUpdate = () => {
-      if (mapRef.current && mapInitializedRef.current && showUserLocation) {
-        console.log("Refreshing map for location update");
-        mapRef.current.invalidateSize(true);
+      if (mapRef.current && mapInitializedRef.current && showUserLocation && mapRef.current._loaded) {
+        try {
+          console.log("Refreshing map for location update");
+          mapRef.current.invalidateSize(true);
+        } catch (error) {
+          console.error("Error refreshing map for location update:", error);
+        }
       }
     };
     
@@ -133,7 +146,7 @@ const MapContainer = ({
           onMarkerClick={handleThreatClick}
           center={userLocation || [37.0902, -95.7129]}
           zoom={userLocation ? 12 : 4}
-          showUserLocation={showUserLocation || true} // Always show user location for better UX
+          showUserLocation={showUserLocation}
           ref={mapRef}
         />
       </div>

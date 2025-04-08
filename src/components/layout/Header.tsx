@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import Logo from '@/components/ui/logo';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
+import ModeToggle from '@/components/ModeToggle';
 
 const Header: React.FC = () => {
   const { user, isAuthenticated } = useAuth();

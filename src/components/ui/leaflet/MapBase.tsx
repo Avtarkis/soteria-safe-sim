@@ -68,13 +68,31 @@ const MapBase = ({
       mapRef.current = map;
       mapInitializedRef.current = true;
       
-      // Force resize to ensure proper display
+      // Use a safe timeout to ensure proper initialization
       setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-        map.invalidateSize(true);
-        
-        // Notify parent component that map is ready
-        onMapReady(map);
+        if (mapRef.current) {
+          try {
+            // Check if the container is properly loaded
+            if (map.getContainer() && map._loaded) {
+              window.dispatchEvent(new Event('resize'));
+              map.invalidateSize(true);
+              
+              // Notify parent component that map is ready
+              onMapReady(map);
+            } else {
+              console.log("Map container not ready, retrying...");
+              // Try again a bit later if needed
+              setTimeout(() => {
+                if (mapRef.current && mapRef.current.getContainer()) {
+                  mapRef.current.invalidateSize(true);
+                  onMapReady(mapRef.current);
+                }
+              }, 500);
+            }
+          } catch (error) {
+            console.error("Error during map initialization:", error);
+          }
+        }
       }, 200);
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -84,7 +102,11 @@ const MapBase = ({
     return () => {
       if (mapRef.current) {
         console.log("Cleaning up map");
-        mapRef.current.remove();
+        try {
+          mapRef.current.remove();
+        } catch (error) {
+          console.error("Error removing map:", error);
+        }
         mapRef.current = null;
         mapInitializedRef.current = false;
       }

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
@@ -57,6 +57,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   showUserLocation = false
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
+  const mapInitializedRef = useRef<boolean>(false);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -86,14 +87,27 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const handleMapReady = (newMap: L.Map) => {
     console.log("Map is ready");
     setMap(newMap);
+    mapInitializedRef.current = true;
   };
   
-  // Update view when center or zoom changes
+  // Update view when center or zoom changes, but only after map is properly initialized
   useEffect(() => {
-    if (!map) return;
+    if (!map || !mapInitializedRef.current) return;
     
-    map.setView(center, zoom, { animate: true });
-  }, [map, center[0], center[1], zoom]);
+    // Add a small delay to ensure map is fully initialized
+    const timer = setTimeout(() => {
+      try {
+        // Check if map container is valid
+        if (map && map.getContainer() && map._loaded) {
+          map.setView(center, zoom, { animate: false });
+        }
+      } catch (error) {
+        console.error("Error setting map view:", error);
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [map, center, zoom, mapInitializedRef.current]);
   
   return (
     <div className={cn("h-full w-full min-h-[300px] relative", className)}>
@@ -103,7 +117,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         onMapReady={handleMapReady}
       />
       
-      {map && (
+      {map && mapInitializedRef.current && (
         <>
           <MarkerLayer 
             map={map}
