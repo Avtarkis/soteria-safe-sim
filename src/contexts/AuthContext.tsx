@@ -30,6 +30,12 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper to check if we're in test mode
+const isTestMode = () => {
+  // Consider both development and production builds as test mode for now
+  return true;
+};
+
 // Auth provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User>(null);
@@ -132,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Attempting to sign in:", email);
       
       // In test mode, we create a fake authenticated user session
-      if (process.env.NODE_ENV === 'development' || import.meta.env.DEV) {
+      if (isTestMode()) {
         console.log("TEST MODE: Simulating successful sign-in for:", email);
         
         // Set a mock user for the testing environment
@@ -176,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Sign up successful for:", email);
       
       // In test mode, immediately set a mock user
-      if (process.env.NODE_ENV === 'development' || import.meta.env.DEV) {
+      if (isTestMode()) {
         console.log("TEST MODE: Setting mock user after registration");
         
         // Set a mock user for the testing environment
@@ -189,6 +195,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: 'Test account created',
           description: 'You have been automatically authenticated for testing purposes.',
         });
+      } else {
+        toast({
+          title: 'Account created',
+          description: 'Please check your email to confirm your account.',
+        });
+      }
+      
+      // Always try to sign in automatically in test mode
+      if (isTestMode()) {
+        try {
+          console.log("TEST MODE: Auto-signing in after registration:", email);
+          await signIn(email, password);
+        } catch (signInError) {
+          console.error("Auto-sign in after registration failed:", signInError);
+        }
       }
       
       return { error: null };
@@ -196,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Sign up error:', error);
       return { error: error as Error };
     }
-  }, [toast]);
+  }, [toast, signIn]);
 
   // Sign out function
   const signOut = useCallback(async () => {

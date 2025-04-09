@@ -48,7 +48,6 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
         });
       } else {
         // Account creation successful - in testing mode, redirect to dashboard
-        // even if auto-login might have failed
         console.log("Account created successfully");
         toast({
           title: "Account created",

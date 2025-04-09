@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { signIn, signUp } = useAuth();
 
@@ -43,8 +45,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
           description: result.error.message || "An error occurred",
           variant: "destructive",
         });
-      } else if (onSuccess) {
-        onSuccess();
+      } else {
+        // Success - navigate to dashboard
+        console.log(`${type === 'login' ? 'Login' : 'Signup'} successful, navigating to dashboard`);
+        toast({
+          title: type === 'login' ? "Login successful" : "Account created",
+          description: type === 'login' 
+            ? "You have been signed in successfully" 
+            : "Your account has been created and you're now signed in",
+        });
+        
+        // Short delay for the toast to be visible
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
@@ -61,11 +75,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
 
   return (
     <div className="space-y-4">
-      {import.meta.env.DEV && (
-        <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-sm text-green-800 dark:text-green-300 mb-4">
-          <p>Testing Mode: Email verification is bypassed</p>
-        </div>
-      )}
+      <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-sm text-green-800 dark:text-green-300 mb-4">
+        <p>Testing Mode: Email verification is bypassed</p>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {type === 'signup' && (
