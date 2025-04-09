@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext'; // Using the correct context
+import { useAuth } from '@/hooks/useAuth'; // Using the correct hook path
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
@@ -143,7 +143,7 @@ const DesktopMenu = ({ navItems }: {
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const { user, signOut } = useAuth(); // Using the correct auth context
+  const { user, logout: signOut } = useAuth(); // Using the correct auth hook
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();

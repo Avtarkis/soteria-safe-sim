@@ -1,32 +1,9 @@
 
 import React from 'react';
+import EmergencyResponse from '@/components/EmergencyResponse';
 
 const EmergencyPage = () => {
-  return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Emergency Response</h1>
-      <div className="grid gap-6">
-        <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Emergency Services</h2>
-          <p className="text-muted-foreground">
-            Quick access to emergency services and contacts.
-          </p>
-        </div>
-        <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">SOS Button</h2>
-          <p className="text-muted-foreground">
-            One-tap emergency alert to your emergency contacts.
-          </p>
-        </div>
-        <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Emergency Protocols</h2>
-          <p className="text-muted-foreground">
-            Step-by-step guides for various emergency situations.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  return <EmergencyResponse />;
 };
 
 export default EmergencyPage;
