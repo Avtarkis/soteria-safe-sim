@@ -11,12 +11,11 @@ interface LegendCardProps {
 const LegendCard: React.FC<LegendCardProps> = ({ showLegend }) => {
   const isMobile = useIsMobile();
   
-  // Simplified legend items for better mobile display
+  // Simplified legend items for better mobile display - Cyber Threat removed as requested
   const legendItems = [
     { color: 'bg-red-500', label: 'High Risk' },
     { color: 'bg-orange-400', label: 'Medium Risk' },
     { color: 'bg-blue-400', label: 'Low Risk' },
-    { color: 'bg-pink-400', label: 'Cyber Threat' },
     { color: 'bg-green-500', label: 'Environmental' },
   ];
 

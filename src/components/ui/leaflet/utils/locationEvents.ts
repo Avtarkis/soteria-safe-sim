@@ -72,3 +72,22 @@ export function centerMapOnThreat(lat: number, lng: number) {
   });
   document.dispatchEvent(event);
 }
+
+/**
+ * Dispatch location update event
+ * @param lat Latitude
+ * @param lng Longitude
+ * @param accuracy Accuracy in meters
+ * @param safetyLevel Safety level assessment
+ */
+export function dispatchLocationUpdate(lat: number, lng: number, accuracy: number, safetyLevel: 'safe' | 'caution' | 'danger') {
+  const event = new CustomEvent('userLocationUpdated', {
+    detail: { 
+      lat, 
+      lng, 
+      accuracy,
+      safetyLevel 
+    }
+  });
+  document.dispatchEvent(event);
+}

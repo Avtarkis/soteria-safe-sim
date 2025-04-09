@@ -5,6 +5,7 @@ import ThreatDetails from './ThreatDetails';
 import { ThreatMarker } from '@/types/threats';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface MapContainerProps {
   mapRef: React.RefObject<L.Map>;
