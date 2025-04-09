@@ -1,9 +1,10 @@
 
 import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Crosshair, Navigation, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Crosshair, Navigation, Eye, EyeOff, RefreshCw, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MapActionButtonsProps {
   showUserLocation: boolean;
@@ -25,6 +26,7 @@ const MapActionButtons = ({
   userLocation
 }: MapActionButtonsProps) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Create a stable callback for centering the map
   const handleCenterMap = useCallback(() => {
@@ -79,52 +81,65 @@ const MapActionButtons = ({
   }, [showUserLocation, toggleUserLocation, toast]);
   
   return (
-    <div className="absolute top-4 left-4 z-10 space-y-2">
+    <div className={cn(
+      "absolute top-4 left-4 z-30",
+      isMobile ? "space-y-1.5" : "space-y-2"
+    )}>
       <Button 
         variant="outline" 
-        size="sm" 
+        size={isMobile ? "sm" : "default"}
         className={cn(
           "shadow-sm backdrop-blur-sm",
           showUserLocation 
-            ? "bg-primary text-white" 
+            ? "bg-primary text-white border-primary" 
             : "bg-background/80"
         )}
         onClick={handleToggleLocation}
       >
         <Crosshair className={cn("h-4 w-4 mr-1", showUserLocation && "text-white")} />
-        <span>{showUserLocation ? "Tracking On" : "Track My Location"}</span>
+        <span>{isMobile ? "Track Me" : "Track My Location"}</span>
       </Button>
       
       <Button 
         variant="outline" 
-        size="sm" 
+        size={isMobile ? "sm" : "default"}
         className="shadow-sm bg-background/80 backdrop-blur-sm"
         onClick={handleCenterMap}
         disabled={!userLocation}
       >
         <Navigation className="h-4 w-4 mr-1" />
-        <span>Center Map</span>
+        <span>{isMobile ? "Center" : "Center Map"}</span>
       </Button>
       
       <Button 
         variant="outline" 
-        size="sm" 
+        size={isMobile ? "sm" : "default"}
         className="shadow-sm bg-background/80 backdrop-blur-sm"
         onClick={() => setShowLegend(!showLegend)}
       >
         {showLegend ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-        <span>{showLegend ? "Hide Legend" : "Show Legend"}</span>
+        <span>{isMobile ? "Legend" : (showLegend ? "Hide Legend" : "Show Legend")}</span>
       </Button>
       
       <Button 
         variant="outline" 
-        size="sm" 
+        size={isMobile ? "sm" : "default"}
         className="shadow-sm bg-background/80 backdrop-blur-sm"
         onClick={handleRefresh}
         disabled={refreshing}
       >
         <RefreshCw className={cn("h-4 w-4 mr-1", refreshing && "animate-spin")} />
-        <span>Refresh Data</span>
+        <span>{isMobile ? "Refresh" : "Refresh Data"}</span>
+      </Button>
+      
+      <Button 
+        variant="default" 
+        size={isMobile ? "sm" : "default"}
+        className="shadow-md"
+        onClick={handleActivateHighPrecision}
+      >
+        <MapPin className="h-4 w-4 mr-1" />
+        <span>{isMobile ? "High Precision" : "High Precision Mode"}</span>
       </Button>
     </div>
   );

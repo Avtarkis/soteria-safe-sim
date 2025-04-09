@@ -122,7 +122,7 @@ const UserLocationLayer = ({
       
       // Add accuracy circle
       accuracyCircleRef.current = L.circle(latlng, {
-        radius: accuracy,
+        radius: Math.max(10, accuracy), // Ensure at least 10m radius for visibility
         color: circleColor,
         fillColor: circleColor,
         fillOpacity: 0.1,
@@ -163,6 +163,30 @@ const UserLocationLayer = ({
       }
     };
   }, [map, userLocation, accuracy, safetyLevel]);
+
+  // Register event handler for centering map on user location
+  useEffect(() => {
+    if (!map || !userLocation) return;
+
+    const handleCenterMap = (e: CustomEvent) => {
+      try {
+        if (map && userLocation) {
+          map.flyTo([userLocation[0], userLocation[1]], 16, {
+            animate: true,
+            duration: 1
+          });
+        }
+      } catch (error) {
+        console.error("Error centering map on event:", error);
+      }
+    };
+
+    document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    
+    return () => {
+      document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
+    };
+  }, [map, userLocation]);
   
   return null; // This is a non-visual component
 };

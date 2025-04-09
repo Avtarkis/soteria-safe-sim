@@ -1,72 +1,125 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Info, Shield } from 'lucide-react';
+import { X, AlertTriangle, Info, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ThreatZone {
-  id: string;
-  lat: number;
-  lng: number;
-  radius: number;
-  level: 'low' | 'medium' | 'high';
-  title: string;
-  details: string;
-  type?: 'cyber' | 'physical' | 'environmental';
-}
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ThreatDetailsProps {
-  selectedThreat: ThreatZone | null;
+  selectedThreat: any;
   clearSelectedThreat: () => void;
+  className?: string;
 }
 
-const ThreatDetails = ({ selectedThreat, clearSelectedThreat }: ThreatDetailsProps) => {
+const ThreatDetails: React.FC<ThreatDetailsProps> = ({ 
+  selectedThreat, 
+  clearSelectedThreat,
+  className
+}) => {
+  const isMobile = useIsMobile();
+  
   if (!selectedThreat) return null;
-
+  
+  // Get threat level styling
+  const levelColor = 
+    selectedThreat.level === 'high' ? 'text-red-500 border-red-500' :
+    selectedThreat.level === 'medium' ? 'text-orange-500 border-orange-500' :
+    'text-blue-500 border-blue-500';
+  
+  const levelBg = 
+    selectedThreat.level === 'high' ? 'bg-red-50' :
+    selectedThreat.level === 'medium' ? 'bg-orange-50' :
+    'bg-blue-50';
+  
   return (
-    <div className="absolute bottom-16 left-4 right-4 z-20 animate-fade-in">
-      <Card className="bg-background/95 backdrop-blur-md border shadow-lg">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              {selectedThreat.level === 'high' ? (
-                <AlertTriangle className="h-5 w-5 text-threat-high" />
-              ) : selectedThreat.level === 'medium' ? (
-                <AlertTriangle className="h-5 w-5 text-threat-medium" />
-              ) : (
-                <Info className="h-5 w-5 text-threat-low" />
-              )}
-              <CardTitle className="text-base">{selectedThreat.title}</CardTitle>
-            </div>
-            <button 
-              className="text-muted-foreground hover:text-foreground"
-              onClick={clearSelectedThreat}
-            >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-              </svg>
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm mb-2">{selectedThreat.details}</p>
-          <div className="flex justify-between items-center">
-            <span className={cn("text-xs px-2.5 py-1 rounded-full", 
-              selectedThreat.level === 'high' ? "bg-threat-high/10 border-threat-high/20 text-threat-high" :
-              selectedThreat.level === 'medium' ? "bg-threat-medium/10 border-threat-medium/20 text-threat-medium" :
-              "bg-threat-low/10 border-threat-low/20 text-threat-low"
+    <Card className={cn(
+      "absolute z-30 shadow-lg border",
+      !isMobile ? "right-4 top-4 max-w-sm" : "bottom-16 left-2 right-2 max-h-[40vh] overflow-auto",
+      levelBg,
+      className
+    )}>
+      <CardHeader className={cn("pb-2", isMobile && "p-3")}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {selectedThreat.level === 'high' ? (
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            ) : (
+              <Info className="h-5 w-5 text-blue-500" />
+            )}
+            <CardTitle className={cn(
+              "text-base",
+              isMobile && "text-sm"
             )}>
-              {selectedThreat.level.charAt(0).toUpperCase() + selectedThreat.level.slice(1)} Threat Level
-            </span>
-            <Button size="sm" variant="outline" className="text-xs gap-1">
-              <Shield className="h-3 w-3" />
-              View Safety Plan
-            </Button>
+              {selectedThreat.title}
+            </CardTitle>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <Button variant="ghost" size="icon" onClick={clearSelectedThreat} className="-mr-2 h-8 w-8">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <CardDescription className={cn(
+          "flex items-center gap-1 mt-1",
+          levelColor
+        )}>
+          <span className={cn(
+            "inline-block px-2 py-0.5 rounded-full text-xs font-medium border",
+            isMobile && "text-[10px] px-1.5",
+            levelColor
+          )}>
+            {selectedThreat.level.toUpperCase()} RISK
+          </span>
+          {selectedThreat.type && (
+            <span className="text-xs text-muted-foreground">
+              {selectedThreat.type.charAt(0).toUpperCase() + selectedThreat.type.slice(1)}
+            </span>
+          )}
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className={cn(
+        "text-sm space-y-2",
+        isMobile && "p-3 pt-0 text-xs"
+      )}>
+        <p>{selectedThreat.details}</p>
+        
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+          <MapPin className="h-3 w-3" />
+          <span>
+            {selectedThreat.position[0].toFixed(4)}, {selectedThreat.position[1].toFixed(4)}
+          </span>
+        </div>
+      </CardContent>
+      
+      <CardFooter className={cn(
+        "pt-0 flex justify-end gap-2",
+        isMobile && "p-3"
+      )}>
+        <Button 
+          variant="ghost" 
+          size={isMobile ? "sm" : "default"}
+          onClick={clearSelectedThreat}
+        >
+          Close
+        </Button>
+        <Button 
+          variant="default" 
+          size={isMobile ? "sm" : "default"}
+          onClick={() => {
+            // Trigger map centering event
+            const event = new CustomEvent('centerMapOnThreat', {
+              detail: { 
+                lat: selectedThreat.position[0], 
+                lng: selectedThreat.position[1] 
+              }
+            });
+            document.dispatchEvent(event);
+          }}
+        >
+          Show on Map
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

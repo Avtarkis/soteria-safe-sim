@@ -110,11 +110,15 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         } catch (error) {
           console.error("Initial setView failed:", error);
         }
+        
+        // Explicitly trigger a resize
+        setTimeout(() => {
+          if (newMap) {
+            newMap.invalidateSize(true);
+          }
+        }, 300);
       }
     }, 300);
-    
-    // Block updates for 2 seconds after initialization
-    updateBlockedUntilRef.current = Date.now() + 2000;
   };
   
   // Handle changes to center/zoom with aggressive debouncing and change detection
@@ -170,13 +174,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       }
     };
   }, [map, center, zoom]);
-  
-  // Only initialize the markers once the map is fully ready
-  useEffect(() => {
-    if (!map || !mapInitializedRef.current || !mapReadyForOperationsRef.current || mapElementsInitializedRef.current) return;
-    mapElementsInitializedRef.current = true;
-  }, [map, mapReadyForOperationsRef.current]);
-  
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -192,7 +190,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   }, []);
   
   return (
-    <div className={cn("h-full w-full min-h-[300px] relative", className)}>
+    <div className={cn("h-full w-full min-h-[400px] relative", className)}>
       <MapBase 
         center={center} 
         zoom={zoom} 
@@ -209,7 +207,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
             />
           )}
           
-          {showUserLocation && userLocation && (
+          {showUserLocation && (
             <UserLocationLayer 
               map={map}
               userLocation={userLocation}

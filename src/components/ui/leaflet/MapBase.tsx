@@ -42,21 +42,19 @@ const MapBase = ({
     try {
       console.log('Initializing map base with center:', center, 'zoom:', zoom);
       
-      // Ensure container size before creating map
-      if (mapContainerRef.current.clientHeight === 0) {
-        console.warn("Map container has zero height, delaying initialization");
-        setInitError("Map container height is zero");
-        return;
+      // Force a minimum height to ensure container is visible
+      if (mapContainerRef.current) {
+        mapContainerRef.current.style.minHeight = '400px';
       }
       
       // Create map with optimized settings
       const map = L.map(mapContainerRef.current, {
         center,
         zoom,
-        zoomControl: false,
+        zoomControl: true,
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
-        attributionControl: false,
+        attributionControl: true,
         fadeAnimation: false,
         zoomAnimation: true,
         markerZoomAnimation: false,
@@ -81,7 +79,7 @@ const MapBase = ({
         keepBuffer: 2
       }).addTo(map);
       
-      // Ensure tiles are loaded before considering the map ready
+      // Ensure tiles are loaded
       tileLayer.on('load', () => {
         console.log("Tile layer loaded");
       });
@@ -89,27 +87,25 @@ const MapBase = ({
       // Store ref
       mapRef.current = map;
       
-      // Register load event
-      map.once('load', () => {
-        console.log("Map load event fired");
-      });
-      
-      // Use staggered initialization to ensure the map is truly ready
+      // Force a redraw of the map container after mounting
       setTimeout(() => {
         if (mapRef.current) {
           // First invalidate size
-          mapRef.current.invalidateSize(false);
+          mapRef.current.invalidateSize(true);
           
-          // Then notify parent after a short delay
+          // Then notify parent
+          console.log("Map base initialization complete");
+          mapInitializedRef.current = true;
+          onMapReady(mapRef.current);
+          
+          // Trigger another resize after a brief delay
           setTimeout(() => {
             if (mapRef.current) {
-              console.log("Map base initialization complete");
-              mapInitializedRef.current = true;
-              onMapReady(mapRef.current);
+              mapRef.current.invalidateSize(true);
             }
-          }, 150);
+          }, 500);
         }
-      }, 150);
+      }, 300);
       
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -147,21 +143,25 @@ const MapBase = ({
   useEffect(() => {
     const handleResize = () => {
       if (mapRef.current && mapInitializedRef.current) {
-        mapRef.current.invalidateSize(false);
+        mapRef.current.invalidateSize(true);
       }
     };
     
     window.addEventListener('resize', handleResize);
     
+    // Force a resize after a short delay
+    const resizeTimer = setTimeout(handleResize, 500);
+    
     return () => {
       window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer);
     };
   }, []);
 
   return (
     <div 
       ref={mapContainerRef} 
-      className={cn("h-full w-full min-h-[300px]", className)} 
+      className={cn("h-full w-full min-h-[400px]", className)} 
       id="leaflet-map-container"
     >
       {initError && (

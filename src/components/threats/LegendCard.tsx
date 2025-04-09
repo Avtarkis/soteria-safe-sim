@@ -24,14 +24,24 @@ const LegendCard: React.FC<LegendCardProps> = ({ showLegend }) => {
 
   return (
     <Card className={cn(
-      "absolute z-10 shadow-md", 
-      isMobile ? "bottom-16 right-2 left-2 max-w-[calc(100%-1rem)]" : "bottom-4 right-4 w-auto max-w-xs"
+      "absolute z-30 shadow-md", 
+      isMobile 
+        ? "top-14 right-2 left-auto max-w-[140px] scale-90 origin-top-right" 
+        : "bottom-4 right-4 w-auto max-w-xs"
     )}>
-      <CardContent className="p-3">
-        <div className="text-sm font-medium mb-2">Threat Map Legend</div>
+      <CardContent className={cn(
+        "p-3",
+        isMobile && "p-2"
+      )}>
         <div className={cn(
-          "grid gap-y-1 gap-x-4 text-xs", 
-          isMobile ? "grid-cols-2" : "grid-cols-1"
+          "text-sm font-medium mb-2",
+          isMobile && "text-xs"
+        )}>
+          Map Legend
+        </div>
+        <div className={cn(
+          "grid gap-y-1 gap-x-4", 
+          isMobile ? "grid-cols-1 text-[10px]" : "grid-cols-1 text-xs"
         )}>
           {legendItems.map((item) => (
             <div key={item.label} className="flex items-center gap-2">
