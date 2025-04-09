@@ -58,7 +58,9 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
   const mapInitializedRef = useRef<boolean>(false);
-  const initializedTimeRef = useRef<number>(Date.now());
+  const prevCenterRef = useRef<[number, number]>(center);
+  const prevZoomRef = useRef<number>(zoom);
+  const viewUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -86,38 +88,50 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   
   // Handle map initialization
   const handleMapReady = (newMap: L.Map) => {
-    console.log("Map is ready");
     setMap(newMap);
     mapInitializedRef.current = true;
-    initializedTimeRef.current = Date.now();
   };
   
-  // Update view when center or zoom changes - with rate limiting to prevent flashing
+  // Update view only when center or zoom changes significantly
   useEffect(() => {
     if (!map || !mapInitializedRef.current) return;
     
-    // Add a small delay to ensure map is fully initialized
-    // Only set view if the map has been initialized for at least 1 second
-    // This prevents constant recentering that can cause flashing
-    const timeSinceInit = Date.now() - initializedTimeRef.current;
-    if (timeSinceInit < 1000) {
-      console.log("Skipping early view update to prevent flashing");
-      return;
+    // Debounce view updates to prevent flickering
+    if (viewUpdateTimeoutRef.current) {
+      clearTimeout(viewUpdateTimeoutRef.current);
     }
     
-    // Use a debounced update with animation disabled to reduce flickering
-    const timer = setTimeout(() => {
-      try {
-        if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
-          map.setView(center, zoom, { animate: false, duration: 0 });
-        }
-      } catch (error) {
-        console.error("Error setting map view:", error);
-      }
-    }, 250);
+    // Check if view actually needs to be updated (significant change)
+    const centerChanged = 
+      Math.abs(center[0] - prevCenterRef.current[0]) > 0.001 || 
+      Math.abs(center[1] - prevCenterRef.current[1]) > 0.001;
+    const zoomChanged = zoom !== prevZoomRef.current;
     
-    return () => clearTimeout(timer);
-  }, [map, center, zoom, mapInitializedRef.current]);
+    if (centerChanged || zoomChanged) {
+      // Only update view for significant changes
+      viewUpdateTimeoutRef.current = setTimeout(() => {
+        try {
+          // Only update if map container exists and has a proper size
+          if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
+            map.setView(center, zoom, { animate: false, duration: 0 });
+            
+            // Update previous values
+            prevCenterRef.current = center;
+            prevZoomRef.current = zoom;
+          }
+        } catch (error) {
+          console.error("Error setting map view:", error);
+        }
+        viewUpdateTimeoutRef.current = null;
+      }, 300); // Longer debounce to prevent rapid updates
+    }
+    
+    return () => {
+      if (viewUpdateTimeoutRef.current) {
+        clearTimeout(viewUpdateTimeoutRef.current);
+      }
+    };
+  }, [map, center, zoom]);
   
   return (
     <div className={cn("h-full w-full min-h-[300px] relative", className)}>
