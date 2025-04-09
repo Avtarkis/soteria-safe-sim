@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
+import Header from './Header';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -10,7 +10,7 @@ const Layout = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+      <Header />
       <main className={cn(
         "flex-1 animate-fade-in w-full mx-auto",
         isMobile 

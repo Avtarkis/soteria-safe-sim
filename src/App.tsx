@@ -26,6 +26,7 @@ function App() {
         <Route path="dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+        <Route path="travel" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
         
         {/* Admin routes */}
         <Route path="admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
