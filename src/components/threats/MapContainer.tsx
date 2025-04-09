@@ -83,7 +83,7 @@ const MapContainer = ({
         const topOffset = position.top;
         const availableHeight = viewportHeight - topOffset - 120; // Leave space for buttons at bottom
         
-        containerRef.current.style.height = `${Math.max(400, availableHeight)}px`;
+        containerRef.current.style.height = `${Math.max(500, availableHeight)}px`;
         
         // Force map resize
         if (mapRef.current) {
@@ -111,14 +111,20 @@ const MapContainer = ({
     <div 
       className={cn(
         "relative w-full", 
-        isMobile ? "h-[60vh]" : "h-full"
+        isMobile ? "h-[70vh]" : "h-[600px]"
       )} 
       key={mapContainerKey}
       ref={containerRef}
+      style={{ 
+        border: '1px solid #e5e7eb', 
+        borderRadius: '8px', 
+        overflow: 'hidden',
+        minHeight: '500px' 
+      }}
     >
       <div 
         className="h-full w-full relative" 
-        style={{ minHeight: isMobile ? '400px' : '380px' }}
+        style={{ minHeight: isMobile ? '500px' : '600px' }}
       >
         <LeafletMap 
           markers={memoizedMarkers.current}

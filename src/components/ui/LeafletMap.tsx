@@ -65,6 +65,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const updateBlockedUntilRef = useRef<number>(0);
   const mapElementsInitializedRef = useRef<boolean>(false);
   const mapReadyForOperationsRef = useRef<boolean>(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -107,6 +108,20 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
           newMap.setView(center, zoom, { animate: false, duration: 0 });
           prevCenterRef.current = center;
           prevZoomRef.current = zoom;
+          
+          // Add custom event listener for high precision mode
+          const handleHighPrecisionMode = () => {
+            console.log("High precision mode activated in map");
+            if (userLocation && userLocation[0] && userLocation[1]) {
+              newMap.setView([userLocation[0], userLocation[1]], 16, { animate: true });
+            }
+          };
+          
+          document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode as EventListener);
+          
+          return () => {
+            document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode as EventListener);
+          };
         } catch (error) {
           console.error("Initial setView failed:", error);
         }
@@ -188,9 +203,22 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       mapElementsInitializedRef.current = false;
     };
   }, []);
+
+  // Create a style to ensure the map container is visible
+  const mapContainerStyle = {
+    height: '100%',
+    width: '100%',
+    minHeight: '500px',
+    position: 'relative' as 'relative',
+    backgroundColor: '#f0f0f0'
+  };
   
   return (
-    <div className={cn("h-full w-full min-h-[400px] relative", className)}>
+    <div 
+      className={cn("h-full w-full min-h-[500px] relative", className)}
+      ref={mapContainerRef}
+      style={mapContainerStyle}
+    >
       <MapBase 
         center={center} 
         zoom={zoom} 

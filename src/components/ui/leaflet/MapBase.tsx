@@ -4,12 +4,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
 
-// Fix marker icon issues
+// Fix marker icon issues - explicitly set the icon paths
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconUrl: '/marker-icon.png',
-  iconRetinaUrl: '/marker-icon-2x.png',
-  shadowUrl: '/marker-shadow.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
 interface MapBaseProps {
@@ -44,68 +44,68 @@ const MapBase = ({
       
       // Force a minimum height to ensure container is visible
       if (mapContainerRef.current) {
-        mapContainerRef.current.style.minHeight = '400px';
+        mapContainerRef.current.style.minHeight = '500px';
+        mapContainerRef.current.style.height = '100%';
+        mapContainerRef.current.style.width = '100%';
+        mapContainerRef.current.style.backgroundColor = '#f0f0f0'; // Add background color to make container visible
       }
       
-      // Create map with optimized settings
-      const map = L.map(mapContainerRef.current, {
-        center,
-        zoom,
-        zoomControl: true,
-        preferCanvas: true,
-        renderer: L.canvas({ padding: 0.5 }),
-        attributionControl: true,
-        fadeAnimation: false,
-        zoomAnimation: true,
-        markerZoomAnimation: false,
-      });
-
-      // Add basic controls
-      L.control.attribution({
-        prefix: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        position: 'bottomright'
-      }).addTo(map);
-      
-      L.control.zoom({
-        position: 'bottomright'
-      }).addTo(map);
-
-      // Add OpenStreetMap tile layer with more conservative settings
-      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-        updateWhenIdle: true,
-        updateWhenZooming: false,
-        keepBuffer: 2
-      }).addTo(map);
-      
-      // Ensure tiles are loaded
-      tileLayer.on('load', () => {
-        console.log("Tile layer loaded");
-      });
-      
-      // Store ref
-      mapRef.current = map;
-      
-      // Force a redraw of the map container after mounting
+      // Short delay to ensure DOM is ready
       setTimeout(() => {
-        if (mapRef.current) {
-          // First invalidate size
-          mapRef.current.invalidateSize(true);
+        try {
+          // Create map with optimized settings
+          const map = L.map(mapContainerRef.current!, {
+            center,
+            zoom,
+            zoomControl: true,
+            preferCanvas: true,
+            renderer: L.canvas({ padding: 0.5 }),
+            attributionControl: true,
+          });
+
+          // Add basic controls
+          L.control.attribution({
+            prefix: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            position: 'bottomright'
+          }).addTo(map);
           
-          // Then notify parent
-          console.log("Map base initialization complete");
-          mapInitializedRef.current = true;
-          onMapReady(mapRef.current);
+          L.control.zoom({
+            position: 'bottomright'
+          }).addTo(map);
+
+          // Add OpenStreetMap tile layer with more conservative settings
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19,
+          }).addTo(map);
           
-          // Trigger another resize after a brief delay
+          // Store ref
+          mapRef.current = map;
+          
+          // Force a redraw of the map container after mounting
           setTimeout(() => {
             if (mapRef.current) {
+              // First invalidate size
               mapRef.current.invalidateSize(true);
+              
+              // Then notify parent
+              console.log("Map base initialization complete");
+              mapInitializedRef.current = true;
+              onMapReady(mapRef.current);
+              
+              // Trigger another resize after a brief delay
+              setTimeout(() => {
+                if (mapRef.current) {
+                  mapRef.current.invalidateSize(true);
+                }
+              }, 500);
             }
-          }, 500);
+          }, 300);
+        } catch (err) {
+          console.error('Error creating Leaflet map:', err);
+          setInitError(`Map creation error: ${err}`);
         }
-      }, 300);
+      }, 100);
       
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -161,13 +161,14 @@ const MapBase = ({
   return (
     <div 
       ref={mapContainerRef} 
-      className={cn("h-full w-full min-h-[400px]", className)} 
+      className={cn("h-full w-full min-h-[500px] bg-gray-100", className)} 
       id="leaflet-map-container"
+      style={{ position: 'relative', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}
     >
       {initError && (
         <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-75 z-50">
           <div className="p-4 bg-background border rounded shadow-lg">
-            <p className="text-sm text-destructive">Map initialization error, please refresh.</p>
+            <p className="text-sm text-destructive">Map initialization error: {initError}</p>
           </div>
         </div>
       )}

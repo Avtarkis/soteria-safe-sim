@@ -106,15 +106,37 @@ const UserLocationLayer = ({
       // Create pulsing icon based on safety level
       const pulsingIcon = createPulsingIcon(safetyLevel);
       
-      // Add user marker
-      userMarkerRef.current = L.marker(latlng, { icon: pulsingIcon, zIndexOffset: 1000 })
-        .addTo(map)
-        .bindPopup(`
-          <b>Your Exact Location</b><br>
-          Lat: ${latlng.lat.toFixed(5)}<br>
-          Lng: ${latlng.lng.toFixed(5)}<br>
-          Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
-        `);
+      if (!pulsingIcon) {
+        // Create a default icon if the pulsing icon fails
+        const defaultIcon = new L.Icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+          shadowSize: [41, 41]
+        });
+        
+        // Add user marker with default icon
+        userMarkerRef.current = L.marker(latlng, { icon: defaultIcon, zIndexOffset: 1000 })
+          .addTo(map)
+          .bindPopup(`
+            <b>Your Exact Location</b><br>
+            Lat: ${latlng.lat.toFixed(5)}<br>
+            Lng: ${latlng.lng.toFixed(5)}<br>
+            Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
+          `);
+      } else {
+        // Add user marker with pulsing icon
+        userMarkerRef.current = L.marker(latlng, { icon: pulsingIcon, zIndexOffset: 1000 })
+          .addTo(map)
+          .bindPopup(`
+            <b>Your Exact Location</b><br>
+            Lat: ${latlng.lat.toFixed(5)}<br>
+            Lng: ${latlng.lng.toFixed(5)}<br>
+            Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
+          `);
+      }
       
       // Color the accuracy circle based on safety level
       const circleColor = safetyLevel === 'safe' ? '#4F46E5' : 
