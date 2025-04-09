@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Menu, X, User, Bell, MapPin, Shield, AlertTriangle, Settings, PanelLeft, Users, Globe, CreditCard, LucideIcon } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavLinkProps {
   to: string;
@@ -33,6 +34,10 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  
+  // Check if user has admin privileges
+  const isAdmin = user?.email?.endsWith('@soteria.com');
   
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -58,6 +63,8 @@ const Navbar = () => {
     { to: '/travel', icon: Globe, text: 'Travel' },
     { to: '/cyber', icon: Shield, text: 'Cyber Security' },
     { to: '/subscription', icon: CreditCard, text: 'Subscription' },
+    // Add Admin link if user is admin
+    ...(isAdmin ? [{ to: '/admin', icon: Settings, text: 'Admin' }] : []),
   ];
 
   return (

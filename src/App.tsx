@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 
 // Layout
 import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 // Pages
 import Dashboard from '@/components/Dashboard';
@@ -19,6 +20,14 @@ import EmergencyPage from '@/pages/EmergencyPage';
 import AlertsPage from '@/pages/AlertsPage';
 import CyberSecurityPage from '@/pages/CyberSecurityPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+
+// Admin Pages
+import AdminDashboardPage from '@/pages/AdminDashboardPage';
+import AdminUsersPage from '@/pages/AdminUsersPage';
+import AdminThreatsPage from '@/pages/AdminThreatsPage';
+
+// Protected Route Component
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 function App() {
   return (
@@ -33,16 +42,98 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             
             {/* Protected routes within layout */}
-            <Route path="/" element={<Layout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/map" element={<ThreatsMap />} />
-              <Route path="/travel" element={<TravelPage />} />
-              <Route path="/family" element={<FamilyPage />} />
-              <Route path="/emergency" element={<EmergencyPage />} />
-              <Route path="/alerts" element={<AlertsPage />} />
-              <Route path="/cyber" element={<CyberSecurityPage />} />
-              <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route element={<Layout />}>
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/map" 
+                element={
+                  <ProtectedRoute>
+                    <ThreatsMap />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/travel" 
+                element={
+                  <ProtectedRoute>
+                    <TravelPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/family" 
+                element={
+                  <ProtectedRoute>
+                    <FamilyPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/emergency" 
+                element={
+                  <ProtectedRoute>
+                    <EmergencyPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/alerts" 
+                element={
+                  <ProtectedRoute>
+                    <AlertsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/cyber" 
+                element={
+                  <ProtectedRoute>
+                    <CyberSecurityPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/subscription" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionPage />
+                  </ProtectedRoute>
+                } 
+              />
             </Route>
+            
+            {/* Admin routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/threats" 
+              element={
+                <ProtectedRoute>
+                  <AdminThreatsPage />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </Router>
         <Toaster />
