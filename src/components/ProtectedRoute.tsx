@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,9 +9,17 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  useEffect(() => {
+    // Mark auth as checked once loading is complete
+    if (!loading) {
+      setAuthChecked(true);
+    }
+  }, [loading]);
   
   // Show loading state while checking authentication
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -28,7 +36,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   
   // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   // Render children if authenticated

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 // Define types for our context
 type User = {
@@ -35,6 +36,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Check for email verification parameters in URL (for account confirmation)
+  useEffect(() => {
+    const handleEmailVerification = async () => {
+      const url = new URL(window.location.href);
+      const accessToken = url.searchParams.get('access_token');
+      const refreshToken = url.searchParams.get('refresh_token');
+      const type = url.searchParams.get('type');
+      
+      if (accessToken && refreshToken && type === 'signup') {
+        try {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) throw error;
+          
+          toast({
+            title: 'Account verified',
+            description: 'Your account has been successfully verified.',
+          });
+          
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+          console.error('Error verifying email:', error);
+          toast({
+            title: 'Verification error',
+            description: 'There was an error verifying your account. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+    
+    handleEmailVerification();
+  }, [toast]);
 
   // Fetch the current session and set the user
   useEffect(() => {
@@ -102,12 +141,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign up function
   const signUp = useCallback(async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
       if (error) throw error;
+      
       toast({
         title: 'Account created',
         description: 'Please check your email for the confirmation link',
       });
+      
       return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);

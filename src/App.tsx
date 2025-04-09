@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -20,6 +21,8 @@ import EmergencyPage from '@/pages/EmergencyPage';
 import AlertsPage from '@/pages/AlertsPage';
 import CyberSecurityPage from '@/pages/CyberSecurityPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import NotFound from '@/pages/NotFound';
+import ResetPassword from '@/pages/ResetPassword';
 
 // Admin Pages
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
@@ -36,11 +39,11 @@ function App() {
         <AdminProvider>
           <Router>
             <Routes>
-              {/* Make login the default route */}
+              {/* Auth routes */}
               <Route path="/" element={<Navigate to="/login" replace />} />
-              
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               
               {/* Protected routes within layout */}
               <Route element={<Layout />}>
@@ -135,6 +138,9 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* 404 Not Found route for all unmatched paths */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
           <Toaster />

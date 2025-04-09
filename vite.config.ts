@@ -11,8 +11,8 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use environment vars if available, otherwise use hardcoded values
-  const envSupabaseUrl = import.meta.env?.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const envSupabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const envSupabaseUrl = process.env.VITE_SUPABASE_URL;
+  const envSupabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
   
   const finalSupabaseUrl = envSupabaseUrl || supabaseUrl;
   const finalSupabaseKey = envSupabaseKey || supabaseAnonKey;
