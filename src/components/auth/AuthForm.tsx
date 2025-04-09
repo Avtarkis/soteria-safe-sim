@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 
 interface AuthFormProps {
@@ -16,7 +16,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +25,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
 
     try {
       if (type === 'login') {
-        await login(email, password);
+        await signIn(email, password);
       } else {
-        await signup(email, password, name);
+        await signUp(email, password, name);
       }
       if (onSuccess) onSuccess();
     } catch (err: any) {

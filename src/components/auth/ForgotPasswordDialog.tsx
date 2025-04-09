@@ -1,23 +1,26 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
-import ButtonWrapper from '@/components/ui/ButtonWrapper';
-import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface ForgotPasswordDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ isOpen, onClose }) => {
+const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
+  isOpen,
+  onClose
+}) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { toast } = useToast();
+  const [sent, setSent] = useState(false);
   const { resetPassword } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,24 +28,18 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ isOpen, onC
 
     try {
       const { error } = await resetPassword(email);
+      if (error) throw error;
       
-      if (error) {
-        toast({
-          title: "Password Reset Failed",
-          description: error.message || "Something went wrong",
-          variant: "destructive",
-        });
-      } else {
-        setSuccess(true);
-        toast({
-          title: "Reset Email Sent",
-          description: "Check your email for the password reset link",
-        });
-      }
-    } catch (error) {
+      setSent(true);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Password reset email sent",
+        description: "Please check your inbox for further instructions."
+      });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Failed to send reset email",
+        description: "Please check your email and try again.",
         variant: "destructive",
       });
     } finally {
@@ -52,7 +49,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ isOpen, onC
 
   const handleClose = () => {
     setEmail('');
-    setSuccess(false);
+    setSent(false);
     onClose();
   };
 
@@ -60,53 +57,44 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ isOpen, onC
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{success ? "Check Your Email" : "Reset Your Password"}</DialogTitle>
+          <DialogTitle>Reset Password</DialogTitle>
           <DialogDescription>
-            {success 
-              ? "We've sent a password reset link to your email address."
-              : "Enter your email address and we'll send you a link to reset your password."}
+            Enter your email address and we'll send you a link to reset your password.
           </DialogDescription>
         </DialogHeader>
-
-        {!success ? (
+        
+        {sent ? (
+          <div className="space-y-4 py-4">
+            <p className="text-center text-sm">
+              Password reset instructions have been sent to your email.
+            </p>
+            <div className="flex justify-center">
+              <Button onClick={handleClose}>Close</Button>
+            </div>
+          </div>
+        ) : (
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="resetEmail">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <input
-                  id="resetEmail"
-                  type="email"
-                  className="w-full pl-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                disabled={loading}
+                required
+              />
             </div>
-
-            <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={handleClose}>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
                 Cancel
               </Button>
-              <ButtonWrapper type="submit" isLoading={loading}>
-                Send Reset Link
-              </ButtonWrapper>
-            </DialogFooter>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Button>
+            </div>
           </form>
-        ) : (
-          <div className="flex flex-col items-center py-6">
-            <Mail className="h-16 w-16 text-primary mb-4" />
-            <p className="text-center mb-6">
-              Please check your inbox and follow the instructions to reset your password.
-            </p>
-            <Button onClick={handleClose}>
-              Close
-            </Button>
-          </div>
         )}
       </DialogContent>
     </Dialog>
