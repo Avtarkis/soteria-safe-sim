@@ -76,6 +76,11 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   useEffect(() => {
     addPulsingStyles();
     
+    // Trigger global resize event to help Leaflet recognize container size
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    
     return () => {
       const styleElem = document.getElementById('pulsing-marker-style');
       if (styleElem) {
@@ -135,8 +140,8 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   };
 
   return (
-    <MapContainer className={className}>
-      {mapContainerRef.current && document.body.contains(mapContainerRef.current) && (
+    <div className={cn("relative w-full h-full min-h-[500px]", className)}>
+      {mapContainerRef.current && (
         <MapBase 
           center={center} 
           zoom={zoom} 
@@ -146,15 +151,11 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       
       {map && isMapReady && (
         <>
-          <MapEvents map={map} />
-          
-          {markers && markers.length > 0 && (
-            <MarkerLayer 
-              map={map}
-              markers={markers}
-              onMarkerClick={onMarkerClick}
-            />
-          )}
+          <MarkerLayer 
+            map={map}
+            markers={markers}
+            onMarkerClick={onMarkerClick}
+          />
           
           {showUserLocation && (
             <UserLocationLayer 
@@ -164,11 +165,15 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
               safetyLevel={safetyLevel}
             />
           )}
+          
+          <MapEvents map={map} />
         </>
       )}
       
-      <MapError error={mapError} onRetry={handleRetry} />
-    </MapContainer>
+      {mapError && (
+        <MapError error={mapError} onRetry={handleRetry} />
+      )}
+    </div>
   );
 });
 

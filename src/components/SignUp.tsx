@@ -54,10 +54,10 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
           description: "Your account has been created successfully. Redirecting to dashboard...",
         });
         
-        // Redirect to dashboard after successful sign-up
+        // Redirect to dashboard after successful sign-up using direct URL change
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 100);
+          window.location.href = '/dashboard';
+        }, 200);
       }
     } catch (error: any) {
       console.error('Sign up error:', error);

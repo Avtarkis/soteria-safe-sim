@@ -63,9 +63,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
         }
         
         // Navigate to dashboard after successful authentication
+        // Use a small timeout to ensure React state updates complete
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 100);
+          window.location.href = '/dashboard';
+        }, 200);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);

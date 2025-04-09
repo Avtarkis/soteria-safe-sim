@@ -3,9 +3,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
-import MapInitializer from './map-base/MapInitializer';
-import MapResizeHandler from './map-base/MapResizeHandler';
-import MapCleanup from './map-base/MapCleanup';
 
 // Fix marker icon issues - explicitly set the icon paths
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,51 +26,75 @@ const MapBase = ({
   onMapReady
 }: MapBaseProps) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const mapInitializedRef = useRef(false);
-  const initializationAttemptedRef = useRef(false);
-  const [initError, setInitError] = useState<string | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
-  // Force initialization of map after component is mounted
   useEffect(() => {
-    if (!mapInitializedRef.current && !initializationAttemptedRef.current && mapContainerRef.current) {
-      console.log("Attempting manual map initialization");
-      try {
-        // Create a new map instance directly
-        if (!mapRef.current && mapContainerRef.current) {
-          // Create the map
-          const newMap = L.map(mapContainerRef.current, {
+    // Only initialize once
+    if (mapInstanceRef.current || !mapContainerRef.current) return;
+    
+    console.log("Initializing map with center:", center, "zoom:", zoom);
+    
+    try {
+      // Give the map container explicit dimensions
+      const container = mapContainerRef.current;
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.minHeight = '500px';
+      
+      // Create the map instance with a slight delay to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          // Create new map instance
+          const newMap = L.map(container, {
             center: center,
             zoom: zoom,
-            layers: [
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              })
-            ]
+            zoomControl: true,
+            attributionControl: true
           });
           
-          // Store the map reference
-          mapRef.current = newMap;
-          mapInitializedRef.current = true;
+          // Add tile layer
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(newMap);
           
-          // Notify parent component
+          // Force map to recognize its container size
+          newMap.invalidateSize(true);
+          
+          // Store reference
+          mapInstanceRef.current = newMap;
+          
+          // Notify parent
           onMapReady(newMap);
-          console.log("Map manually initialized successfully");
+          
+          // Extra check to make sure map renders
+          setTimeout(() => {
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.invalidateSize(true);
+            }
+          }, 1000);
+          
+        } catch (e) {
+          console.error("Error creating map:", e);
+          setError(`Map creation failed: ${e}`);
         }
-      } catch (error) {
-        console.error("Manual map initialization failed:", error);
-        setInitError("Failed to initialize map. Please try again.");
-      } finally {
-        initializationAttemptedRef.current = true;
-      }
+      }, 100);
+    } catch (e) {
+      console.error("Map initialization error:", e);
+      setError(`Map initialization failed: ${e}`);
     }
+    
+    // Cleanup function
+    return () => {
+      if (mapInstanceRef.current) {
+        console.log("Cleaning up map instance");
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
   }, [center, zoom, onMapReady]);
   
-  const handleMapReady = (map: L.Map) => {
-    mapRef.current = map;
-    onMapReady(map);
-  };
-
   return (
     <div 
       ref={mapContainerRef} 
@@ -87,36 +108,13 @@ const MapBase = ({
         height: '500px' // Explicit height
       }}
     >
-      <MapInitializer 
-        mapContainerRef={mapContainerRef}
-        center={center}
-        zoom={zoom}
-        onMapReady={handleMapReady}
-        onInitError={setInitError}
-        mapInitializedRef={mapInitializedRef}
-        initializationAttemptedRef={initializationAttemptedRef}
-      />
-      
-      <MapResizeHandler 
-        map={mapRef.current} 
-        mapInitialized={mapInitializedRef.current} 
-      />
-      
-      <MapCleanup 
-        map={mapRef.current}
-        mapInitializedRef={mapInitializedRef}
-      />
-      
-      {initError && (
+      {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-75 z-50">
           <div className="p-4 bg-background border rounded shadow-lg">
-            <p className="text-sm text-destructive">Map initialization error: {initError}</p>
+            <p className="text-sm text-destructive">{error}</p>
             <button 
               className="mt-2 px-3 py-1 bg-primary text-primary-foreground rounded text-sm"
-              onClick={() => {
-                setInitError(null);
-                initializationAttemptedRef.current = false;
-              }}
+              onClick={() => window.location.reload()}
             >
               Retry
             </button>

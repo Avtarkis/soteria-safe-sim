@@ -12,7 +12,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const [notificationShown, setNotificationShown] = useState(false);
-  const navigate = useNavigate();
   
   // Show loading state while checking authentication
   if (loading) {
@@ -40,13 +39,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [user, toast, notificationShown]);
   
   // Always bypass authentication in testing mode
-  if (!user) {
-    // For test mode, always allow access to protected routes
-    console.log("Test mode: allowing access to protected route without authentication");
-    return <>{children}</>;
-  }
-  
-  // Render children if authenticated
+  console.log("Test mode: allowing access to protected route without authentication");
   return <>{children}</>;
 };
 

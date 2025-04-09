@@ -31,7 +31,7 @@ const useLocationTracking = (
   // For debugging
   useEffect(() => {
     if (userLocation) {
-      console.log('Updating location:', userLocation[0], userLocation[1], 'accuracy:', locationAccuracy);
+      console.log('Updating location in useLocationTracking:', userLocation[0], userLocation[1], 'accuracy:', locationAccuracy);
     }
   }, [userLocation, locationAccuracy]);
 
