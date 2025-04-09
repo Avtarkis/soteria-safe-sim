@@ -1,6 +1,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 
@@ -127,11 +128,13 @@ try {
   
   const root = createRoot(rootElement);
   
-  // Wrap the App component in the ErrorBoundary
+  // Wrap the App component in the ErrorBoundary and BrowserRouter
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <App />
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </ErrorBoundary>
     </React.StrictMode>
   );
