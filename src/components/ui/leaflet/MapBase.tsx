@@ -31,7 +31,7 @@ const MapBase = ({
   const initializationAttemptedRef = useRef(false);
   const [initError, setInitError] = useState<string | null>(null);
   
-  // Initialize map when component mounts
+  // Initialize map when component mounts with more defensive checks
   useEffect(() => {
     // Only run initialization once
     if (!mapContainerRef.current || mapInitializedRef.current || initializationAttemptedRef.current) return;
@@ -50,11 +50,23 @@ const MapBase = ({
         mapContainerRef.current.style.backgroundColor = '#f0f0f0'; // Add background color to make container visible
       }
       
+      // Verify that the container exists and has dimensions before proceeding
+      if (!mapContainerRef.current || !mapContainerRef.current.clientHeight) {
+        // If container isn't ready yet, retry initialization after a delay
+        setTimeout(() => {
+          initializationAttemptedRef.current = false; // Reset flag to allow another attempt
+          if (mapContainerRef.current) mapContainerRef.current.style.minHeight = '500px';
+        }, 300);
+        return;
+      }
+      
       // Short delay to ensure DOM is ready
       setTimeout(() => {
         try {
+          if (!mapContainerRef.current) return;
+          
           // Create map with optimized settings
-          const map = L.map(mapContainerRef.current!, {
+          const map = L.map(mapContainerRef.current, {
             center,
             zoom,
             zoomControl: true,
@@ -79,33 +91,54 @@ const MapBase = ({
             maxZoom: 19,
           }).addTo(map);
           
+          // Wait for tiles to load before proceeding
+          map.once('load', () => {
+            console.log("Map tiles loaded");
+          });
+          
           // Store ref
           mapRef.current = map;
           
           // Force a redraw of the map container after mounting
           setTimeout(() => {
             if (mapRef.current) {
-              // First invalidate size
-              mapRef.current.invalidateSize(true);
-              
-              // Then notify parent
-              console.log("Map base initialization complete");
-              mapInitializedRef.current = true;
-              onMapReady(mapRef.current);
-              
-              // Trigger another resize after a brief delay
-              setTimeout(() => {
-                if (mapRef.current) {
-                  mapRef.current.invalidateSize(true);
-                }
-              }, 500);
+              try {
+                // First invalidate size forcefully
+                mapRef.current.invalidateSize(true);
+                
+                // Then notify parent
+                console.log("Map base initialization complete");
+                mapInitializedRef.current = true;
+                onMapReady(mapRef.current);
+                
+                // Add another resize after a brief delay to ensure map is properly sized
+                setTimeout(() => {
+                  if (mapRef.current) {
+                    mapRef.current.invalidateSize(true);
+                    
+                    // More defensive check for leaflet_pos error
+                    try {
+                      mapRef.current.setView(center, zoom);
+                    } catch (e) {
+                      console.warn("Secondary setView failed, will try again:", e);
+                      
+                      // Try one more time after another delay
+                      setTimeout(() => {
+                        if (mapRef.current) mapRef.current.invalidateSize(true);
+                      }, 500);
+                    }
+                  }
+                }, 500);
+              } catch (error) {
+                console.error("Error during map initialization callback:", error);
+              }
             }
           }, 300);
         } catch (err) {
           console.error('Error creating Leaflet map:', err);
           setInitError(`Map creation error: ${err}`);
         }
-      }, 100);
+      }, 300);
       
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -143,7 +176,11 @@ const MapBase = ({
   useEffect(() => {
     const handleResize = () => {
       if (mapRef.current && mapInitializedRef.current) {
-        mapRef.current.invalidateSize(true);
+        try {
+          mapRef.current.invalidateSize(true);
+        } catch (e) {
+          console.error("Error during resize:", e);
+        }
       }
     };
     
@@ -169,6 +206,15 @@ const MapBase = ({
         <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-75 z-50">
           <div className="p-4 bg-background border rounded shadow-lg">
             <p className="text-sm text-destructive">Map initialization error: {initError}</p>
+            <button 
+              className="mt-2 px-3 py-1 bg-primary text-primary-foreground rounded text-sm"
+              onClick={() => {
+                setInitError(null);
+                initializationAttemptedRef.current = false;
+              }}
+            >
+              Retry
+            </button>
           </div>
         </div>
       )}

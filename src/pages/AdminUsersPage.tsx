@@ -1,15 +1,12 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 
 const AdminUsersPage = () => {
-  const { user } = useAuth();
-  
-  // Check if user has admin privileges
-  const isAdmin = user?.email?.endsWith('@soteria.com');
+  const { isAdmin } = useAdmin();
   
   // Redirect non-admin users
   if (!isAdmin) {

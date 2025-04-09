@@ -66,6 +66,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const mapElementsInitializedRef = useRef<boolean>(false);
   const mapReadyForOperationsRef = useRef<boolean>(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const initAttemptsRef = useRef<number>(0);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -91,7 +92,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     return map as L.Map;
   }, [map]);
   
-  // Handle map initialization
+  // Handle map initialization with retry logic
   const handleMapReady = (newMap: L.Map) => {
     console.log("Map base is now ready");
     setMap(newMap);
@@ -108,22 +109,20 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
           newMap.setView(center, zoom, { animate: false, duration: 0 });
           prevCenterRef.current = center;
           prevZoomRef.current = zoom;
-          
-          // Add custom event listener for high precision mode
-          const handleHighPrecisionMode = () => {
-            console.log("High precision mode activated in map");
-            if (userLocation && userLocation[0] && userLocation[1]) {
-              newMap.setView([userLocation[0], userLocation[1]], 16, { animate: true });
-            }
-          };
-          
-          document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode as EventListener);
-          
-          return () => {
-            document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode as EventListener);
-          };
         } catch (error) {
           console.error("Initial setView failed:", error);
+          
+          // Try again after a delay
+          setTimeout(() => {
+            try {
+              if (newMap) {
+                newMap.invalidateSize(true);
+                newMap.setView(center, zoom, { animate: false });
+              }
+            } catch (e) {
+              console.error("Retry setView failed:", e);
+            }
+          }, 500);
         }
         
         // Explicitly trigger a resize
@@ -136,60 +135,6 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     }, 300);
   };
   
-  // Handle changes to center/zoom with aggressive debouncing and change detection
-  useEffect(() => {
-    if (!map || !mapInitializedRef.current || !mapReadyForOperationsRef.current) return;
-    
-    // Skip if we're still in the update cooling period
-    if (Date.now() < updateBlockedUntilRef.current) {
-      return;
-    }
-    
-    // Clear any pending view update
-    if (viewUpdateTimeoutRef.current) {
-      clearTimeout(viewUpdateTimeoutRef.current);
-    }
-    
-    // Only update if there's a significant change (more than 0.01 degrees or zoom change)
-    const centerChanged = 
-      Math.abs(center[0] - prevCenterRef.current[0]) > 0.01 || 
-      Math.abs(center[1] - prevCenterRef.current[1]) > 0.01;
-    const zoomChanged = zoom !== prevZoomRef.current;
-    
-    if (centerChanged || zoomChanged) {
-      // Delay updates to prevent rapid changes
-      viewUpdateTimeoutRef.current = setTimeout(() => {
-        // Only proceed if the map is still valid and ready
-        if (map && map.getContainer() && map.getContainer().clientHeight > 0 && mapReadyForOperationsRef.current) {
-          try {
-            // Use flyTo for smoother transitions and less flickering
-            map.flyTo(center, zoom, { 
-              animate: true, 
-              duration: 0.5, // Short duration to minimize flashing
-              easeLinearity: 0.5 
-            });
-            
-            // Update previous values
-            prevCenterRef.current = center;
-            prevZoomRef.current = zoom;
-            
-            // Block further updates for 1 second
-            updateBlockedUntilRef.current = Date.now() + 1000;
-          } catch (error) {
-            console.error("Error setting map view:", error);
-          }
-        }
-        viewUpdateTimeoutRef.current = null;
-      }, 600); // Longer debounce (600ms)
-    }
-    
-    return () => {
-      if (viewUpdateTimeoutRef.current) {
-        clearTimeout(viewUpdateTimeoutRef.current);
-      }
-    };
-  }, [map, center, zoom]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {

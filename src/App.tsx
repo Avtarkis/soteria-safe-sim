@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AdminProvider } from '@/contexts/AdminContext';
 
 // Layout
 import Layout from '@/components/Layout';
@@ -33,110 +33,112 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="secure-travel-theme">
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Make login the default route */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            
-            {/* Protected routes within layout */}
-            <Route element={<Layout />}>
+        <AdminProvider>
+          <Router>
+            <Routes>
+              {/* Make login the default route */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              
+              {/* Protected routes within layout */}
+              <Route element={<Layout />}>
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/map" 
+                  element={
+                    <ProtectedRoute>
+                      <ThreatsMap />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/travel" 
+                  element={
+                    <ProtectedRoute>
+                      <TravelPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/family" 
+                  element={
+                    <ProtectedRoute>
+                      <FamilyPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/emergency" 
+                  element={
+                    <ProtectedRoute>
+                      <EmergencyPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/alerts" 
+                  element={
+                    <ProtectedRoute>
+                      <AlertsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/cyber" 
+                  element={
+                    <ProtectedRoute>
+                      <CyberSecurityPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/subscription" 
+                  element={
+                    <ProtectedRoute>
+                      <SubscriptionPage />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Route>
+              
+              {/* Admin routes */}
               <Route 
-                path="/dashboard" 
+                path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <AdminDashboardPage />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/map" 
+                path="/admin/users" 
                 element={
                   <ProtectedRoute>
-                    <ThreatsMap />
+                    <AdminUsersPage />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/travel" 
+                path="/admin/threats" 
                 element={
                   <ProtectedRoute>
-                    <TravelPage />
+                    <AdminThreatsPage />
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/family" 
-                element={
-                  <ProtectedRoute>
-                    <FamilyPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/emergency" 
-                element={
-                  <ProtectedRoute>
-                    <EmergencyPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/alerts" 
-                element={
-                  <ProtectedRoute>
-                    <AlertsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/cyber" 
-                element={
-                  <ProtectedRoute>
-                    <CyberSecurityPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/subscription" 
-                element={
-                  <ProtectedRoute>
-                    <SubscriptionPage />
-                  </ProtectedRoute>
-                } 
-              />
-            </Route>
-            
-            {/* Admin routes */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute>
-                  <AdminDashboardPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/users" 
-              element={
-                <ProtectedRoute>
-                  <AdminUsersPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/threats" 
-              element={
-                <ProtectedRoute>
-                  <AdminThreatsPage />
-                </ProtectedRoute>
-              } 
-            />
-          </Routes>
-        </Router>
-        <Toaster />
+            </Routes>
+          </Router>
+          <Toaster />
+        </AdminProvider>
       </AuthProvider>
     </ThemeProvider>
   );
