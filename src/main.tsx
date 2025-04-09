@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Define a basic ErrorBoundary component
 interface ErrorBoundaryProps {
@@ -128,13 +129,15 @@ try {
   
   const root = createRoot(rootElement);
   
-  // Wrap the App component in the ErrorBoundary and BrowserRouter
+  // Wrap the App component in the ErrorBoundary, AuthProvider, and BrowserRouter
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );
