@@ -25,25 +25,18 @@ const MapContainer = ({
   clearSelectedThreat
 }: MapContainerProps) => {
   const { toast } = useToast();
-  const [mapKey] = useState(`map-container-${Date.now()}`);
-  const skipResizeRef = useRef(false);
+  // Use a static key to prevent re-creation of the container
+  const mapContainerKey = useRef(`map-${Date.now()}`).current;
+  const resizeAttemptedRef = useRef(false);
   
-  // Prevent multiple resize operations
+  // Minimal one-time resize with no re-renders or timers
   useEffect(() => {
-    if (mapRef.current && !skipResizeRef.current) {
-      // Set a flag to prevent multiple resizes
-      skipResizeRef.current = true;
-      
-      // Simple one-time initialization, without any timers
-      if (mapRef.current) {
-        mapRef.current.invalidateSize({ animate: false });
-      }
+    if (mapRef.current && !resizeAttemptedRef.current) {
+      // Mark that we've attempted resize to prevent future attempts
+      resizeAttemptedRef.current = true;
+      // Simple invalidation without animation or delays
+      mapRef.current.invalidateSize({ animate: false });
     }
-    
-    // Cleanup function
-    return () => {
-      skipResizeRef.current = false;
-    };
   }, [mapRef]);
 
   return (
@@ -51,7 +44,7 @@ const MapContainer = ({
       <div 
         className="h-full w-full relative" 
         style={{ minHeight: '300px' }}
-        key={mapKey}
+        key={mapContainerKey}
       >
         <LeafletMap 
           markers={filteredMarkers}

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef, memo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
@@ -48,6 +48,7 @@ interface LeafletMapProps {
   showUserLocation?: boolean;
 }
 
+// Use React.memo to prevent unnecessary re-renders
 const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   className,
   markers = [],
@@ -61,6 +62,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const prevCenterRef = useRef<[number, number]>(center);
   const prevZoomRef = useRef<number>(zoom);
   const viewUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const updateBlockedUntilRef = useRef<number>(0);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -90,40 +92,51 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const handleMapReady = (newMap: L.Map) => {
     setMap(newMap);
     mapInitializedRef.current = true;
+    // Block updates for 2 seconds after initialization
+    updateBlockedUntilRef.current = Date.now() + 2000;
   };
   
-  // Update view only when center or zoom changes significantly
+  // Even more aggressive rate limiting and change detection
   useEffect(() => {
     if (!map || !mapInitializedRef.current) return;
     
-    // Debounce view updates to prevent flickering
+    // Enforce a minimum time between view updates (2 seconds)
+    if (Date.now() < updateBlockedUntilRef.current) {
+      return;
+    }
+    
+    // Clear any existing scheduled update
     if (viewUpdateTimeoutRef.current) {
       clearTimeout(viewUpdateTimeoutRef.current);
     }
     
-    // Check if view actually needs to be updated (significant change)
+    // Only update if there's a significant change (more than 0.01 degrees or zoom change)
     const centerChanged = 
-      Math.abs(center[0] - prevCenterRef.current[0]) > 0.001 || 
-      Math.abs(center[1] - prevCenterRef.current[1]) > 0.001;
+      Math.abs(center[0] - prevCenterRef.current[0]) > 0.01 || 
+      Math.abs(center[1] - prevCenterRef.current[1]) > 0.01;
     const zoomChanged = zoom !== prevZoomRef.current;
     
     if (centerChanged || zoomChanged) {
-      // Only update view for significant changes
+      // Delay updates to prevent rapid changes
       viewUpdateTimeoutRef.current = setTimeout(() => {
         try {
           // Only update if map container exists and has a proper size
           if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
+            // Disable animations completely to reduce flashing
             map.setView(center, zoom, { animate: false, duration: 0 });
             
             // Update previous values
             prevCenterRef.current = center;
             prevZoomRef.current = zoom;
+            
+            // Block further updates for 1 second
+            updateBlockedUntilRef.current = Date.now() + 1000;
           }
         } catch (error) {
           console.error("Error setting map view:", error);
         }
         viewUpdateTimeoutRef.current = null;
-      }, 300); // Longer debounce to prevent rapid updates
+      }, 500); // Longer debounce (half a second)
     }
     
     return () => {
@@ -165,4 +178,5 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 
 LeafletMap.displayName = 'LeafletMap';
 
-export default LeafletMap;
+// Wrap with memo to prevent re-renders when props haven't changed
+export default memo(LeafletMap);
