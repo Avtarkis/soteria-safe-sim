@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Layout from '@/components/Layout';
+import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import DashboardPage from '@/pages/Index';
 import LoginPage from '@/pages/LoginPage';
@@ -18,6 +18,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
+import ThreatsMap from '@/components/ThreatsMap';
 
 function App() {
   return (
@@ -30,7 +31,7 @@ function App() {
         
         {/* Protected routes */}
         <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="map" element={<ProtectedRoute><TravelPage /></ProtectedRoute>} />
+        <Route path="map" element={<ThreatsMap />} />
         <Route path="alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
         <Route path="emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
         <Route path="travel" element={<ProtectedRoute><TravelPage /></ProtectedRoute>} />

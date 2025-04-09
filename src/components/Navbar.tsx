@@ -1,16 +1,14 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext'; // Using the correct path now
+import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-// Extract NavItem component to make code more modular
 const NavItem = ({ to, icon, label, active, loading, onClick }: { 
   to: string; 
   icon: React.ReactNode; 
@@ -40,7 +38,6 @@ const NavItem = ({ to, icon, label, active, loading, onClick }: {
   );
 };
 
-// Extract MobileMenu component
 const MobileMenu = ({ open, setOpen, navItems, user, signOut }: {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -110,7 +107,6 @@ const MobileMenu = ({ open, setOpen, navItems, user, signOut }: {
   );
 };
 
-// Extract DesktopMenu component
 const DesktopMenu = ({ navItems }: {
   navItems: {
     to: string;
@@ -143,14 +139,13 @@ const DesktopMenu = ({ navItems }: {
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const { user, signOut } = useAuth(); // Using the correct auth hook
+  const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Clean up loading state if navigation gets stuck
   React.useEffect(() => {
     if (isLoading) {
       const timer = setTimeout(() => {
@@ -162,20 +157,16 @@ const Navbar = () => {
   }, [isLoading]);
 
   const handleNavigation = (path: string) => {
-    // Set loading state
     setIsLoading(true);
     
-    // Navigate to the path with a small delay to allow UI to update
     setTimeout(() => {
       navigate(path);
       
-      // Clear loading state after navigation
       setTimeout(() => {
         setIsLoading(false);
       }, 500);
     }, 100);
     
-    // Show toast for navigation feedback
     toast({
       title: `Navigating to ${path.slice(1).charAt(0).toUpperCase() + path.slice(2)}`,
       description: "Where every second counts - loading page...",
@@ -183,7 +174,6 @@ const Navbar = () => {
     });
   };
 
-  // Generate navigation items - updated to match routes in App.tsx
   const navItems = [
     { to: '/dashboard', icon: <Home className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Dashboard' },
     { to: '/map', icon: <Map className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Threat Map' },
@@ -206,7 +196,7 @@ const Navbar = () => {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0284c7" className="h-8 w-8">
             <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.75.75 0 00.674 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
           </svg>
-          <span className="font-semibold text-lg">Soteria</span>
+          <span className="font-semibold text-xl">Soteria</span>
         </div>
 
         {isMobile ? (

@@ -50,11 +50,20 @@ const MobileMenu = () => {
               </li>
               <li>
                 <Link 
-                  to="/threats" 
+                  to="/map" 
                   className="block py-2 px-3 hover:bg-accent rounded-md"
                   onClick={() => setOpen(false)}
                 >
                   Threat Map
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/alerts" 
+                  className="block py-2 px-3 hover:bg-accent rounded-md"
+                  onClick={() => setOpen(false)}
+                >
+                  Alerts
                 </Link>
               </li>
               <li>
@@ -73,6 +82,33 @@ const MobileMenu = () => {
                   onClick={() => setOpen(false)}
                 >
                   Family
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/travel" 
+                  className="block py-2 px-3 hover:bg-accent rounded-md"
+                  onClick={() => setOpen(false)}
+                >
+                  Travel
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/cyber" 
+                  className="block py-2 px-3 hover:bg-accent rounded-md"
+                  onClick={() => setOpen(false)}
+                >
+                  Cyber Security
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/subscription" 
+                  className="block py-2 px-3 hover:bg-accent rounded-md"
+                  onClick={() => setOpen(false)}
+                >
+                  Subscription
                 </Link>
               </li>
               <li>

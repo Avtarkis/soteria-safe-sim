@@ -1,34 +1,53 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const MainNav = () => {
+  const location = useLocation();
+
+  // Function to check if a path is active
+  const isActive = (path: string) => {
+    if (path === '/dashboard' && (location.pathname === '/' || location.pathname === '/dashboard')) {
+      return true;
+    }
+    return location.pathname === path;
+  };
+
   return (
     <nav className="hidden md:flex items-center space-x-4 ml-6">
       <Link 
         to="/dashboard" 
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",
-          window.location.pathname === '/dashboard' ? "text-primary" : "text-muted-foreground"
+          isActive('/dashboard') ? "text-primary" : "text-muted-foreground"
         )}
       >
         Dashboard
       </Link>
       <Link 
-        to="/threats" 
+        to="/map" 
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",
-          window.location.pathname === '/threats' ? "text-primary" : "text-muted-foreground"
+          isActive('/map') ? "text-primary" : "text-muted-foreground"
         )}
       >
         Threat Map
       </Link>
       <Link 
+        to="/alerts" 
+        className={cn(
+          "text-sm font-medium transition-colors hover:text-primary",
+          isActive('/alerts') ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        Alerts
+      </Link>
+      <Link 
         to="/emergency" 
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",
-          window.location.pathname === '/emergency' ? "text-primary" : "text-muted-foreground"
+          isActive('/emergency') ? "text-primary" : "text-muted-foreground"
         )}
       >
         Emergency
@@ -37,10 +56,37 @@ const MainNav = () => {
         to="/family" 
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",
-          window.location.pathname === '/family' ? "text-primary" : "text-muted-foreground"
+          isActive('/family') ? "text-primary" : "text-muted-foreground"
         )}
       >
         Family
+      </Link>
+      <Link 
+        to="/travel" 
+        className={cn(
+          "text-sm font-medium transition-colors hover:text-primary",
+          isActive('/travel') ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        Travel
+      </Link>
+      <Link 
+        to="/cyber" 
+        className={cn(
+          "text-sm font-medium transition-colors hover:text-primary",
+          isActive('/cyber') ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        Cyber Security
+      </Link>
+      <Link 
+        to="/subscription" 
+        className={cn(
+          "text-sm font-medium transition-colors hover:text-primary",
+          isActive('/subscription') ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        Subscription
       </Link>
     </nav>
   );
