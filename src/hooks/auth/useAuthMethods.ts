@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +45,25 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
     try {
       console.log("Attempting to sign up:", email);
       
-      // Register the user with Supabase (we'll still create the account)
+      // In test mode, immediately set a mock user without actual registration
+      if (isTestMode()) {
+        console.log("TEST MODE: Setting mock user for registration");
+        
+        // Set a mock user for the testing environment
+        setUser({
+          id: 'test-user-id',
+          email: email
+        });
+        
+        toast({
+          title: 'Test account created',
+          description: 'You have been automatically authenticated for testing purposes.',
+        });
+        
+        return { error: null };
+      }
+      
+      // Register the user with Supabase if not in test mode
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -59,43 +76,17 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
       
       console.log("Sign up successful for:", email);
       
-      // In test mode, immediately set a mock user
-      if (isTestMode()) {
-        console.log("TEST MODE: Setting mock user after registration");
-        
-        // Set a mock user for the testing environment
-        setUser({
-          id: 'test-user-id',
-          email: email
-        });
-        
-        toast({
-          title: 'Test account created',
-          description: 'You have been automatically authenticated for testing purposes.',
-        });
-      } else {
-        toast({
-          title: 'Account created',
-          description: 'Please check your email to confirm your account.',
-        });
-      }
-      
-      // Always try to sign in automatically in test mode
-      if (isTestMode()) {
-        try {
-          console.log("TEST MODE: Auto-signing in after registration:", email);
-          await signIn(email, password);
-        } catch (signInError) {
-          console.error("Auto-sign in after registration failed:", signInError);
-        }
-      }
+      toast({
+        title: 'Account created',
+        description: 'Please check your email to confirm your account.',
+      });
       
       return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error: error as Error };
     }
-  }, [toast, signIn, setUser]);
+  }, [toast, setUser]);
 
   // Sign out function
   const signOut = useCallback(async () => {
@@ -104,6 +95,9 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
       
       // Clear the user state
       setUser(null);
+      
+      // Redirect to sign in page after sign out
+      window.location.href = '/login';
     } catch (error) {
       console.error('Sign out error:', error);
       toast({

@@ -43,10 +43,8 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
           description: "You have been signed in successfully.",
         });
         
-        // Navigate to dashboard after successful sign-in using direct URL change
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 200);
+        // Hard redirect to dashboard instead of using navigate
+        window.location.href = '/dashboard';
       }
     } catch (error: any) {
       console.error('Sign in error:', error);

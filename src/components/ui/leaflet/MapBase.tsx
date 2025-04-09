@@ -38,48 +38,45 @@ const MapBase = ({
     try {
       // Give the map container explicit dimensions
       const container = mapContainerRef.current;
+      if (!container) {
+        console.error("Map container ref is null");
+        return;
+      }
+      
       container.style.width = '100%';
       container.style.height = '100%';
       container.style.minHeight = '500px';
       
-      // Create the map instance with a slight delay to ensure DOM is ready
+      // Create map immediately instead of with delay
+      const newMap = L.map(container, {
+        center: center,
+        zoom: zoom,
+        zoomControl: true,
+        attributionControl: true
+      });
+      
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(newMap);
+      
+      // Force map to recognize its container size
+      newMap.invalidateSize(true);
+      
+      // Store reference
+      mapInstanceRef.current = newMap;
+      
+      // Notify parent
+      onMapReady(newMap);
+      
+      // Extra check to make sure map renders
       setTimeout(() => {
-        try {
-          // Create new map instance
-          const newMap = L.map(container, {
-            center: center,
-            zoom: zoom,
-            zoomControl: true,
-            attributionControl: true
-          });
-          
-          // Add tile layer
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-          }).addTo(newMap);
-          
-          // Force map to recognize its container size
-          newMap.invalidateSize(true);
-          
-          // Store reference
-          mapInstanceRef.current = newMap;
-          
-          // Notify parent
-          onMapReady(newMap);
-          
-          // Extra check to make sure map renders
-          setTimeout(() => {
-            if (mapInstanceRef.current) {
-              mapInstanceRef.current.invalidateSize(true);
-            }
-          }, 1000);
-          
-        } catch (e) {
-          console.error("Error creating map:", e);
-          setError(`Map creation failed: ${e}`);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize(true);
+          console.log("Map size invalidated after timeout");
         }
-      }, 100);
+      }, 500);
     } catch (e) {
       console.error("Map initialization error:", e);
       setError(`Map initialization failed: ${e}`);

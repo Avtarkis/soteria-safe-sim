@@ -62,7 +62,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
   const [isMapReady, setIsMapReady] = useState<boolean>(false);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   
   // Track user location
@@ -74,6 +74,9 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   
   // Add pulsing animation styles
   useEffect(() => {
+    // Create ref to the container
+    mapContainerRef.current = document.createElement('div');
+    
     addPulsingStyles();
     
     // Trigger global resize event to help Leaflet recognize container size
@@ -117,7 +120,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
           console.error("Initial setView failed:", error);
           setMapError("Failed to set map view. Please refresh the page.");
         }
-      }, 500);
+      }, 100);
     } else {
       console.error("Map container not ready");
       setMapError("Map container not ready. Please refresh the page.");
@@ -141,13 +144,11 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 
   return (
     <div className={cn("relative w-full h-full min-h-[500px]", className)}>
-      {mapContainerRef.current && (
-        <MapBase 
-          center={center} 
-          zoom={zoom} 
-          onMapReady={handleMapReady}
-        />
-      )}
+      <MapBase 
+        center={center} 
+        zoom={zoom} 
+        onMapReady={handleMapReady}
+      />
       
       {map && isMapReady && (
         <>
