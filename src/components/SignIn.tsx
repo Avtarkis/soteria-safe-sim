@@ -44,7 +44,9 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
         });
         
         // Navigate to dashboard after successful sign-in
-        navigate('/dashboard');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -59,10 +61,10 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-gray-800 text-white border-gray-700">
       <CardHeader>
         <CardTitle className="text-2xl">Sign In</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-300">
           Enter your email and password to access your account
           <p className="text-xs mt-1 text-green-500">Testing mode: Email verification bypassed</p>
         </CardDescription>
@@ -70,19 +72,20 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-gray-300">Email</Label>
             <Input 
               id="email" 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="name@example.com"
+              className="bg-gray-700 border-gray-600 text-white"
               required
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-gray-300">Password</Label>
               <button 
                 type="button" 
                 onClick={toggleForgotPassword} 
@@ -96,6 +99,7 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
+              className="bg-gray-700 border-gray-600 text-white"
               required
             />
           </div>
@@ -105,7 +109,7 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
         </form>
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-gray-400">
           Don't have an account?{" "}
           <button 
             type="button" 

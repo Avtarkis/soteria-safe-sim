@@ -55,7 +55,9 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
         });
         
         // Redirect to dashboard after successful sign-up
-        navigate('/dashboard');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -70,10 +72,10 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-gray-800 text-white border-gray-700">
       <CardHeader>
         <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-300">
           Enter your details to create a new account
           <p className="text-xs mt-1 text-green-500">Testing mode: Automatic sign-in after registration</p>
         </CardDescription>
@@ -81,33 +83,36 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-gray-300">Email</Label>
             <Input 
               id="email" 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="name@example.com"
+              className="bg-gray-700 border-gray-600 text-white"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-gray-300">Password</Label>
             <Input 
               id="password" 
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
+              className="bg-gray-700 border-gray-600 text-white"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="text-gray-300">Confirm Password</Label>
             <Input 
               id="confirmPassword" 
               type="password" 
               value={confirmPassword} 
               onChange={(e) => setConfirmPassword(e.target.value)} 
+              className="bg-gray-700 border-gray-600 text-white"
               required
             />
           </div>
@@ -117,7 +122,7 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
         </form>
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-gray-400">
           Already have an account?{" "}
           <button 
             type="button" 

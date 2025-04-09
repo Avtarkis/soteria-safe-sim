@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,41 @@ const MapBase = ({
   const mapInitializedRef = useRef(false);
   const initializationAttemptedRef = useRef(false);
   const [initError, setInitError] = useState<string | null>(null);
+  
+  // Force initialization of map after component is mounted
+  useEffect(() => {
+    if (!mapInitializedRef.current && !initializationAttemptedRef.current && mapContainerRef.current) {
+      console.log("Attempting manual map initialization");
+      try {
+        // Create a new map instance directly
+        if (!mapRef.current && mapContainerRef.current) {
+          // Create the map
+          const newMap = L.map(mapContainerRef.current, {
+            center: center,
+            zoom: zoom,
+            layers: [
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              })
+            ]
+          });
+          
+          // Store the map reference
+          mapRef.current = newMap;
+          mapInitializedRef.current = true;
+          
+          // Notify parent component
+          onMapReady(newMap);
+          console.log("Map manually initialized successfully");
+        }
+      } catch (error) {
+        console.error("Manual map initialization failed:", error);
+        setInitError("Failed to initialize map. Please try again.");
+      } finally {
+        initializationAttemptedRef.current = true;
+      }
+    }
+  }, [center, zoom, onMapReady]);
   
   const handleMapReady = (map: L.Map) => {
     mapRef.current = map;

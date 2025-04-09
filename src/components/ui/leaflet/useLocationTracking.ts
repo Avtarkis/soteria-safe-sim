@@ -19,6 +19,15 @@ const useLocationTracking = (
     safetyLevel 
   } = useUserLocationTracking(map, showUserLocation, threatMarkers);
 
+  // Additional logging for map debugging
+  useEffect(() => {
+    if (map) {
+      console.log("Map instance provided to useLocationTracking:", map);
+    } else {
+      console.log("No map instance provided to useLocationTracking");
+    }
+  }, [map]);
+  
   // For debugging
   useEffect(() => {
     if (userLocation) {

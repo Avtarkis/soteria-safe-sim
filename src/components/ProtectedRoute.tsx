@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,11 +12,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const [notificationShown, setNotificationShown] = useState(false);
+  const navigate = useNavigate();
   
   // Show loading state while checking authentication
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
@@ -41,6 +42,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Always bypass authentication in testing mode
   if (!user) {
     // For test mode, always allow access to protected routes
+    console.log("Test mode: allowing access to protected route without authentication");
     return <>{children}</>;
   }
   

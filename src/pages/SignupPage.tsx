@@ -17,30 +17,48 @@ const SignupPage = () => {
   }, [user, navigate]);
 
   return (
-    <div className="container mx-auto px-4 h-[calc(100vh-4rem)] flex items-center justify-center">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-800 to-gray-900 p-4">
+      <div className="w-full max-w-md mx-auto mb-8">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-3xl font-bold text-center text-white">Soteria</h1>
+          <p className="text-gray-300 text-center mt-1">...every second counts.</p>
+        </div>
+      </div>
+      
+      <Card className="w-full max-w-md mx-auto border-2 border-gray-700 bg-gray-800">
         <CardHeader className="space-y-1">
-          <div className="flex flex-col items-center mb-3">
-            <img src="/soteria-logo.png" alt="Soteria Logo" className="h-16 w-auto mb-2" />
-            <h1 className="text-2xl font-bold">Soteria</h1>
-            <p className="text-muted-foreground text-sm">...every second counts.</p>
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-white">Create an Account</CardTitle>
+          <CardDescription className="text-center text-gray-300">
             Enter your information to create a new account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <AuthForm type="signup" />
           
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center text-sm text-gray-300">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-600 hover:underline">
+            <a href="/login" className="text-primary hover:underline">
               Sign in
             </a>
           </div>
         </CardContent>
       </Card>
+      
+      <div className="mt-8 text-center text-xs text-gray-400">
+        <p>
+          By using Soteria, you agree to our{' '}
+          <a href="#" className="text-primary hover:underline">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="#" className="text-primary hover:underline">
+            Privacy Policy
+          </a>
+        </p>
+        <p className="mt-4">
+          © 2025 Soteria Security. All rights reserved.
+        </p>
+      </div>
     </div>
   );
 };

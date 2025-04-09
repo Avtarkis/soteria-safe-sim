@@ -33,8 +33,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
       let result;
       
       if (type === 'login') {
+        console.log("Attempting sign in with AuthForm component");
         result = await signIn(email, password);
       } else {
+        console.log("Attempting sign up with AuthForm component");
         result = await signUp(email, password);
       }
       
@@ -55,8 +57,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
             : "Your account has been created and you're now signed in",
         });
         
+        // Execute callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
+        
         // Navigate to dashboard after successful authentication
-        navigate('/dashboard');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
