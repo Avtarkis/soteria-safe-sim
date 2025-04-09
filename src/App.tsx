@@ -3,18 +3,22 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/contexts/AuthContext'; // Use the correct AuthProvider
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Layout
 import Layout from '@/components/Layout';
 
 // Pages
-import HomePage from '@/pages/HomePage';
+import Dashboard from '@/components/Dashboard';
 import ThreatsMap from '@/components/ThreatsMap';
-import TravelPage from '@/pages/TravelPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
-import Dashboard from '@/components/Dashboard';
+import TravelPage from '@/pages/TravelPage';
+import FamilyPage from '@/pages/FamilyPage';
+import EmergencyPage from '@/pages/EmergencyPage';
+import AlertsPage from '@/pages/AlertsPage';
+import CyberSecurityPage from '@/pages/CyberSecurityPage';
+import SubscriptionPage from '@/pages/SubscriptionPage';
 
 function App() {
   return (
@@ -27,6 +31,11 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/map" element={<ThreatsMap />} />
               <Route path="/travel" element={<TravelPage />} />
+              <Route path="/family" element={<FamilyPage />} />
+              <Route path="/emergency" element={<EmergencyPage />} />
+              <Route path="/alerts" element={<AlertsPage />} />
+              <Route path="/cyber" element={<CyberSecurityPage />} />
+              <Route path="/subscription" element={<SubscriptionPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
             </Route>

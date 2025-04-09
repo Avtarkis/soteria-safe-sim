@@ -1,27 +1,27 @@
 
 import React from 'react';
 
-const EmergencyPage = () => {
+const CyberSecurityPage = () => {
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Emergency Response</h1>
+      <h1 className="text-3xl font-bold mb-6">Cyber Security</h1>
       <div className="grid gap-6">
         <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Emergency Services</h2>
+          <h2 className="text-xl font-semibold mb-4">Threat Detection</h2>
           <p className="text-muted-foreground">
-            Quick access to emergency services and contacts.
+            Monitor and detect cyber threats to your personal data.
           </p>
         </div>
         <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">SOS Button</h2>
+          <h2 className="text-xl font-semibold mb-4">Password Manager</h2>
           <p className="text-muted-foreground">
-            One-tap emergency alert to your emergency contacts.
+            Securely store and manage your passwords.
           </p>
         </div>
         <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Emergency Protocols</h2>
+          <h2 className="text-xl font-semibold mb-4">Privacy Protection</h2>
           <p className="text-muted-foreground">
-            Step-by-step guides for various emergency situations.
+            Tools and tips to protect your online privacy.
           </p>
         </div>
       </div>
@@ -29,4 +29,4 @@ const EmergencyPage = () => {
   );
 };
 
-export default EmergencyPage;
+export default CyberSecurityPage;

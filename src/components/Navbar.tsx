@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart } from 'lucide-react';
+import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext'; // Use the correct auth context
+import { useAuth } from '@/contexts/AuthContext'; // Using the correct context
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
@@ -183,12 +183,14 @@ const Navbar = () => {
     });
   };
 
-  // Generate navigation items
+  // Generate navigation items - updated to match routes in App.tsx
   const navItems = [
     { to: '/dashboard', icon: <Home className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Dashboard' },
     { to: '/map', icon: <Map className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Threat Map' },
-    { to: '/family', icon: <Heart className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Family' },
+    { to: '/alerts', icon: <AlertTriangle className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Alerts' },
     { to: '/emergency', icon: <Bell className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Emergency' },
+    { to: '/family', icon: <Heart className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Family' },
+    { to: '/travel', icon: <Globe className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Travel' },
     { to: '/cyber', icon: <Shield className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Cyber Security' },
     { to: '/subscription', icon: <CreditCard className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Subscription' },
   ].map(item => ({

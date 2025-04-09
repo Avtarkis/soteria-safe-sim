@@ -1,49 +1,28 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Shield } from 'lucide-react';
 
 interface LogoProps {
-  className?: string;
   size?: 'small' | 'medium' | 'large';
-  withText?: boolean;
+  className?: string;
 }
 
-const Logo = ({ className, size = 'medium', withText = true }: LogoProps) => {
-  const sizes = {
-    small: { icon: 'h-6 w-6', text: 'text-lg' },
-    medium: { icon: 'h-8 w-8', text: 'text-xl' },
-    large: { icon: 'h-10 w-10', text: 'text-2xl' },
+const Logo = ({ size = 'medium', className }: LogoProps) => {
+  const sizeClasses = {
+    small: "h-6 w-6",
+    medium: "h-8 w-8",
+    large: "h-16 w-16",
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className={cn(
-        "relative flex items-center justify-center",
-        sizes[size].icon
-      )}>
-        <Shield 
-          className={cn(
-            "text-blue-600 dark:text-blue-400 absolute", 
-            sizes[size].icon
-          )} 
-          fill="#dbeafe" 
-          strokeWidth={2}
-        />
-      </div>
-
-      {withText && (
-        <span className={cn(
-          "font-bold text-primary dark:text-primary-foreground",
-          sizes[size].text
-        )}>
-          SecureTravel
-          <span className="block text-xs text-muted-foreground">
-            Where every second counts
-          </span>
-        </span>
-      )}
-    </div>
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="#0284c7" 
+      className={cn(sizeClasses[size], className)}
+    >
+      <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.75.75 0 00.674 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    </svg>
   );
 };
 
