@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LeafletMap from '@/components/ui/LeafletMap';
 import ThreatDetails from './ThreatDetails';
 import { ThreatMarker } from '@/types/threats';
@@ -25,21 +25,22 @@ const MapContainer = ({
   clearSelectedThreat
 }: MapContainerProps) => {
   const { toast } = useToast();
-  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const mapInitializedRef = useRef(false);
-  const highPrecisionAttemptedRef = useRef(false);
-  const mapContainerKey = useRef(`map-container-${Date.now()}`);
-  const [mapReady, setMapReady] = useState(false);
-  const lastResizeTimeRef = useRef<number>(0);
-  const minResizeIntervalRef = useRef<number>(5000); // 5 seconds between resizes
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [mapContainerKey] = useState(`map-container-${Date.now()}`);
+  const [lastResizeTime, setLastResizeTime] = useState<number>(0);
+  const [highPrecisionAttempted, setHighPrecisionAttempted] = useState(false);
+  const minResizeInterval = 5000; // 5 seconds between resizes
   
   // Enhanced map sizing effect with debounce
   useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    let mapInitialized = false;
+    
     // Safe resize function with throttling
     const resizeMap = () => {
       const now = Date.now();
       // Prevent too many resize operations
-      if (now - lastResizeTimeRef.current < minResizeIntervalRef.current) {
+      if (now - lastResizeTime < minResizeInterval) {
         return;
       }
       
@@ -48,11 +49,11 @@ const MapContainer = ({
           console.log('Resizing map to ensure proper display');
           window.dispatchEvent(new Event('resize'));
           mapRef.current.invalidateSize(true);
-          lastResizeTimeRef.current = now;
+          setLastResizeTime(now);
           
           // If map is ready, mark as initialized
-          if (!mapInitializedRef.current && mapReady) {
-            mapInitializedRef.current = true;
+          if (!mapInitialized && isMapReady) {
+            mapInitialized = true;
           }
         } catch (error) {
           console.error("Error resizing map:", error);
@@ -63,7 +64,7 @@ const MapContainer = ({
     // Apply resize on component mount with a delay to ensure DOM is ready
     const initialResizeTimer = setTimeout(() => {
       resizeMap();
-      setMapReady(true);
+      setIsMapReady(true);
       
       // Schedule only one additional resize attempt for reliability
       setTimeout(resizeMap, 1000);
@@ -71,10 +72,10 @@ const MapContainer = ({
     
     // Debounced window resize handler
     const handleWindowResize = () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
-      resizeTimeoutRef.current = setTimeout(resizeMap, 300);
+      resizeTimeout = setTimeout(resizeMap, 300);
     };
     
     // Add throttled resize handler for window resize
@@ -83,29 +84,31 @@ const MapContainer = ({
     return () => {
       window.removeEventListener('resize', handleWindowResize);
       clearTimeout(initialResizeTimer);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
     };
-  }, [mapRef, mapReady]);
+  }, [mapRef, isMapReady, lastResizeTime, minResizeInterval]);
 
   // Optimized high precision mode handler with reduced frequency
   useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    
     const handleHighPrecisionMode = () => {
-      if (highPrecisionAttemptedRef.current) return; // Skip if already attempted
+      if (highPrecisionAttempted) return; // Skip if already attempted
       
       console.log("High precision mode activated in map container");
-      highPrecisionAttemptedRef.current = true;
+      setHighPrecisionAttempted(true);
       
       // Force map update and resize safely - only once
       if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
         // Clear any existing timeout
-        if (resizeTimeoutRef.current) {
-          clearTimeout(resizeTimeoutRef.current);
+        if (resizeTimeout) {
+          clearTimeout(resizeTimeout);
         }
         
         // Schedule a single resize attempt
-        resizeTimeoutRef.current = setTimeout(() => {
+        resizeTimeout = setTimeout(() => {
           try {
             if (mapRef.current && mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
               console.log("Refreshing map for high precision mode");
@@ -122,21 +125,21 @@ const MapContainer = ({
     document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
     
     // Optimized location update handler - don't update the map on every location change
-    const locationUpdateTimeRef = useRef<number>(0);
-    const locationUpdateIntervalRef = useRef<number>(5000); // 5 seconds between updates
+    let locationUpdateTime = 0;
+    const locationUpdateInterval = 5000; // 5 seconds between updates
     
     const handleUserLocationUpdate = () => {
       const now = Date.now();
-      if (now - locationUpdateTimeRef.current < locationUpdateIntervalRef.current) {
+      if (now - locationUpdateTime < locationUpdateInterval) {
         return; // Skip if updated recently
       }
       
-      if (mapRef.current && mapInitializedRef.current && showUserLocation && 
+      if (mapRef.current && isMapReady && showUserLocation && 
           mapRef.current.getContainer && mapRef.current.getContainer().clientHeight > 0) {
         try {
           console.log("Refreshing map for location update");
           mapRef.current.invalidateSize(true);
-          locationUpdateTimeRef.current = now;
+          locationUpdateTime = now;
         } catch (error) {
           console.error("Error refreshing map for location update:", error);
         }
@@ -146,7 +149,7 @@ const MapContainer = ({
     document.addEventListener('userLocationUpdated', handleUserLocationUpdate);
     
     // Try to activate high precision mode automatically but only once
-    if (!highPrecisionAttemptedRef.current && mapReady) {
+    if (!highPrecisionAttempted && isMapReady) {
       setTimeout(() => {
         document.dispatchEvent(new CustomEvent('highPrecisionModeActivated'));
       }, 2000);
@@ -155,18 +158,18 @@ const MapContainer = ({
     return () => {
       document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
       document.removeEventListener('userLocationUpdated', handleUserLocationUpdate);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
     };
-  }, [mapRef, showUserLocation, mapReady, toast]);
+  }, [mapRef, showUserLocation, isMapReady, highPrecisionAttempted, toast]);
 
   return (
     <>
       <div 
         className="h-full w-full relative" 
         style={{ minHeight: '300px' }}
-        key={mapContainerKey.current}
+        key={mapContainerKey}
       >
         <LeafletMap 
           markers={filteredMarkers}
