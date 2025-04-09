@@ -19,7 +19,12 @@ const SignupPage = () => {
   return (
     <div className="container mx-auto px-4 h-[calc(100vh-4rem)] flex items-center justify-center">
       <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
+        <CardHeader className="space-y-1">
+          <div className="flex flex-col items-center mb-3">
+            <img src="/soteria-logo.png" alt="Soteria Logo" className="h-16 w-auto mb-2" />
+            <h1 className="text-2xl font-bold">Soteria</h1>
+            <p className="text-muted-foreground text-sm">Where every second counts.</p>
+          </div>
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
             Enter your information to create a new account

@@ -45,7 +45,7 @@ const Subscription = () => {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center justify-between">
               Individual Plan
-              <span className="text-lg font-normal text-muted-foreground">$4.19/month</span>
+              <span className="text-lg font-normal text-muted-foreground">$4.99/month</span>
             </CardTitle>
             <CardDescription>Perfect for solo travelers and individuals</CardDescription>
           </CardHeader>
@@ -77,7 +77,7 @@ const Subscription = () => {
             </div>
             <CardTitle className="text-2xl flex items-center justify-between">
               Family Plan
-              <span className="text-lg font-normal text-muted-foreground">$16.79/month</span>
+              <span className="text-lg font-normal text-muted-foreground">$19.99/month</span>
             </CardTitle>
             <CardDescription>Protect your entire family (up to 6 people)</CardDescription>
           </CardHeader>
