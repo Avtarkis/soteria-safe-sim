@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
@@ -28,13 +28,26 @@ const MapBase = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const mapInitializedRef = useRef(false);
+  const initializationAttemptedRef = useRef(false);
+  const [initError, setInitError] = useState<string | null>(null);
   
   // Initialize map when component mounts
   useEffect(() => {
-    if (!mapContainerRef.current || mapInitializedRef.current) return;
+    // Only run initialization once
+    if (!mapContainerRef.current || mapInitializedRef.current || initializationAttemptedRef.current) return;
+    
+    // Mark that we've attempted initialization
+    initializationAttemptedRef.current = true;
     
     try {
       console.log('Initializing map base with center:', center, 'zoom:', zoom);
+      
+      // Ensure container size before creating map
+      if (mapContainerRef.current.clientHeight === 0) {
+        console.warn("Map container has zero height, delaying initialization");
+        setInitError("Map container height is zero");
+        return;
+      }
       
       // Create map with optimized settings
       const map = L.map(mapContainerRef.current, {
@@ -44,6 +57,9 @@ const MapBase = ({
         preferCanvas: true,
         renderer: L.canvas({ padding: 0.5 }),
         attributionControl: false,
+        fadeAnimation: false,
+        zoomAnimation: true,
+        markerZoomAnimation: false,
       });
 
       // Add basic controls
@@ -56,52 +72,54 @@ const MapBase = ({
         position: 'bottomright'
       }).addTo(map);
 
-      // Add OpenStreetMap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // Add OpenStreetMap tile layer with more conservative settings
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
         updateWhenIdle: true,
-        updateWhenZooming: false
+        updateWhenZooming: false,
+        keepBuffer: 2
       }).addTo(map);
       
-      // Store refs
-      mapRef.current = map;
-      mapInitializedRef.current = true;
+      // Ensure tiles are loaded before considering the map ready
+      tileLayer.on('load', () => {
+        console.log("Tile layer loaded");
+      });
       
-      // Use a safe timeout to ensure proper initialization
+      // Store ref
+      mapRef.current = map;
+      
+      // Register load event
+      map.once('load', () => {
+        console.log("Map load event fired");
+      });
+      
+      // Use staggered initialization to ensure the map is truly ready
       setTimeout(() => {
         if (mapRef.current) {
-          try {
-            // Check if the container is properly loaded - use container size check instead of _loaded
-            if (map.getContainer() && map.getContainer().clientHeight > 0) {
-              window.dispatchEvent(new Event('resize'));
-              map.invalidateSize(true);
-              
-              // Notify parent component that map is ready
-              onMapReady(map);
-            } else {
-              console.log("Map container not ready, retrying...");
-              // Try again a bit later if needed
-              setTimeout(() => {
-                if (mapRef.current && mapRef.current.getContainer()) {
-                  mapRef.current.invalidateSize(true);
-                  onMapReady(mapRef.current);
-                }
-              }, 500);
+          // First invalidate size
+          mapRef.current.invalidateSize(false);
+          
+          // Then notify parent after a short delay
+          setTimeout(() => {
+            if (mapRef.current) {
+              console.log("Map base initialization complete");
+              mapInitializedRef.current = true;
+              onMapReady(mapRef.current);
             }
-          } catch (error) {
-            console.error("Error during map initialization:", error);
-          }
+          }, 150);
         }
-      }, 200);
+      }, 150);
+      
     } catch (error) {
       console.error('Error initializing map:', error);
+      setInitError(error instanceof Error ? error.message : String(error));
     }
     
     // Cleanup when component unmounts
     return () => {
       if (mapRef.current) {
-        console.log("Cleaning up map");
+        console.log("Cleaning up map base");
         try {
           // First remove all layers to prevent '_removePath' errors
           mapRef.current.eachLayer((layer) => {
@@ -125,12 +143,35 @@ const MapBase = ({
     };
   }, [center, zoom, onMapReady]);
 
+  // Handle container resizing
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current && mapInitializedRef.current) {
+        mapRef.current.invalidateSize(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
     <div 
       ref={mapContainerRef} 
       className={cn("h-full w-full min-h-[300px]", className)} 
       id="leaflet-map-container"
-    />
+    >
+      {initError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-75 z-50">
+          <div className="p-4 bg-background border rounded shadow-lg">
+            <p className="text-sm text-destructive">Map initialization error, please refresh.</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

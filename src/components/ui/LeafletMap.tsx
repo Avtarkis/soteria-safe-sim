@@ -63,6 +63,8 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const prevZoomRef = useRef<number>(zoom);
   const viewUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const updateBlockedUntilRef = useRef<number>(0);
+  const mapElementsInitializedRef = useRef<boolean>(false);
+  const mapReadyForOperationsRef = useRef<boolean>(false);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -90,22 +92,41 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   
   // Handle map initialization
   const handleMapReady = (newMap: L.Map) => {
+    console.log("Map base is now ready");
     setMap(newMap);
     mapInitializedRef.current = true;
+    
+    // Allow a short delay for the map to fully render before enabling operations
+    setTimeout(() => {
+      if (newMap && newMap.getContainer() && newMap.getContainer().clientHeight > 0) {
+        console.log("Map is fully ready for operations");
+        mapReadyForOperationsRef.current = true;
+        
+        // Initial center and zoom (only once at startup)
+        try {
+          newMap.setView(center, zoom, { animate: false, duration: 0 });
+          prevCenterRef.current = center;
+          prevZoomRef.current = zoom;
+        } catch (error) {
+          console.error("Initial setView failed:", error);
+        }
+      }
+    }, 300);
+    
     // Block updates for 2 seconds after initialization
     updateBlockedUntilRef.current = Date.now() + 2000;
   };
   
-  // Even more aggressive rate limiting and change detection
+  // Handle changes to center/zoom with aggressive debouncing and change detection
   useEffect(() => {
-    if (!map || !mapInitializedRef.current) return;
+    if (!map || !mapInitializedRef.current || !mapReadyForOperationsRef.current) return;
     
-    // Enforce a minimum time between view updates (2 seconds)
+    // Skip if we're still in the update cooling period
     if (Date.now() < updateBlockedUntilRef.current) {
       return;
     }
     
-    // Clear any existing scheduled update
+    // Clear any pending view update
     if (viewUpdateTimeoutRef.current) {
       clearTimeout(viewUpdateTimeoutRef.current);
     }
@@ -119,11 +140,15 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     if (centerChanged || zoomChanged) {
       // Delay updates to prevent rapid changes
       viewUpdateTimeoutRef.current = setTimeout(() => {
-        try {
-          // Only update if map container exists and has a proper size
-          if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
-            // Disable animations completely to reduce flashing
-            map.setView(center, zoom, { animate: false, duration: 0 });
+        // Only proceed if the map is still valid and ready
+        if (map && map.getContainer() && map.getContainer().clientHeight > 0 && mapReadyForOperationsRef.current) {
+          try {
+            // Use flyTo for smoother transitions and less flickering
+            map.flyTo(center, zoom, { 
+              animate: true, 
+              duration: 0.5, // Short duration to minimize flashing
+              easeLinearity: 0.5 
+            });
             
             // Update previous values
             prevCenterRef.current = center;
@@ -131,12 +156,12 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
             
             // Block further updates for 1 second
             updateBlockedUntilRef.current = Date.now() + 1000;
+          } catch (error) {
+            console.error("Error setting map view:", error);
           }
-        } catch (error) {
-          console.error("Error setting map view:", error);
         }
         viewUpdateTimeoutRef.current = null;
-      }, 500); // Longer debounce (half a second)
+      }, 600); // Longer debounce (600ms)
     }
     
     return () => {
@@ -146,6 +171,26 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     };
   }, [map, center, zoom]);
   
+  // Only initialize the markers once the map is fully ready
+  useEffect(() => {
+    if (!map || !mapInitializedRef.current || !mapReadyForOperationsRef.current || mapElementsInitializedRef.current) return;
+    mapElementsInitializedRef.current = true;
+  }, [map, mapReadyForOperationsRef.current]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      console.log("LeafletMap component unmounting");
+      if (viewUpdateTimeoutRef.current) {
+        clearTimeout(viewUpdateTimeoutRef.current);
+      }
+      updateBlockedUntilRef.current = 0;
+      mapInitializedRef.current = false;
+      mapReadyForOperationsRef.current = false;
+      mapElementsInitializedRef.current = false;
+    };
+  }, []);
+  
   return (
     <div className={cn("h-full w-full min-h-[300px] relative", className)}>
       <MapBase 
@@ -154,13 +199,15 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         onMapReady={handleMapReady}
       />
       
-      {map && mapInitializedRef.current && (
+      {map && mapInitializedRef.current && mapReadyForOperationsRef.current && (
         <>
-          <MarkerLayer 
-            map={map}
-            markers={markers}
-            onMarkerClick={onMarkerClick}
-          />
+          {markers && markers.length > 0 && (
+            <MarkerLayer 
+              map={map}
+              markers={markers}
+              onMarkerClick={onMarkerClick}
+            />
+          )}
           
           {showUserLocation && userLocation && (
             <UserLocationLayer 

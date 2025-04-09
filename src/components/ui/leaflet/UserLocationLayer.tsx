@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { createPulsingIcon } from './UserLocationMarker';
 
@@ -18,35 +18,56 @@ const UserLocationLayer = ({
 }: UserLocationLayerProps) => {
   const userMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
+  const previousLocationRef = useRef<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
-  // Update user location marker when it changes
+  // Update user location marker when it changes, with debouncing and error handling
   useEffect(() => {
     if (!map || !userLocation) {
       // Clean up existing markers if location is not available
-      if (userMarkerRef.current) {
-        try {
-          if (map && map.hasLayer(userMarkerRef.current)) {
-            map.removeLayer(userMarkerRef.current);
+      const cleanup = () => {
+        if (userMarkerRef.current) {
+          try {
+            if (map && map.hasLayer(userMarkerRef.current)) {
+              map.removeLayer(userMarkerRef.current);
+            }
+            userMarkerRef.current = null;
+          } catch (error) {
+            console.error("Error removing user marker:", error);
+            userMarkerRef.current = null;
           }
-          userMarkerRef.current = null;
-        } catch (error) {
-          console.error("Error removing user marker:", error);
-          userMarkerRef.current = null;
         }
-      }
-      if (accuracyCircleRef.current) {
-        try {
-          if (map && map.hasLayer(accuracyCircleRef.current)) {
-            map.removeLayer(accuracyCircleRef.current);
+        if (accuracyCircleRef.current) {
+          try {
+            if (map && map.hasLayer(accuracyCircleRef.current)) {
+              map.removeLayer(accuracyCircleRef.current);
+            }
+            accuracyCircleRef.current = null;
+          } catch (error) {
+            console.error("Error removing accuracy circle:", error);
+            accuracyCircleRef.current = null;
           }
-          accuracyCircleRef.current = null;
-        } catch (error) {
-          console.error("Error removing accuracy circle:", error);
-          accuracyCircleRef.current = null;
         }
-      }
+      };
+      
+      cleanup();
       return;
     }
+    
+    // Check if the map is ready for adding elements
+    if (!map.getContainer() || map.getContainer().clientHeight === 0) {
+      console.warn("Map container not ready for user location layer");
+      return;
+    }
+    
+    // Debounce location updates by checking if the location has changed
+    const locationKey = `${userLocation[0].toFixed(6)}-${userLocation[1].toFixed(6)}-${accuracy.toFixed(1)}-${safetyLevel}`;
+    if (locationKey === previousLocationRef.current) {
+      console.log("Location unchanged, skipping update");
+      return;
+    }
+    
+    previousLocationRef.current = locationKey;
     
     // Remove existing markers if present
     if (userMarkerRef.current) {
@@ -72,14 +93,21 @@ const UserLocationLayer = ({
       }
     }
     
+    // Only proceed if map is still valid
+    if (!map.getContainer() || map.getContainer().clientHeight === 0) {
+      console.warn("Map container not ready for updating user location");
+      return;
+    }
+    
     try {
+      console.log(`Updating user location: ${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`);
       const latlng = L.latLng(userLocation[0], userLocation[1]);
       
       // Create pulsing icon based on safety level
       const pulsingIcon = createPulsingIcon(safetyLevel);
       
       // Add user marker
-      userMarkerRef.current = L.marker(latlng, { icon: pulsingIcon })
+      userMarkerRef.current = L.marker(latlng, { icon: pulsingIcon, zIndexOffset: 1000 })
         .addTo(map)
         .bindPopup(`
           <b>Your Exact Location</b><br>
@@ -100,8 +128,11 @@ const UserLocationLayer = ({
         fillOpacity: 0.1,
         weight: 2
       }).addTo(map);
+      
+      setError(null);
     } catch (error) {
       console.error("Error creating user location markers:", error);
+      setError("Failed to update user location");
     }
     
     // Cleanup when component unmounts

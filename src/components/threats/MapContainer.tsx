@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import LeafletMap from '@/components/ui/LeafletMap';
 import ThreatDetails from './ThreatDetails';
 import { ThreatMarker } from '@/types/threats';
@@ -25,32 +25,61 @@ const MapContainer = ({
   clearSelectedThreat
 }: MapContainerProps) => {
   const { toast } = useToast();
-  // Use a static key to prevent re-creation of the container
-  const mapContainerKey = useRef(`map-${Date.now()}`).current;
-  const resizeAttemptedRef = useRef(false);
+  // Create a stable key to prevent unnecessary re-creation
+  const mapContainerKey = useRef(`map-container-${Date.now()}`).current;
   
-  // Minimal one-time resize with no re-renders or timers
+  // Memoize the threat markers to prevent unnecessary re-renders
+  const memoizedMarkers = useRef<ThreatMarker[]>([]);
+  const markersJSON = JSON.stringify(filteredMarkers.map(m => 
+    `${m.id}-${m.position[0]}-${m.position[1]}-${m.level}`
+  ));
+  
+  // Only update markers reference if they've changed
   useEffect(() => {
-    if (mapRef.current && !resizeAttemptedRef.current) {
-      // Mark that we've attempted resize to prevent future attempts
-      resizeAttemptedRef.current = true;
-      // Simple invalidation without animation or delays
-      mapRef.current.invalidateSize({ animate: false });
+    const parsedMarkers = JSON.parse(markersJSON);
+    if (JSON.stringify(memoizedMarkers.current) !== markersJSON) {
+      memoizedMarkers.current = filteredMarkers;
+    }
+  }, [markersJSON, filteredMarkers]);
+  
+  // Memoize the center location to prevent unnecessary map movements
+  const center = userLocation || [37.0902, -95.7129];
+  const zoom = userLocation ? 12 : 4;
+  
+  // Handle resize once after initial render
+  const hasResized = useRef(false);
+  useEffect(() => {
+    if (mapRef.current && !hasResized.current) {
+      // Set flag to prevent multiple resize attempts
+      hasResized.current = true;
+      
+      // Short delay to let the component fully render
+      const timer = setTimeout(() => {
+        try {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize(false);
+            console.log("Map container: invalidated size");
+          }
+        } catch (error) {
+          console.error("Error during map resize:", error);
+        }
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [mapRef]);
 
   return (
-    <>
+    <div className="relative h-full w-full" key={mapContainerKey}>
       <div 
         className="h-full w-full relative" 
-        style={{ minHeight: '300px' }}
-        key={mapContainerKey}
+        style={{ minHeight: '380px' }}
       >
         <LeafletMap 
-          markers={filteredMarkers}
+          markers={memoizedMarkers.current}
           onMarkerClick={handleThreatClick}
-          center={userLocation || [37.0902, -95.7129]}
-          zoom={userLocation ? 12 : 4}
+          center={center}
+          zoom={zoom}
           showUserLocation={showUserLocation}
           ref={mapRef}
         />
@@ -62,8 +91,8 @@ const MapContainer = ({
           clearSelectedThreat={clearSelectedThreat}
         />
       )}
-    </>
+    </div>
   );
 };
 
-export default MapContainer;
+export default React.memo(MapContainer);
