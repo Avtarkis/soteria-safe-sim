@@ -39,9 +39,9 @@ const MapBase = ({
     // Mark that we've attempted initialization
     initializationAttemptedRef.current = true;
     
+    console.log('Initializing map base with center:', center, 'zoom:', zoom);
+    
     try {
-      console.log('Initializing map base with center:', center, 'zoom:', zoom);
-      
       // Force a minimum height to ensure container is visible
       if (mapContainerRef.current) {
         mapContainerRef.current.style.minHeight = '500px';
@@ -50,130 +50,114 @@ const MapBase = ({
         mapContainerRef.current.style.backgroundColor = '#f0f0f0'; // Add background color to make container visible
       }
       
-      // Verify that the container exists and has dimensions before proceeding
-      if (!mapContainerRef.current || !mapContainerRef.current.clientHeight) {
-        // If container isn't ready yet, retry initialization after a delay
-        setTimeout(() => {
-          initializationAttemptedRef.current = false; // Reset flag to allow another attempt
-          if (mapContainerRef.current) mapContainerRef.current.style.minHeight = '500px';
-        }, 300);
-        return;
-      }
-      
-      // Add a small delay to ensure DOM is fully ready
-      setTimeout(() => {
+      // Add a delay to ensure the container is in the DOM and has dimensions
+      const initMapWithDelay = setTimeout(() => {
         try {
-          if (!mapContainerRef.current) return;
+          if (!mapContainerRef.current) {
+            console.error("Map container ref is null");
+            return;
+          }
           
-          // Create map with optimized settings
-          const map = L.map(mapContainerRef.current, {
-            center,
-            zoom,
-            zoomControl: true,
-            preferCanvas: true,
-            renderer: L.canvas({ padding: 0.5 }),
-            attributionControl: true,
-            // Ensure map doesn't try to do animations until fully ready
-            fadeAnimation: false,
-            zoomAnimation: false,
-            markerZoomAnimation: false,
-          });
-
-          // Add basic controls
-          L.control.attribution({
-            prefix: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-            position: 'bottomright'
-          }).addTo(map);
+          // Make sure the map container is visible and has dimensions before creating the map
+          if (mapContainerRef.current.clientHeight === 0) {
+            console.warn("Map container has no height, forcing height");
+            mapContainerRef.current.style.height = '500px';
+            document.body.style.height = '100%';
+            document.documentElement.style.height = '100%';
+          }
           
-          L.control.zoom({
-            position: 'bottomright'
-          }).addTo(map);
-
-          // Add OpenStreetMap tile layer with more conservative settings
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19,
-          }).addTo(map);
-          
-          // Wait for tiles to load before proceeding
-          map.once('load', () => {
-            console.log("Map tiles loaded");
-          });
-          
-          // Store ref
-          mapRef.current = map;
-          
-          // Extra delay to ensure map is properly initialized before operations
+          // Wait for layout to be calculated
           setTimeout(() => {
-            if (mapRef.current) {
-              try {
-                // First invalidate size forcefully
-                mapRef.current.invalidateSize(true);
-                
-                // Set view with no animations initially
-                mapRef.current.setView(center, zoom, { animate: false, duration: 0 });
-                
-                // Then notify parent that map is ready
-                console.log("Map base initialization complete");
-                mapInitializedRef.current = true;
-                
-                // Wait for DOM to fully process the map
-                setTimeout(() => {
-                  // Enable animations after map is stable
-                  if (mapRef.current) {
-                    (mapRef.current.options as any).fadeAnimation = true;
-                    (mapRef.current.options as any).zoomAnimation = true;
-                    (mapRef.current.options as any).markerZoomAnimation = true;
-                    
+            try {
+              if (!mapContainerRef.current) return;
+              
+              // Display the dimensions to help debug
+              console.log(`Map container dimensions: ${mapContainerRef.current.clientWidth}x${mapContainerRef.current.clientHeight}`);
+              
+              // Create map with optimized settings
+              const map = L.map(mapContainerRef.current, {
+                center,
+                zoom,
+                zoomControl: true,
+                preferCanvas: true,
+                renderer: L.canvas({ padding: 0.5 }),
+                attributionControl: true,
+                // Ensure map doesn't try to do animations until fully ready
+                fadeAnimation: false,
+                zoomAnimation: false,
+                markerZoomAnimation: false,
+              });
+
+              // Add OpenStreetMap tile layer with more conservative settings
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19,
+              }).addTo(map);
+              
+              // Store ref
+              mapRef.current = map;
+              
+              // Log that map initialization is complete
+              console.log("Map base initialization complete");
+              mapInitializedRef.current = true;
+              
+              // Wait a moment for the map to stabilize before triggering operations
+              setTimeout(() => {
+                if (mapRef.current) {
+                  try {
+                    // Force a resize of the map
                     mapRef.current.invalidateSize(true);
-                    console.log("Map is fully ready for operations");
                     
-                    // Finally notify parent with the ready map
+                    // Notify parent that map is ready
+                    console.log("Map is fully ready for operations");
                     onMapReady(mapRef.current);
+                  } catch (error) {
+                    console.error("Error during map ready callback:", error);
+                    setInitError(`Map ready callback error: ${error}`);
                   }
-                }, 500);
-              } catch (error) {
-                console.error("Error during map initialization:", error);
-                setInitError(`Map init error: ${error}`);
-              }
+                }
+              }, 500);
+            } catch (err) {
+              console.error('Error creating Leaflet map:', err);
+              setInitError(`Map creation error: ${err}`);
             }
-          }, 300);
+          }, 200);
         } catch (err) {
-          console.error('Error creating Leaflet map:', err);
-          setInitError(`Map creation error: ${err}`);
+          console.error('Error in map initialization timeout:', err);
+          setInitError(`Initialization timeout error: ${err}`);
         }
-      }, 500); // Longer delay to ensure DOM is ready
+      }, 300);
       
+      // Cleanup function will clear the timeout if the component unmounts
+      return () => {
+        clearTimeout(initMapWithDelay);
+        if (mapRef.current) {
+          console.log("Cleaning up map base");
+          try {
+            // First remove all layers to prevent '_removePath' errors
+            mapRef.current.eachLayer((layer) => {
+              try {
+                if (mapRef.current && mapRef.current.hasLayer(layer)) {
+                  mapRef.current.removeLayer(layer);
+                }
+              } catch (e) {
+                console.error("Error removing layer:", e);
+              }
+            });
+            
+            // Then remove the map itself
+            mapRef.current.remove();
+          } catch (error) {
+            console.error("Error removing map:", error);
+          }
+          mapRef.current = null;
+          mapInitializedRef.current = false;
+        }
+      };
     } catch (error) {
       console.error('Error initializing map:', error);
       setInitError(error instanceof Error ? error.message : String(error));
     }
-    
-    // Cleanup when component unmounts
-    return () => {
-      if (mapRef.current) {
-        console.log("Cleaning up map base");
-        try {
-          // First remove all layers to prevent '_removePath' errors
-          mapRef.current.eachLayer((layer) => {
-            try {
-              if (mapRef.current && mapRef.current.hasLayer(layer)) {
-                mapRef.current.removeLayer(layer);
-              }
-            } catch (e) {
-              console.error("Error removing layer:", e);
-            }
-          });
-          
-          // Then remove the map itself
-          mapRef.current.remove();
-        } catch (error) {
-          console.error("Error removing map:", error);
-        }
-        mapRef.current = null;
-        mapInitializedRef.current = false;
-      }
-    };
   }, [center, zoom, onMapReady]);
 
   // Handle container resizing
@@ -204,7 +188,13 @@ const MapBase = ({
       ref={mapContainerRef} 
       className={cn("h-full w-full min-h-[500px] bg-gray-100", className)} 
       id="leaflet-map-container"
-      style={{ position: 'relative', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}
+      style={{ 
+        position: 'relative', 
+        border: '1px solid #ddd', 
+        borderRadius: '8px', 
+        overflow: 'hidden',
+        height: '500px' // Explicit height
+      }}
     >
       {initError && (
         <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-75 z-50">

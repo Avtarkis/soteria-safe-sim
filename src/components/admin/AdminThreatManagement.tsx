@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Search, Plus, Filter, Map, Trash2, Clock, AlertTriangle, Check, ChevronDown, Shield } from 'lucide-react';
+import { Search, Plus, Filter, Map, Trash2, Clock, AlertTriangle, Check, ChevronDown, Shield, Cloud } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ export const AdminThreatManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   
-  // Sample threat data
   const threats = [
     { 
       id: 'T-4102', 
@@ -90,7 +88,6 @@ export const AdminThreatManagement = () => {
     },
   ];
 
-  // Filter threats based on search term and active tab
   const filteredThreats = threats.filter((threat) => 
     (threat.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     threat.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -270,25 +267,28 @@ export const AdminThreatManagement = () => {
                         </span>
                       </TableCell>
                       <TableCell>{threat.affects}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        {threat.status === 'Active' && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {threat.status === 'Active' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleResolve(threat.id)}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Resolve
+                            </Button>
+                          )}
                           <Button 
-                            variant="outline" 
+                            variant="ghost" 
                             size="sm" 
-                            onClick={() => handleResolve(threat.id)}
+                            className="text-red-600 dark:text-red-400"
+                            onClick={() => handleDelete(threat.id)}
                           >
-                            <Check className="h-3 w-3 mr-1" />
-                            Resolve
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Delete
                           </Button>
-                        )}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-600 dark:text-red-400"
-                          onClick={() => handleDelete(threat.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -310,7 +310,6 @@ export const AdminThreatManagement = () => {
           <Card>
             <CardContent className="p-0">
               <Table>
-                {/* Same structure as above table, but filtered for active threats */}
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[80px]">ID</TableHead>
@@ -352,23 +351,26 @@ export const AdminThreatManagement = () => {
                         </TableCell>
                         <TableCell>{threat.location}</TableCell>
                         <TableCell>{threat.affects}</TableCell>
-                        <TableCell className="text-right space-x-1">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleResolve(threat.id)}
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Resolve
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-red-600 dark:text-red-400"
-                            onClick={() => handleDelete(threat.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleResolve(threat.id)}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Resolve
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 dark:text-red-400"
+                              onClick={() => handleDelete(threat.id)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -390,7 +392,6 @@ export const AdminThreatManagement = () => {
           <Card>
             <CardContent className="p-0">
               <Table>
-                {/* Same structure as above table, but filtered for resolved threats */}
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[80px]">ID</TableHead>
@@ -434,7 +435,7 @@ export const AdminThreatManagement = () => {
                         <TableCell>{threat.timestamp}</TableCell>
                         <TableCell className="text-right">
                           <Button 
-                            variant="outline" 
+                            variant="ghost" 
                             size="sm" 
                             className="text-red-600 dark:text-red-400"
                             onClick={() => handleDelete(threat.id)}
@@ -462,7 +463,6 @@ export const AdminThreatManagement = () => {
   );
 };
 
-// Missing Cloud icon
 const Cloud = (props) => (
   <svg
     {...props}

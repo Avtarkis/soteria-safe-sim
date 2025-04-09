@@ -11,7 +11,6 @@ interface MarkerLayerProps {
 
 const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
-  const markersReadyRef = useRef<boolean>(false);
   const previousMarkersRef = useRef<string>('');
   const [error, setError] = useState<string | null>(null);
   
@@ -21,7 +20,7 @@ const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
     if (!map) return;
     
     // Check if the map DOM node is still valid
-    if (!map.getContainer() || map.getContainer().clientHeight === 0) {
+    if (!map.getContainer() || !document.body.contains(map.getContainer())) {
       console.warn("Map container is not ready for markers");
       return;
     }
@@ -43,17 +42,24 @@ const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
         console.log("Creating new marker layer group");
         markerLayerRef.current = L.layerGroup();
         
-        // Only add to map if the map is valid
-        if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
-          markerLayerRef.current.addTo(map);
-        } else {
-          console.warn("Map container not ready, delaying marker layer addition");
-          return;
-        }
+        // Only add to map if the map is valid and ready
+        setTimeout(() => {
+          try {
+            if (map && map.getContainer() && document.body.contains(map.getContainer())) {
+              markerLayerRef.current?.addTo(map);
+              console.log("Added marker layer group to map");
+            } else {
+              console.warn("Map container not ready, delaying marker layer addition");
+            }
+          } catch (error) {
+            console.error("Error adding layer group to map:", error);
+          }
+        }, 500);
       }
       
       // Get current layer group
       const markerLayer = markerLayerRef.current;
+      if (!markerLayer) return;
       
       // Clear existing markers from the layer
       try {
@@ -66,68 +72,70 @@ const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
         return;
       }
       
-      // Check if the map is in a state where we can add markers
-      if (!map || !map.getContainer() || map.getContainer().clientHeight === 0) {
-        console.warn("Map not ready for marker addition");
-        return;
-      }
-      
-      // Add all markers to the layer
-      const addedMarkers: L.Marker[] = [];
-      
-      markers.forEach((marker, index) => {
-        try {
-          const { position, level, title, details } = marker;
-          
-          // Skip invalid positions
-          if (!position || position.length !== 2 || isNaN(position[0]) || isNaN(position[1])) {
-            console.warn(`Skipping marker with invalid position: ${JSON.stringify(position)}`);
-            return;
-          }
-          
-          // Determine marker color based on threat level
-          const markerColor = level === 'high' ? 'red' : 
-                              level === 'medium' ? 'orange' : 'blue';
-          
-          // Create custom icon for marker
-          const icon = L.divIcon({
-            className: `custom-marker ${level}-marker`,
-            html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
-          });
-          
-          // Create marker
-          const leafletMarker = L.marker(position, { icon });
-          
-          // Add popup with threat details
-          leafletMarker.bindPopup(`
-            <div class="threat-popup">
-              <h3>${title}</h3>
-              <p>${details}</p>
-              <span class="threat-level ${level}">Risk Level: ${level.toUpperCase()}</span>
-            </div>
-          `);
-          
-          // Add click handler if provided
-          if (onMarkerClick) {
-            leafletMarker.on('click', () => {
-              onMarkerClick(marker);
-            });
-          }
-          
-          // Add to layer group
-          leafletMarker.addTo(markerLayer);
-          addedMarkers.push(leafletMarker);
-          
-        } catch (error) {
-          console.error(`Error adding marker ${index}:`, error);
+      // Wait before adding markers to ensure map is fully initialized
+      setTimeout(() => {
+        // Check if map is still valid
+        if (!map || !map.getContainer() || !document.body.contains(map.getContainer())) {
+          console.warn("Map not ready for marker addition");
+          return;
         }
-      });
-      
-      console.log(`Successfully added ${addedMarkers.length} markers`);
-      markersReadyRef.current = true;
-      setError(null);
+        
+        // Add all markers to the layer
+        const addedMarkers: L.Marker[] = [];
+        
+        markers.forEach((marker, index) => {
+          try {
+            const { position, level, title, details } = marker;
+            
+            // Skip invalid positions
+            if (!position || position.length !== 2 || isNaN(position[0]) || isNaN(position[1])) {
+              console.warn(`Skipping marker with invalid position: ${JSON.stringify(position)}`);
+              return;
+            }
+            
+            // Determine marker color based on threat level
+            const markerColor = level === 'high' ? 'red' : 
+                              level === 'medium' ? 'orange' : 'blue';
+            
+            // Create custom icon for marker
+            const icon = L.divIcon({
+              className: `custom-marker ${level}-marker`,
+              html: `<div style="background-color: ${markerColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            });
+            
+            // Create marker
+            const leafletMarker = L.marker(position, { icon });
+            
+            // Add popup with threat details
+            leafletMarker.bindPopup(`
+              <div class="threat-popup">
+                <h3>${title}</h3>
+                <p>${details}</p>
+                <span class="threat-level ${level}">Risk Level: ${level.toUpperCase()}</span>
+              </div>
+            `);
+            
+            // Add click handler if provided
+            if (onMarkerClick) {
+              leafletMarker.on('click', () => {
+                onMarkerClick(marker);
+              });
+            }
+            
+            // Add to layer group
+            leafletMarker.addTo(markerLayer);
+            addedMarkers.push(leafletMarker);
+            
+          } catch (error) {
+            console.error(`Error adding marker ${index}:`, error);
+          }
+        });
+        
+        console.log(`Successfully added ${addedMarkers.length} markers`);
+        setError(null);
+      }, 1000);
       
     } catch (error) {
       console.error("Error managing marker layer:", error);
@@ -144,7 +152,6 @@ const MarkerLayer = ({ map, markers, onMarkerClick }: MarkerLayerProps) => {
             console.log("Removed marker layer during cleanup");
           }
           markerLayerRef.current = null;
-          markersReadyRef.current = false;
         }
       } catch (error) {
         console.error("Error cleaning up marker layer:", error);

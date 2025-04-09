@@ -58,19 +58,13 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   showUserLocation = false
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
-  const mapInitializedRef = useRef<boolean>(false);
-  const prevCenterRef = useRef<[number, number]>(center);
-  const prevZoomRef = useRef<number>(zoom);
-  const viewUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const updateBlockedUntilRef = useRef<number>(0);
-  const mapElementsInitializedRef = useRef<boolean>(false);
-  const mapReadyForOperationsRef = useRef<boolean>(false);
+  const [isMapReady, setIsMapReady] = useState<boolean>(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const initAttemptsRef = useRef<number>(0);
+  const [mapError, setMapError] = useState<string | null>(null);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
-    map, 
+    isMapReady ? map : null, 
     showUserLocation,
     markers
   );
@@ -96,56 +90,37 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const handleMapReady = (newMap: L.Map) => {
     console.log("Map base is now ready");
     setMap(newMap);
-    mapInitializedRef.current = true;
     
-    // Allow a short delay for the map to fully render before enabling operations
-    setTimeout(() => {
-      if (newMap && newMap.getContainer() && newMap.getContainer().clientHeight > 0) {
-        console.log("Map is fully ready for operations");
-        mapReadyForOperationsRef.current = true;
-        
-        // Initial center and zoom (only once at startup)
+    // Initial center and zoom (only once at startup)
+    try {
+      newMap.setView(center, zoom, { animate: false, duration: 0 });
+      console.log("Map is fully ready for operations");
+      setIsMapReady(true);
+    } catch (error) {
+      console.error("Initial setView failed:", error);
+      
+      // Try again after a delay
+      setTimeout(() => {
         try {
-          newMap.setView(center, zoom, { animate: false, duration: 0 });
-          prevCenterRef.current = center;
-          prevZoomRef.current = zoom;
-        } catch (error) {
-          console.error("Initial setView failed:", error);
-          
-          // Try again after a delay
-          setTimeout(() => {
-            try {
-              if (newMap) {
-                newMap.invalidateSize(true);
-                newMap.setView(center, zoom, { animate: false });
-              }
-            } catch (e) {
-              console.error("Retry setView failed:", e);
-            }
-          }, 500);
-        }
-        
-        // Explicitly trigger a resize
-        setTimeout(() => {
           if (newMap) {
             newMap.invalidateSize(true);
+            newMap.setView(center, zoom, { animate: false });
+            setIsMapReady(true);
           }
-        }, 300);
-      }
-    }, 300);
+        } catch (e) {
+          console.error("Retry setView failed:", e);
+          setMapError("Failed to set map view. Please refresh the page.");
+        }
+      }, 500);
+    }
   };
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       console.log("LeafletMap component unmounting");
-      if (viewUpdateTimeoutRef.current) {
-        clearTimeout(viewUpdateTimeoutRef.current);
-      }
-      updateBlockedUntilRef.current = 0;
-      mapInitializedRef.current = false;
-      mapReadyForOperationsRef.current = false;
-      mapElementsInitializedRef.current = false;
+      setIsMapReady(false);
+      setMap(null);
     };
   }, []);
 
@@ -170,7 +145,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
         onMapReady={handleMapReady}
       />
       
-      {map && mapInitializedRef.current && mapReadyForOperationsRef.current && (
+      {map && isMapReady && (
         <>
           {markers && markers.length > 0 && (
             <MarkerLayer 
@@ -189,6 +164,21 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
             />
           )}
         </>
+      )}
+      
+      {mapError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50">
+          <div className="p-4 bg-background border rounded shadow-lg">
+            <h3 className="text-lg font-medium">Map Error</h3>
+            <p className="text-sm text-destructive my-2">{mapError}</p>
+            <button 
+              className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm"
+              onClick={() => window.location.reload()}
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
