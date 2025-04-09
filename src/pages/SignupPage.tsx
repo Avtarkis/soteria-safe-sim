@@ -1,9 +1,43 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import AuthForm from '@/components/auth/AuthForm';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const SignupPage = () => {
-  return <AuthForm type="signup" />;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  return (
+    <div className="container mx-auto px-4 h-[calc(100vh-4rem)] flex items-center justify-center">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
+          <CardDescription className="text-center">
+            Enter your information to create a new account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AuthForm type="signup" />
+          
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <a href="/login" className="text-blue-600 hover:underline">
+              Sign in
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default SignupPage;

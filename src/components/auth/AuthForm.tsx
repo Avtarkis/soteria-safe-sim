@@ -27,7 +27,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
       if (type === 'login') {
         await signIn(email, password);
       } else {
-        await signUp(email, password, name);
+        // Pass only email and password to signUp, not name
+        await signUp(email, password);
       }
       if (onSuccess) onSuccess();
     } catch (err: any) {
