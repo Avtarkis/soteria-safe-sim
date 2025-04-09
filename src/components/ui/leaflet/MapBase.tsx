@@ -60,7 +60,7 @@ const MapBase = ({
         return;
       }
       
-      // Short delay to ensure DOM is ready
+      // Add a small delay to ensure DOM is fully ready
       setTimeout(() => {
         try {
           if (!mapContainerRef.current) return;
@@ -73,6 +73,10 @@ const MapBase = ({
             preferCanvas: true,
             renderer: L.canvas({ padding: 0.5 }),
             attributionControl: true,
+            // Ensure map doesn't try to do animations until fully ready
+            fadeAnimation: false,
+            zoomAnimation: false,
+            markerZoomAnimation: false,
           });
 
           // Add basic controls
@@ -99,38 +103,38 @@ const MapBase = ({
           // Store ref
           mapRef.current = map;
           
-          // Force a redraw of the map container after mounting
+          // Extra delay to ensure map is properly initialized before operations
           setTimeout(() => {
             if (mapRef.current) {
               try {
                 // First invalidate size forcefully
                 mapRef.current.invalidateSize(true);
                 
-                // Then notify parent
+                // Set view with no animations initially
+                mapRef.current.setView(center, zoom, { animate: false, duration: 0 });
+                
+                // Then notify parent that map is ready
                 console.log("Map base initialization complete");
                 mapInitializedRef.current = true;
-                onMapReady(mapRef.current);
                 
-                // Add another resize after a brief delay to ensure map is properly sized
+                // Wait for DOM to fully process the map
                 setTimeout(() => {
+                  // Enable animations after map is stable
                   if (mapRef.current) {
-                    mapRef.current.invalidateSize(true);
+                    (mapRef.current.options as any).fadeAnimation = true;
+                    (mapRef.current.options as any).zoomAnimation = true;
+                    (mapRef.current.options as any).markerZoomAnimation = true;
                     
-                    // More defensive check for leaflet_pos error
-                    try {
-                      mapRef.current.setView(center, zoom);
-                    } catch (e) {
-                      console.warn("Secondary setView failed, will try again:", e);
-                      
-                      // Try one more time after another delay
-                      setTimeout(() => {
-                        if (mapRef.current) mapRef.current.invalidateSize(true);
-                      }, 500);
-                    }
+                    mapRef.current.invalidateSize(true);
+                    console.log("Map is fully ready for operations");
+                    
+                    // Finally notify parent with the ready map
+                    onMapReady(mapRef.current);
                   }
                 }, 500);
               } catch (error) {
-                console.error("Error during map initialization callback:", error);
+                console.error("Error during map initialization:", error);
+                setInitError(`Map init error: ${error}`);
               }
             }
           }, 300);
@@ -138,7 +142,7 @@ const MapBase = ({
           console.error('Error creating Leaflet map:', err);
           setInitError(`Map creation error: ${err}`);
         }
-      }, 300);
+      }, 500); // Longer delay to ensure DOM is ready
       
     } catch (error) {
       console.error('Error initializing map:', error);
