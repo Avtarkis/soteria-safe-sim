@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -254,7 +253,7 @@ const SubscriptionPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '4.99' : '4.19'}</div>
+                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '4.99' : '4.99'}</div>
                 <div className="text-sm text-muted-foreground">/month</div>
                 <div className="mt-2 text-sm">Advanced protection for individuals</div>
               </div>
@@ -374,7 +373,7 @@ const SubscriptionPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '19.99' : '16.79'}</div>
+                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '19.99' : '19.99'}</div>
                 <div className="text-sm text-muted-foreground">/month</div>
                 <div className="mt-2 text-sm">Complete protection for your entire family</div>
               </div>
@@ -556,7 +555,6 @@ const SubscriptionPage = () => {
   );
 };
 
-// Define missing components
 const Cross = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M18 6L6 18"></path>
