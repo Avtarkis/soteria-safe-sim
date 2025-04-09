@@ -10,18 +10,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false);
   const [notificationShown, setNotificationShown] = useState(false);
   
-  useEffect(() => {
-    // Mark auth as checked once loading is complete
-    if (!loading) {
-      setAuthChecked(true);
-    }
-  }, [loading]);
-  
   // Show loading state while checking authentication
-  if (loading || !authChecked) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -32,19 +24,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Always bypass authentication in testing mode
   if (!user) {
     // Log the issue for easier debugging
-    console.log("Authentication required but user not found - bypassing in test mode");
+    console.log("TEST MODE: Bypassing authentication for protected route");
     
     // Show toast only once when entering protected route without auth
-    useEffect(() => {
-      if (!notificationShown) {
-        toast({
-          title: "Testing Mode",
-          description: "Authentication bypassed for testing",
-          variant: "default",
-        });
-        setNotificationShown(true);
-      }
-    }, [notificationShown]);
+    if (!notificationShown) {
+      toast({
+        title: "Testing Mode Active",
+        description: "Authentication bypassed for testing",
+        variant: "default",
+      });
+      setNotificationShown(true);
+    }
     
     // For test mode, always allow access to protected routes
     return <>{children}</>;

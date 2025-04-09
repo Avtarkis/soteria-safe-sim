@@ -47,9 +47,18 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
           variant: "destructive",
         });
       } else {
-        // Successful signup with auto-login will redirect to dashboard
-        console.log("Signup successful, navigating to dashboard");
-        navigate('/dashboard');
+        // Account creation successful - in testing mode, redirect to dashboard
+        // even if auto-login might have failed
+        console.log("Account created successfully");
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully. Redirecting to dashboard...",
+        });
+        
+        // Short delay before redirecting to dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Sign up error:', error);

@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 // Define types for our context
 type User = {
@@ -109,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } : null);
           
           toast({
-            title: 'Welcome back!',
+            title: 'Welcome!',
             description: 'You have successfully signed in',
           });
         } else if (event === 'SIGNED_OUT') {
@@ -127,33 +126,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [toast]);
 
-  // Sign in function - immediately authenticates users without email verification
+  // Sign in function - modified for test environment
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       console.log("Attempting to sign in:", email);
-      // Standard sign-in attempt without verification checks for testing
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password
-      });
       
-      // Handle specific error for unverified emails - bypass for testing
-      if (error && error.message === 'Email not confirmed' && error.status === 400) {
-        console.log("Email not confirmed, bypassing verification for testing");
+      // In test mode, we create a fake authenticated user session
+      if (process.env.NODE_ENV === 'development' || import.meta.env.DEV) {
+        console.log("TEST MODE: Simulating successful sign-in for:", email);
         
-        // Force authentication for testing purposes
-        // This is a workaround that would be removed in production
-        const { error: autoSignInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        // Set a mock user for the testing environment
+        setUser({
+          id: 'test-user-id',
+          email: email
         });
-        
-        if (autoSignInError) throw autoSignInError;
         
         return { error: null };
       }
       
+      // Standard sign-in for production
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      
       if (error) throw error;
+      
       console.log("Sign in successful for:", email);
       return { error: null };
     } catch (error) {
@@ -162,54 +157,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Sign up function - modified to auto-sign in users after registration for testing
+  // Sign up function - modified for test environment
   const signUp = useCallback(async (email: string, password: string) => {
     try {
       console.log("Attempting to sign up:", email);
       
-      // During testing, sign up with auto-confirmation
-      const { data, error } = await supabase.auth.signUp({ 
+      // Register the user with Supabase (we'll still create the account)
+      const { error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          // Redirect to dashboard after sign-up (if email verification is needed)
           emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
       
       if (error) throw error;
       
-      console.log("Sign up successful for:", email, "Now attempting auto sign-in");
+      console.log("Sign up successful for:", email);
       
-      // For testing, always immediately sign in the user after signup
-      const signInResult = await signIn(email, password);
-      
-      if (signInResult.error) {
-        console.log("Auto-sign in after registration failed:", signInResult.error);
-        toast({
-          title: 'Account created',
-          description: 'Your account was created, but automatic sign-in failed. Please try signing in manually.',
-          variant: 'destructive',
+      // In test mode, immediately set a mock user
+      if (process.env.NODE_ENV === 'development' || import.meta.env.DEV) {
+        console.log("TEST MODE: Setting mock user after registration");
+        
+        // Set a mock user for the testing environment
+        setUser({
+          id: 'test-user-id',
+          email: email
         });
-        return { error: signInResult.error };
-      } else {
-        console.log("Auto-sign in successful after registration");
+        
         toast({
-          title: 'Account created',
-          description: 'You have been automatically signed in for testing purposes.',
+          title: 'Test account created',
+          description: 'You have been automatically authenticated for testing purposes.',
         });
-        return { error: null };
       }
+      
+      return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error: error as Error };
     }
-  }, [toast, signIn]);
+  }, [toast]);
 
   // Sign out function
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
+      
+      // Clear the user state
+      setUser(null);
     } catch (error) {
       console.error('Sign out error:', error);
       toast({
