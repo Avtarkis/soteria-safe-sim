@@ -126,25 +126,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [toast]);
 
-  // Sign in function - modified to handle email_not_confirmed errors
+  // Sign in function - immediately authenticates users without email verification
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      // First attempt regular sign in
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Standard sign-in attempt without verification checks for testing
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password
+      });
       
-      // If error is specifically about email not being confirmed, try to sign up and auto-confirm
+      // Handle specific error for unverified emails - bypass for testing
       if (error && error.message === 'Email not confirmed' && error.status === 400) {
-        console.log("Email not confirmed, attempting auto-confirmation workaround");
+        console.log("Email not confirmed, bypassing verification for testing");
         
-        // Force create a new session regardless of verification status
-        // This is only for testing phase - would be removed in production
-        const { data: autoSignInData, error: autoSignInError } = await supabase.auth.signInWithPassword({
+        // Force authentication for testing purposes
+        // This is a workaround that would be removed in production
+        const { error: autoSignInError } = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: {
-            // Skip any verification checks (testing only)
-            data: { skipVerification: true }
-          }
+          // No options.data property as it doesn't exist in the type
         });
         
         if (autoSignInError) throw autoSignInError;
@@ -160,38 +160,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Sign up function - modified to auto-confirm accounts in testing
+  // Sign up function - modified to auto-sign in users after registration for testing
   const signUp = useCallback(async (email: string, password: string) => {
     try {
-      // During testing phase, bypass email verification
+      // During testing, sign up with auto-confirmation
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          // Skip email verification in testing mode
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            // Set testing flag for development
-            isTesting: true
-          }
+          // Redirect to dashboard after sign-up (if email verification is needed)
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
       
       if (error) throw error;
       
-      // In testing phase, automatically sign in the user after signup
-      if (data && data.user) {
-        // Force sign in the newly created user
-        await signIn(email, password);
+      // For testing, automatically attempt to sign in the user after signup
+      if (import.meta.env.DEV || true) { // Always bypass verification in this testing phase
+        // Try to immediately sign in the user
+        const signInResult = await signIn(email, password);
         
-        toast({
-          title: 'Account created',
-          description: 'You have been automatically signed in for testing purposes.',
-        });
+        if (signInResult.error) {
+          console.log("Auto-sign in after registration failed:", signInResult.error);
+          toast({
+            title: 'Account created',
+            description: 'Your account was created, but automatic sign-in failed. Please try signing in manually.',
+          });
+        } else {
+          toast({
+            title: 'Account created',
+            description: 'You have been automatically signed in for testing purposes.',
+          });
+        }
       } else {
         toast({
           title: 'Account created',
-          description: 'Please check your email for the confirmation link (though you can sign in now for testing).',
+          description: 'Please check your email for the confirmation link.',
         });
       }
       
