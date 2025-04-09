@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth'; // Using the correct hook path
+import { useAuth } from '@/contexts/AuthContext'; // Using the correct path now
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
@@ -89,8 +89,8 @@ const MobileMenu = ({ open, setOpen, navItems, user, signOut }: {
             <div className="mt-auto mb-6 space-y-4">
               <div className="border-t pt-4 space-y-4">
                 <button
-                  onClick={() => {
-                    signOut();
+                  onClick={async () => {
+                    await signOut();
                     setOpen(false);
                   }}
                   className="flex items-center gap-4 py-2 px-4 rounded-lg text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 w-full"
@@ -143,7 +143,7 @@ const DesktopMenu = ({ navItems }: {
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const { user, logout: signOut } = useAuth(); // Using the correct auth hook
+  const { user, signOut } = useAuth(); // Using the correct auth hook
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
@@ -224,7 +224,7 @@ const Navbar = () => {
         <div className="ml-auto flex items-center gap-4">
           <ThemeToggle />
           {user && !isMobile && (
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button variant="outline" size="sm" onClick={async () => await signOut()}>
               Sign Out
             </Button>
           )}

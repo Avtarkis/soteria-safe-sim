@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
+import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 
 interface AuthFormProps {
   type: 'login' | 'signup';
@@ -110,8 +110,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
       )}
       
       <ForgotPasswordDialog
-        open={showForgotPassword}
-        onOpenChange={setShowForgotPassword}
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
       />
     </div>
   );
