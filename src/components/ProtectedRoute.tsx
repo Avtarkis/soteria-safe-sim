@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,6 +32,16 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (import.meta.env.DEV && !user) {
     // Log the issue for easier debugging
     console.log("Authentication bypassed in development mode");
+    
+    // Show toast only once when entering protected route without auth in dev mode
+    useEffect(() => {
+      toast({
+        title: "Dev Mode",
+        description: "Authentication bypassed for development",
+        variant: "default",
+      });
+    }, []);
+    
     return <>{children}</>;
   }
   

@@ -26,17 +26,28 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      toast({
-        title: "Success!",
-        description: "You have been signed in successfully.",
-      });
-      navigate('/dashboard');
-    } catch (error) {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        // For testing purposes, show more detailed errors to help debugging
+        console.log("Sign in attempt error:", error);
+        toast({
+          title: "Sign in issue",
+          description: `Error: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "You have been signed in successfully.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
       console.error('Sign in error:', error);
       toast({
         title: "Sign in failed",
-        description: "Please check your credentials and try again.",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -50,6 +61,9 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
         <CardTitle className="text-2xl">Sign In</CardTitle>
         <CardDescription>
           Enter your email and password to access your account
+          {import.meta.env.DEV && (
+            <p className="text-xs mt-1 text-green-500">Testing mode: Email verification bypassed</p>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>

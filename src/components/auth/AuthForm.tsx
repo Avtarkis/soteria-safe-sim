@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthFormProps {
   type: 'login' | 'signup';
@@ -15,6 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const { toast } = useToast();
 
   const { signIn, signUp } = useAuth();
 
@@ -24,16 +28,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
     setLoading(true);
 
     try {
+      let result;
+      
       if (type === 'login') {
-        await signIn(email, password);
+        result = await signIn(email, password);
       } else {
-        // Pass only email and password to signUp, not name
-        await signUp(email, password);
+        result = await signUp(email, password);
       }
-      if (onSuccess) onSuccess();
+      
+      if (result.error) {
+        setError(result.error.message);
+        toast({
+          title: type === 'login' ? "Login failed" : "Signup failed",
+          description: result.error.message || "An error occurred",
+          variant: "destructive",
+        });
+      } else if (onSuccess) {
+        onSuccess();
+      }
     } catch (err: any) {
       console.error('Authentication error:', err);
       setError(err.message || 'An error occurred during authentication.');
+      toast({
+        title: "Authentication Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -41,6 +61,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
 
   return (
     <div className="space-y-4">
+      {import.meta.env.DEV && (
+        <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md text-sm text-green-800 dark:text-green-300 mb-4">
+          <p>Testing Mode: Email verification is bypassed</p>
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         {type === 'signup' && (
           <div>

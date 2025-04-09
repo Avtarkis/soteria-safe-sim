@@ -8,6 +8,11 @@ import { componentTagger } from "lovable-tagger";
 const supabaseUrl = 'https://momujszivwegjajwzngy.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbXVqc3ppdndlZ2phand6bmd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMTgyMTcsImV4cCI6MjA1OTY5NDIxN30.u12Ut80z2iNxmyTH2_m96lroygpARxv9s3AKjDfBLMQ';
 
+interface ImportMetaEnv {
+  VITE_SUPABASE_URL?: string
+  VITE_SUPABASE_ANON_KEY?: string
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use environment vars if available, otherwise use hardcoded values
