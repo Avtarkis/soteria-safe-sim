@@ -18,7 +18,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'dark', // Changed default to dark
   storageKey = 'theme',
   ...props
 }: ThemeProviderProps) {
