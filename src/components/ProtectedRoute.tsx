@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -11,6 +11,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
+  const [notificationShown, setNotificationShown] = useState(false);
   
   useEffect(() => {
     // Mark auth as checked once loading is complete
@@ -35,20 +36,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     
     // Show toast only once when entering protected route without auth
     useEffect(() => {
-      toast({
-        title: "Testing Mode",
-        description: "Authentication bypassed for testing",
-        variant: "default",
-      });
-    }, []);
+      if (!notificationShown) {
+        toast({
+          title: "Testing Mode",
+          description: "Authentication bypassed for testing",
+          variant: "default",
+        });
+        setNotificationShown(true);
+      }
+    }, [notificationShown]);
     
     // For test mode, always allow access to protected routes
-    if (import.meta.env.DEV || true) { // Always bypass for testing phase
-      return <>{children}</>;
-    }
-    
-    // For production, redirect to login if not authenticated
-    return <Navigate to="/login" replace />;
+    return <>{children}</>;
   }
   
   // Render children if authenticated

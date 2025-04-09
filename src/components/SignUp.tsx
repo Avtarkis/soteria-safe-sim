@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,7 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,17 +36,26 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
     setLoading(true);
 
     try {
-      await signUp(email, password);
-      toast({
-        title: "Account created!",
-        description: "Your account has been created successfully. Please sign in.",
-      });
-      toggleSignIn();
-    } catch (error) {
+      console.log("Starting signup process for:", email);
+      const result = await signUp(email, password);
+      
+      if (result.error) {
+        console.error('Sign up error:', result.error);
+        toast({
+          title: "Sign up failed",
+          description: result.error.message || "There was an error creating your account. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        // Successful signup with auto-login will redirect to dashboard
+        console.log("Signup successful, navigating to dashboard");
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
       console.error('Sign up error:', error);
       toast({
         title: "Sign up failed",
-        description: "There was an error creating your account. Please try again.",
+        description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -58,6 +69,7 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
         <CardTitle className="text-2xl">Create an account</CardTitle>
         <CardDescription>
           Enter your details to create a new account
+          <p className="text-xs mt-1 text-green-500">Testing mode: Automatic sign-in after registration</p>
         </CardDescription>
       </CardHeader>
       <CardContent>

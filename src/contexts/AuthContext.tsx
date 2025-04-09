@@ -101,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
         if (event === 'SIGNED_IN') {
           setUser(session?.user ? {
             id: session.user.id,
@@ -129,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign in function - immediately authenticates users without email verification
   const signIn = useCallback(async (email: string, password: string) => {
     try {
+      console.log("Attempting to sign in:", email);
       // Standard sign-in attempt without verification checks for testing
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
@@ -144,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { error: autoSignInError } = await supabase.auth.signInWithPassword({
           email,
           password,
-          // No options.data property as it doesn't exist in the type
         });
         
         if (autoSignInError) throw autoSignInError;
@@ -153,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (error) throw error;
+      console.log("Sign in successful for:", email);
       return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -163,6 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign up function - modified to auto-sign in users after registration for testing
   const signUp = useCallback(async (email: string, password: string) => {
     try {
+      console.log("Attempting to sign up:", email);
+      
       // During testing, sign up with auto-confirmation
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -175,31 +179,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // For testing, automatically attempt to sign in the user after signup
-      if (import.meta.env.DEV || true) { // Always bypass verification in this testing phase
-        // Try to immediately sign in the user
-        const signInResult = await signIn(email, password);
-        
-        if (signInResult.error) {
-          console.log("Auto-sign in after registration failed:", signInResult.error);
-          toast({
-            title: 'Account created',
-            description: 'Your account was created, but automatic sign-in failed. Please try signing in manually.',
-          });
-        } else {
-          toast({
-            title: 'Account created',
-            description: 'You have been automatically signed in for testing purposes.',
-          });
-        }
-      } else {
+      console.log("Sign up successful for:", email, "Now attempting auto sign-in");
+      
+      // For testing, always immediately sign in the user after signup
+      const signInResult = await signIn(email, password);
+      
+      if (signInResult.error) {
+        console.log("Auto-sign in after registration failed:", signInResult.error);
         toast({
           title: 'Account created',
-          description: 'Please check your email for the confirmation link.',
+          description: 'Your account was created, but automatic sign-in failed. Please try signing in manually.',
+          variant: 'destructive',
         });
+        return { error: signInResult.error };
+      } else {
+        console.log("Auto-sign in successful after registration");
+        toast({
+          title: 'Account created',
+          description: 'You have been automatically signed in for testing purposes.',
+        });
+        return { error: null };
       }
-      
-      return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error: error as Error };
