@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/components/ThemeProvider.tsx';
 
 // Define a basic ErrorBoundary component
 interface ErrorBoundaryProps {
@@ -133,11 +134,13 @@ try {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <AuthProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </AuthProvider>
+        <ThemeProvider defaultTheme="dark">
+          <AuthProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </AuthProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );
