@@ -55,10 +55,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
             : "Your account has been created and you're now signed in",
         });
         
-        // Short delay for the toast to be visible
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+        // Navigate to dashboard after successful authentication
+        navigate('/dashboard');
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
@@ -90,7 +88,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               required
             />
           </div>
@@ -105,7 +103,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
@@ -119,7 +117,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             required
           />
         </div>
@@ -141,7 +139,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
         <div className="text-center">
           <button
             onClick={() => setShowForgotPassword(true)}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
             Forgot password?
           </button>

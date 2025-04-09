@@ -54,10 +54,8 @@ const SignUp: React.FC<SignUpProps> = ({ toggleSignIn }) => {
           description: "Your account has been created successfully. Redirecting to dashboard...",
         });
         
-        // Short delay before redirecting to dashboard
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+        // Redirect to dashboard after successful sign-up
+        navigate('/dashboard');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);

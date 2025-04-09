@@ -42,6 +42,8 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
           title: "Success!",
           description: "You have been signed in successfully.",
         });
+        
+        // Navigate to dashboard after successful sign-in
         navigate('/dashboard');
       }
     } catch (error: any) {

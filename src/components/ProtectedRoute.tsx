@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const { toast } = useToast();
   const [notificationShown, setNotificationShown] = useState(false);
   
   // Show loading state while checking authentication
@@ -21,13 +22,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
   
-  // Always bypass authentication in testing mode
-  if (!user) {
-    // Log the issue for easier debugging
-    console.log("TEST MODE: Bypassing authentication for protected route");
-    
-    // Show toast only once when entering protected route without auth
-    if (!notificationShown) {
+  // Use useEffect to show toast outside of render
+  useEffect(() => {
+    if (!user && !notificationShown) {
+      // Log the issue for easier debugging
+      console.log("TEST MODE: Bypassing authentication for protected route");
+      
+      // Show toast only once when entering protected route without auth
       toast({
         title: "Testing Mode Active",
         description: "Authentication bypassed for testing",
@@ -35,7 +36,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       });
       setNotificationShown(true);
     }
-    
+  }, [user, toast, notificationShown]);
+  
+  // Always bypass authentication in testing mode
+  if (!user) {
     // For test mode, always allow access to protected routes
     return <>{children}</>;
   }
