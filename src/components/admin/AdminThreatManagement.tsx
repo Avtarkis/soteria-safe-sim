@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Filter, Map, Trash2, Clock, AlertTriangle, Check, ChevronDown, Shield, Cloud } from 'lucide-react';
+import { Search, Plus, Filter, Map, Trash2, Clock, AlertTriangle, Check, ChevronDown, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -239,7 +239,7 @@ export const AdminThreatManagement = () => {
                         }`}>
                           {threat.type === 'Cyber' && <Shield className="h-3 w-3" />}
                           {threat.type === 'Physical' && <AlertTriangle className="h-3 w-3" />}
-                          {threat.type === 'Environmental' && <Cloud className="h-3 w-3" />}
+                          {threat.type === 'Environmental' && <CloudIcon className="h-3 w-3" />}
                           {threat.type}
                         </span>
                       </TableCell>
@@ -336,7 +336,7 @@ export const AdminThreatManagement = () => {
                           }`}>
                             {threat.type === 'Cyber' && <Shield className="h-3 w-3" />}
                             {threat.type === 'Physical' && <AlertTriangle className="h-3 w-3" />}
-                            {threat.type === 'Environmental' && <Cloud className="h-3 w-3" />}
+                            {threat.type === 'Environmental' && <CloudIcon className="h-3 w-3" />}
                             {threat.type}
                           </span>
                         </TableCell>
@@ -418,7 +418,7 @@ export const AdminThreatManagement = () => {
                           }`}>
                             {threat.type === 'Cyber' && <Shield className="h-3 w-3" />}
                             {threat.type === 'Physical' && <AlertTriangle className="h-3 w-3" />}
-                            {threat.type === 'Environmental' && <Cloud className="h-3 w-3" />}
+                            {threat.type === 'Environmental' && <CloudIcon className="h-3 w-3" />}
                             {threat.type}
                           </span>
                         </TableCell>
@@ -463,7 +463,7 @@ export const AdminThreatManagement = () => {
   );
 };
 
-const Cloud = (props) => (
+const CloudIcon = (props) => (
   <svg
     {...props}
     xmlns="http://www.w3.org/2000/svg"

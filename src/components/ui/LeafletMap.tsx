@@ -61,6 +61,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const [isMapReady, setIsMapReady] = useState<boolean>(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const mapInitializedRef = useRef<boolean>(false);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -86,32 +87,61 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     return map as L.Map;
   }, [map]);
   
-  // Handle map initialization with retry logic
+  // Ensure container exists before attempting to create map
+  useEffect(() => {
+    // Quick check to ensure container is in DOM before initializing
+    const containerCheck = setInterval(() => {
+      if (mapContainerRef.current && 
+          document.body.contains(mapContainerRef.current) &&
+          mapContainerRef.current.clientHeight > 0) {
+        clearInterval(containerCheck);
+        mapInitializedRef.current = true;
+      }
+    }, 100);
+    
+    return () => clearInterval(containerCheck);
+  }, []);
+  
+  // Handle map initialization with improved error handling
   const handleMapReady = (newMap: L.Map) => {
     console.log("Map base is now ready");
-    setMap(newMap);
     
-    // Initial center and zoom (only once at startup)
-    try {
-      newMap.setView(center, zoom, { animate: false, duration: 0 });
-      console.log("Map is fully ready for operations");
-      setIsMapReady(true);
-    } catch (error) {
-      console.error("Initial setView failed:", error);
+    if (newMap && newMap.getContainer()) {
+      // Ensure map container is visible and has size
+      newMap.invalidateSize(true);
       
-      // Try again after a delay
+      // Set map state
+      setMap(newMap);
+      
+      // Delay setting view to ensure container is fully rendered
       setTimeout(() => {
         try {
-          if (newMap) {
-            newMap.invalidateSize(true);
-            newMap.setView(center, zoom, { animate: false });
+          if (newMap && document.body.contains(newMap.getContainer())) {
+            newMap.setView(center, zoom, { animate: false, duration: 0 });
+            console.log("Map is fully ready for operations");
             setIsMapReady(true);
           }
-        } catch (e) {
-          console.error("Retry setView failed:", e);
-          setMapError("Failed to set map view. Please refresh the page.");
+        } catch (error) {
+          console.error("Initial setView failed:", error);
+          
+          // Final retry
+          setTimeout(() => {
+            try {
+              if (newMap && document.body.contains(newMap.getContainer())) {
+                newMap.invalidateSize(true);
+                newMap.setView(center, zoom, { animate: false });
+                setIsMapReady(true);
+              }
+            } catch (e) {
+              console.error("Retry setView failed:", e);
+              setMapError("Failed to set map view. Please refresh the page.");
+            }
+          }, 1000);
         }
       }, 500);
+    } else {
+      console.error("Map container not ready");
+      setMapError("Map container not ready. Please refresh the page.");
     }
   };
   
@@ -139,11 +169,13 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
       ref={mapContainerRef}
       style={mapContainerStyle}
     >
-      <MapBase 
-        center={center} 
-        zoom={zoom} 
-        onMapReady={handleMapReady}
-      />
+      {mapContainerRef.current && document.body.contains(mapContainerRef.current) && (
+        <MapBase 
+          center={center} 
+          zoom={zoom} 
+          onMapReady={handleMapReady}
+        />
+      )}
       
       {map && isMapReady && (
         <>
