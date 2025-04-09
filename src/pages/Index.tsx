@@ -36,9 +36,9 @@ const Index = () => {
                 </svg>
               </div>
               <h1 className="text-3xl font-extrabold text-center text-gray-900">Soteria</h1>
-              <p className="text-lg text-center text-gray-600 mt-2">Where every second counts.</p>
+              <p className="text-lg text-center text-gray-600 mt-2">...every second counts.</p>
               <p className="text-sm text-center text-gray-500 mt-2 mb-6">
-                Personal safety and threat monitoring platform
+                Personal safety and threat monitoring app
               </p>
             </div>
             
@@ -70,8 +70,7 @@ const Index = () => {
                 </a>
               </p>
               <p className="mt-4">
-                Every second counts in an emergency.{' '}
-                <span className="text-blue-600">Stay prepared</span>.
+                ...every second counts.
               </p>
             </div>
           </div>
@@ -83,7 +82,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-500 text-sm">
             <p>© 2025 Soteria Security. All rights reserved.</p>
-            <p className="mt-1">Where every second counts.</p>
+            <p className="mt-1">...every second counts.</p>
           </div>
         </div>
       </footer>

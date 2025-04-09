@@ -27,8 +27,7 @@ const MobileMenu = () => {
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
-              <Link to="/" className="flex items-center space-x-2" onClick={() => setOpen(false)}>
-                <img src="/soteria-logo.png" alt="Soteria Logo" className="h-8 w-auto" />
+              <Link to="/" className="flex items-center" onClick={() => setOpen(false)}>
                 <span className="font-bold text-xl">Soteria</span>
               </Link>
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>

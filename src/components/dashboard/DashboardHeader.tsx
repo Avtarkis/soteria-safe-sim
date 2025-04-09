@@ -10,7 +10,7 @@ const DashboardHeader = () => {
         </svg>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Where every second counts.</p>
+          <p className="text-sm text-muted-foreground">...every second counts.</p>
         </div>
       </div>
       <p className="text-sm sm:text-base text-muted-foreground">
