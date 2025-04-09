@@ -15,10 +15,10 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <img src="/soteria-logo.png" alt="Soteria Logo" className="h-8 w-auto" />
           <span className="font-bold text-xl hidden sm:inline-block">Soteria</span>
-        </div>
+        </Link>
         <MainNav />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
