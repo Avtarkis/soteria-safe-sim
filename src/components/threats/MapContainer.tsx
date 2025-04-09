@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import LeafletMap from '@/components/ui/LeafletMap';
 import ThreatDetails from './ThreatDetails';
 import { ThreatMarker } from '@/types/threats';
@@ -25,115 +25,25 @@ const MapContainer = ({
   clearSelectedThreat
 }: MapContainerProps) => {
   const { toast } = useToast();
-  const [isMapReady, setIsMapReady] = useState(false);
+  const isInitialRenderRef = useRef(true);
   const [mapContainerKey] = useState(`map-container-${Date.now()}`);
-  const [lastResizeTime, setLastResizeTime] = useState<number>(0);
-  const [highPrecisionAttempted, setHighPrecisionAttempted] = useState(false);
-  const minResizeInterval = 10000; // Increased to 10 seconds between resizes to reduce flickering
   
-  // Simplified map sizing effect with reduced frequency
+  // Simplified initialization that doesn't cause re-renders
   useEffect(() => {
-    const handleMapInitialization = () => {
-      if (mapRef.current && !isMapReady) {
-        // Only resize once on initialization
-        try {
-          console.log('Initial map sizing');
-          window.dispatchEvent(new Event('resize'));
-          mapRef.current.invalidateSize(true);
-          setIsMapReady(true);
-        } catch (error) {
-          console.error("Error during initial map resize:", error);
-        }
-      }
-    };
-    
-    // Apply initial resize after a short delay
-    const initialResizeTimer = setTimeout(handleMapInitialization, 500);
-    
-    return () => {
-      clearTimeout(initialResizeTimer);
-    };
-  }, [mapRef, isMapReady]);
-
-  // Add a separate effect for window resize with heavy throttling
-  useEffect(() => {
-    let resizeTimeout: NodeJS.Timeout | null = null;
-    
-    const handleWindowResize = () => {
-      // Clear any existing timeout
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-      
-      const now = Date.now();
-      // Prevent too many resize operations
-      if (now - lastResizeTime < minResizeInterval) {
-        // Schedule a single resize later
-        resizeTimeout = setTimeout(() => {
+    if (isInitialRenderRef.current && mapRef.current) {
+      try {
+        console.log('Initial map sizing once');
+        setTimeout(() => {
           if (mapRef.current) {
-            try {
-              console.log('Delayed resize after window change');
-              mapRef.current.invalidateSize(false); // Use false for smoother resize
-              setLastResizeTime(Date.now());
-            } catch (error) {
-              console.error("Error during delayed resize:", error);
-            }
+            mapRef.current.invalidateSize({ animate: false });
           }
-        }, minResizeInterval - (now - lastResizeTime));
-        return;
+          isInitialRenderRef.current = false;
+        }, 500);
+      } catch (error) {
+        console.error("Error during initial map resize:", error);
       }
-      
-      // Schedule a resize with a long debounce
-      resizeTimeout = setTimeout(() => {
-        if (mapRef.current) {
-          try {
-            console.log('Resizing map after window resize');
-            mapRef.current.invalidateSize(false);
-            setLastResizeTime(Date.now());
-          } catch (error) {
-            console.error("Error resizing map:", error);
-          }
-        }
-      }, 500); // Long debounce for reduced flickering
-    };
-    
-    window.addEventListener('resize', handleWindowResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleWindowResize);
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-    };
-  }, [mapRef, lastResizeTime, minResizeInterval]);
-
-  // Simplified high precision mode handler with reduced frequency
-  useEffect(() => {
-    const handleHighPrecisionMode = () => {
-      if (highPrecisionAttempted) return; // Skip if already attempted
-      
-      console.log("High precision mode activated in map container");
-      setHighPrecisionAttempted(true);
-      
-      // Schedule a single resize attempt with delay
-      setTimeout(() => {
-        if (mapRef.current && mapRef.current.getContainer().clientHeight > 0) {
-          try {
-            console.log("Refreshing map for high precision mode");
-            mapRef.current.invalidateSize(false);
-          } catch (error) {
-            console.error("Error refreshing map in high precision mode:", error);
-          }
-        }
-      }, 1000);
-    };
-    
-    document.addEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
-    
-    return () => {
-      document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
-    };
-  }, [mapRef, highPrecisionAttempted]);
+    }
+  }, [mapRef]);
 
   return (
     <>

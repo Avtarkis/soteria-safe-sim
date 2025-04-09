@@ -58,6 +58,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
   const mapInitializedRef = useRef<boolean>(false);
+  const initializedTimeRef = useRef<number>(Date.now());
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -88,23 +89,32 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     console.log("Map is ready");
     setMap(newMap);
     mapInitializedRef.current = true;
+    initializedTimeRef.current = Date.now();
   };
   
-  // Update view when center or zoom changes, but only after map is properly initialized
+  // Update view when center or zoom changes - with rate limiting to prevent flashing
   useEffect(() => {
     if (!map || !mapInitializedRef.current) return;
     
     // Add a small delay to ensure map is fully initialized
+    // Only set view if the map has been initialized for at least 1 second
+    // This prevents constant recentering that can cause flashing
+    const timeSinceInit = Date.now() - initializedTimeRef.current;
+    if (timeSinceInit < 1000) {
+      console.log("Skipping early view update to prevent flashing");
+      return;
+    }
+    
+    // Use a debounced update with animation disabled to reduce flickering
     const timer = setTimeout(() => {
       try {
-        // Check if map container is valid using container size instead of _loaded
         if (map && map.getContainer() && map.getContainer().clientHeight > 0) {
-          map.setView(center, zoom, { animate: false });
+          map.setView(center, zoom, { animate: false, duration: 0 });
         }
       } catch (error) {
         console.error("Error setting map view:", error);
       }
-    }, 100);
+    }, 250);
     
     return () => clearTimeout(timer);
   }, [map, center, zoom, mapInitializedRef.current]);
