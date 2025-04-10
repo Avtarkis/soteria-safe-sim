@@ -52,6 +52,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   });
   
   // Always initialize the location tracking hook - consistent hook call order
+  // Pass the props as an object to ensure consistent parameter usage
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking({
     map, 
     showUserLocation,
