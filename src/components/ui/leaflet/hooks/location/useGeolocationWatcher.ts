@@ -1,6 +1,7 @@
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import L from 'leaflet';
+import { GeoLocationWatcher } from '../../utils/location/GeoLocationWatcher';
 
 /**
  * Hook for watching geolocation
@@ -8,37 +9,77 @@ import L from 'leaflet';
 export function useGeolocationWatcher(
   onPositionUpdate: (position: GeolocationPosition) => void
 ) {
-  const watchIdRef = useRef<number | null>(null);
+  const watcherRef = useRef<GeoLocationWatcher | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  
+  // Create handler for synthetic location events
+  const handleLocationEvent = useCallback((e: L.LocationEvent) => {
+    // Convert to GeolocationPosition format
+    const syntheticPosition: GeolocationPosition = {
+      coords: {
+        latitude: e.latlng.lat,
+        longitude: e.latlng.lng,
+        accuracy: e.accuracy,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null
+      },
+      timestamp: e.timestamp
+    };
+    
+    onPositionUpdate(syntheticPosition);
+  }, [onPositionUpdate]);
+  
+  // Method to set map reference
+  const setMap = useCallback((map: L.Map) => {
+    mapRef.current = map;
+    
+    // Create new watcher if map changes
+    if (map && !watcherRef.current) {
+      watcherRef.current = new GeoLocationWatcher({
+        map,
+        onPositionUpdate: handleLocationEvent,
+        onError: (error) => console.error("Geolocation error:", error.message)
+      });
+    }
+  }, [handleLocationEvent]);
   
   // Start watching with high accuracy
   const startHighAccuracyWatch = useCallback(() => {
-    // Clean up any existing watcher
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
+    if (!watcherRef.current && mapRef.current) {
+      watcherRef.current = new GeoLocationWatcher({
+        map: mapRef.current,
+        onPositionUpdate: handleLocationEvent,
+        onError: (error) => console.error("Geolocation error:", error.message)
+      });
     }
     
-    // Start high accuracy tracking
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      onPositionUpdate,
-      (error) => console.error("Geolocation error:", error.message),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-    
-    console.log("Started high-accuracy geolocation watch");
-  }, [onPositionUpdate]);
+    if (watcherRef.current) {
+      watcherRef.current.startHighAccuracyWatch();
+    }
+  }, [handleLocationEvent]);
   
-  // Stop watching
+  // Start watching with standard accuracy
   const stopWatch = useCallback(() => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-      console.log("Stopped geolocation watch");
+    if (watcherRef.current) {
+      watcherRef.current.stopWatch();
     }
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (watcherRef.current) {
+        watcherRef.current.stopWatch();
+      }
+    };
   }, []);
   
   return {
     startHighAccuracyWatch,
-    stopWatch
+    stopWatch,
+    setMap
   };
 }
 
