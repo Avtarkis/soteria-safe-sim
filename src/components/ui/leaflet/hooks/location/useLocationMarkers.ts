@@ -1,80 +1,81 @@
 
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import L from 'leaflet';
 
 /**
- * Hook to manage user location markers (dot and accuracy circle)
+ * Hook to manage location markers
  */
 export function useLocationMarkers(map: L.Map | null) {
-  const userLocationMarkerRef = useRef<L.Marker | null>(null);
-  const userLocationCircleRef = useRef<L.Circle | null>(null);
+  // References for tracking map objects
+  let userMarker: L.Marker | null = null;
+  let accuracyCircle: L.Circle | null = null;
   
-  // Function to safely remove a map layer
-  const safelyRemoveLayer = useCallback((layer: L.Layer | null) => {
-    if (!layer || !map) return null;
-    
-    try {
-      if (map.hasLayer(layer)) {
-        map.removeLayer(layer);
-      }
-    } catch (error) {
-      console.error("Error removing layer:", error);
-    }
-    return null;
-  }, [map]);
-  
-  // Function to clean up all location layers
-  const cleanupMarkers = useCallback(() => {
-    if (!map) return;
-    
-    try {
-      userLocationMarkerRef.current = safelyRemoveLayer(userLocationMarkerRef.current);
-      userLocationCircleRef.current = safelyRemoveLayer(userLocationCircleRef.current);
-    } catch (error) {
-      console.error("Error in location markers cleanup:", error);
-    }
-  }, [map, safelyRemoveLayer]);
-  
+  // Create or update markers for user location
   const createOrUpdateMarkers = useCallback((lat: number, lng: number, accuracy: number) => {
     if (!map) return;
     
     try {
-      // Create location marker if it doesn't exist
-      if (!userLocationMarkerRef.current) {
-        userLocationMarkerRef.current = L.marker([lat, lng], {
-          icon: L.divIcon({
-            className: 'user-location-marker',
-            html: '<div class="pulse"></div>',
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
-          })
-        }).addTo(map);
-      } else {
-        userLocationMarkerRef.current.setLatLng([lat, lng]);
+      // Remove existing markers
+      if (userMarker) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+      }
+      if (accuracyCircle) {
+        map.removeLayer(accuracyCircle);
+        accuracyCircle = null;
       }
       
-      // Create accuracy circle if it doesn't exist
-      if (!userLocationCircleRef.current) {
-        userLocationCircleRef.current = L.circle([lat, lng], {
-          radius: accuracy,
-          color: '#4a80f5',
-          fillColor: '#4a80f580',
-          fillOpacity: 0.2,
-          weight: 1
-        }).addTo(map);
-      } else {
-        userLocationCircleRef.current.setLatLng([lat, lng]);
-        userLocationCircleRef.current.setRadius(accuracy);
+      // Create simple user marker
+      const pulsingIcon = L.divIcon({
+        className: 'user-location-marker',
+        html: '<div class="user-marker-inner"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+      
+      userMarker = L.marker([lat, lng], { icon: pulsingIcon })
+        .addTo(map)
+        .bindPopup(`
+          <b>Your Location</b><br>
+          Accuracy: ±${accuracy.toFixed(1)} meters
+        `);
+      
+      // Create accuracy circle
+      accuracyCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#4F46E5',
+        fillColor: '#4F46E5',
+        fillOpacity: 0.1,
+        weight: 2
+      }).addTo(map);
+      
+    } catch (error) {
+      console.error("Error creating location markers:", error);
+    }
+  }, [map]);
+  
+  // Clean up markers
+  const cleanupMarkers = useCallback(() => {
+    if (!map) return;
+    
+    try {
+      if (userMarker && map.hasLayer(userMarker)) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+      }
+      
+      if (accuracyCircle && map.hasLayer(accuracyCircle)) {
+        map.removeLayer(accuracyCircle);
+        accuracyCircle = null;
       }
     } catch (error) {
-      console.error("Error creating/updating location markers:", error);
+      console.error("Error cleaning up markers:", error);
     }
   }, [map]);
   
   return {
     createOrUpdateMarkers,
-    cleanupMarkers,
-    markerRefs: { userLocationMarkerRef, userLocationCircleRef }
+    cleanupMarkers
   };
 }
 

@@ -1,9 +1,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { cleanupStreetLabels } from './utils/streetLabels';
-import { LocationHandler } from './utils/LocationHandler';
 import { ThreatMarker } from '@/types/threats';
+
+// Fix the import paths to reference the correct locations
+import { cleanupStreetLabels } from '../../leaflet/utils/streetLabels';
+import { LocationHandler } from '../../leaflet/utils/LocationHandler';
 import useLocationUpdater from './location/useLocationUpdater';
 import useGeolocationWatcher from './location/useGeolocationWatcher';
 

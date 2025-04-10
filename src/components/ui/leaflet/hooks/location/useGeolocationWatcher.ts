@@ -1,7 +1,6 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import L from 'leaflet';
-import { GeoLocationWatcher } from '../../utils/location/GeoLocationWatcher';
 
 /**
  * Hook for watching geolocation
@@ -9,96 +8,66 @@ import { GeoLocationWatcher } from '../../utils/location/GeoLocationWatcher';
 export function useGeolocationWatcher(
   onPositionUpdate: (position: GeolocationPosition) => void
 ) {
-  const watcherRef = useRef<GeoLocationWatcher | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  
-  // Create handler for synthetic location events
-  const handleLocationEvent = useCallback((e: L.LocationEvent) => {
-    // Convert to GeolocationPosition format
-    const syntheticPosition: GeolocationPosition = {
-      coords: {
-        latitude: e.latlng.lat,
-        longitude: e.latlng.lng,
-        accuracy: e.accuracy,
-        altitude: null,
-        altitudeAccuracy: null,
-        heading: null,
-        speed: null,
-        // Add required toJSON method
-        toJSON: function() {
-          return {
-            latitude: this.latitude,
-            longitude: this.longitude,
-            accuracy: this.accuracy,
-            altitude: this.altitude,
-            altitudeAccuracy: this.altitudeAccuracy,
-            heading: this.heading,
-            speed: this.speed
-          };
-        }
-      },
-      timestamp: e.timestamp,
-      // Add required toJSON method to the position object
-      toJSON: function() {
-        return {
-          coords: this.coords.toJSON(),
-          timestamp: this.timestamp
-        };
-      }
-    };
-    
-    onPositionUpdate(syntheticPosition);
-  }, [onPositionUpdate]);
-  
-  // Method to set map reference
-  const setMap = useCallback((map: L.Map) => {
-    mapRef.current = map;
-    
-    // Create new watcher if map changes
-    if (map && !watcherRef.current) {
-      watcherRef.current = new GeoLocationWatcher({
-        map,
-        onPositionUpdate: handleLocationEvent,
-        onError: (error) => console.error("Geolocation error:", error.message)
-      });
-    }
-  }, [handleLocationEvent]);
+  const watchIdRef = useRef<number | null>(null);
+  const errorCountRef = useRef<number>(0);
   
   // Start watching with high accuracy
   const startHighAccuracyWatch = useCallback(() => {
-    if (!watcherRef.current && mapRef.current) {
-      watcherRef.current = new GeoLocationWatcher({
-        map: mapRef.current,
-        onPositionUpdate: handleLocationEvent,
-        onError: (error) => console.error("Geolocation error:", error.message)
-      });
+    // Clear any existing watch first
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
     
-    if (watcherRef.current) {
-      watcherRef.current.startHighAccuracyWatch();
+    try {
+      if (navigator.geolocation) {
+        console.log("Starting high accuracy geolocation watch");
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          onPositionUpdate,
+          (error) => {
+            errorCountRef.current++;
+            console.error("Geolocation error:", error.message);
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000
+          }
+        );
+      } else {
+        console.warn("Geolocation not supported by this browser");
+      }
+    } catch (error) {
+      console.error("Error starting geolocation watch:", error);
     }
-  }, [handleLocationEvent]);
+  }, [onPositionUpdate]);
   
-  // Start watching with standard accuracy
+  // Stop watching
   const stopWatch = useCallback(() => {
-    if (watcherRef.current) {
-      watcherRef.current.stopWatch();
+    if (watchIdRef.current !== null) {
+      try {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        console.log("Stopped geolocation watch");
+      } catch (error) {
+        console.error("Error stopping geolocation watch:", error);
+      }
+      watchIdRef.current = null;
     }
   }, []);
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (watcherRef.current) {
-        watcherRef.current.stopWatch();
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
       }
     };
   }, []);
   
   return {
     startHighAccuracyWatch,
-    stopWatch,
-    setMap
+    stopWatch
   };
 }
 

@@ -3,41 +3,59 @@ import { useCallback } from 'react';
 import { ThreatMarker } from '@/types/threats';
 
 /**
- * Determine safety level based on proximity to threats
- */
-export function determineSafetyLevel(
-  latitude: number, 
-  longitude: number, 
-  threatMarkers: ThreatMarker[]
-): 'safe' | 'caution' | 'danger' {
-  if (!threatMarkers.length) return 'safe';
-  
-  // Calculate distances to all threats
-  const distances = threatMarkers.map(threat => {
-    const [threatLat, threatLng] = threat.position;
-    // Simple distance calculation (not accounting for Earth's curvature)
-    return Math.sqrt(
-      Math.pow(latitude - threatLat, 2) + 
-      Math.pow(longitude - threatLng, 2)
-    );
-  });
-  
-  // Find the minimum distance
-  const minDistance = Math.min(...distances);
-  
-  // Determine safety level based on proximity
-  if (minDistance < 0.01) return 'danger';     // Within ~1km
-  if (minDistance < 0.05) return 'caution';    // Within ~5km
-  return 'safe';
-}
-
-/**
- * Hook to handle location events
+ * Hook to handle safety level assessment based on proximity to threats
  */
 export function useLocationEvents(threatMarkers: ThreatMarker[] = []) {
-  // Calculate safety level based on location
-  const getSafetyLevel = useCallback((latitude: number, longitude: number) => {
-    return determineSafetyLevel(latitude, longitude, threatMarkers);
+  // Determine safety level based on proximity to threats
+  const getSafetyLevel = useCallback((lat: number, lng: number): 'safe' | 'caution' | 'danger' => {
+    if (!threatMarkers || threatMarkers.length === 0) {
+      return 'safe';
+    }
+    
+    try {
+      // Calculate distances to all threats
+      const distances = threatMarkers.map(threat => {
+        const threatLat = threat.position[0];
+        const threatLng = threat.position[1];
+        
+        // Haversine formula for distance calculation
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = lat * Math.PI/180;
+        const φ2 = threatLat * Math.PI/180;
+        const Δφ = (threatLat - lat) * Math.PI/180;
+        const Δλ = (threatLng - lng) * Math.PI/180;
+        
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        return {
+          distance,
+          level: threat.level
+        };
+      });
+      
+      // Check for nearby threats
+      const dangerThreshold = 500; // meters
+      const cautionThreshold = 1500; // meters
+      
+      const nearbyDanger = distances.some(d => 
+        d.distance < dangerThreshold && d.level === 'high'
+      );
+      
+      const nearbyCaution = distances.some(d => 
+        d.distance < cautionThreshold && (d.level === 'medium' || d.level === 'high')
+      );
+      
+      if (nearbyDanger) return 'danger';
+      if (nearbyCaution) return 'caution';
+      return 'safe';
+    } catch (error) {
+      console.error("Error calculating safety level:", error);
+      return 'safe'; // Default to safe on error
+    }
   }, [threatMarkers]);
   
   return {
