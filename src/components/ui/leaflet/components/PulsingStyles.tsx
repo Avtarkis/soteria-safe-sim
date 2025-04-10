@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
  */
 const PulsingStyles = () => {
   useEffect(() => {
+    // Check if styles are already applied
     if (!document.getElementById('pulsing-marker-style')) {
       const style = document.createElement('style');
       style.id = 'pulsing-marker-style';
@@ -13,25 +14,31 @@ const PulsingStyles = () => {
         @keyframes pulse {
           0% {
             transform: scale(0.95);
-            opacity: 0.8;
+            box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+            opacity: 0.9;
           }
           70% {
-            transform: scale(2);
-            opacity: 0.3;
+            transform: scale(1.8);
+            box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+            opacity: 0.4;
           }
           100% {
             transform: scale(0.95);
-            opacity: 0.8;
+            box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+            opacity: 0.9;
           }
         }
         
-        /* Fix to ensure user marker is always visible and on top */
-        .leaflet-marker-icon.user-marker-pin,
+        /* Ensure z-index for all marker elements */
+        .leaflet-marker-icon.user-marker-pin {
+          z-index: 1000 !important;
+        }
+        
         .leaflet-marker-icon.user-marker-pin * {
           z-index: 1000 !important;
         }
         
-        /* Important styles for marker positioning and visibility */
+        /* User marker container styling */
         .user-marker-pin {
           z-index: 1000 !important;
           pointer-events: auto !important;
@@ -43,28 +50,27 @@ const PulsingStyles = () => {
           transform: translate(-50%, -50%);
         }
         
-        /* Style for the outer pulsing circle */
+        /* Pulse animation for all elements with pulse-animation class */
+        .pulse-animation {
+          animation: pulse 2s infinite !important;
+        }
+        
+        /* Outer circle styling */
         .user-marker-outer {
-          pointer-events: none;
-          animation: pulse 2s infinite;
           z-index: 998 !important;
-        }
-        
-        /* Style for the inner dot */
-        .user-marker-inner {
           pointer-events: none;
-          z-index: 999 !important;
         }
         
-        /* Pulse animation for all browsers */
-        .user-marker-pulse {
-          animation: pulse 2s infinite;
+        /* Inner dot styling */
+        .user-marker-inner {
+          z-index: 999 !important;
+          pointer-events: none;
         }
         
         /* Safari-specific fixes */
         @media not all and (min-resolution:.001dpcm) {
           @supports (-webkit-appearance:none) {
-            .user-marker-outer {
+            .user-marker-outer, .pulse-animation {
               animation-name: pulse !important;
               animation-duration: 2s !important;
               animation-iteration-count: infinite !important;
@@ -74,8 +80,8 @@ const PulsingStyles = () => {
         
         /* Firefox-specific fixes */
         @-moz-document url-prefix() {
-          .user-marker-outer {
-            animation: pulse 2s infinite;
+          .user-marker-outer, .pulse-animation {
+            animation: pulse 2s infinite !important;
           }
         }
       `;

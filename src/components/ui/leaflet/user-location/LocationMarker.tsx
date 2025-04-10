@@ -123,9 +123,9 @@ const LocationMarker = ({
       
       // Make sure marker is visible by bringing it to front
       if (userMarkerRef.current) {
-        userMarkerRef.current.getElement()?.classList.add('user-marker-pin');
-        // Explicitly set z-index to ensure visibility
         if (userMarkerRef.current.getElement()) {
+          userMarkerRef.current.getElement()!.classList.add('user-marker-pin');
+          // Explicitly set z-index to ensure visibility
           userMarkerRef.current.getElement()!.style.zIndex = '1000';
         }
       }

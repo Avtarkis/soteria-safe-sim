@@ -27,36 +27,34 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
     className: 'user-marker-pin',
     html: `
       <div class="marker-pin" style="position: relative; z-index: 1000;">
-        <div class="user-marker-outer" style="
-          position: absolute;
+        <div class="user-marker-outer pulse-animation" style="
           width: 30px;
           height: 30px;
           border-radius: 50%;
           background-color: ${pulse};
           opacity: 0.8;
+          position: absolute;
           top: -15px;
           left: -15px;
           z-index: 998;
-          pointer-events: none;
           animation: pulse 2s infinite;
         "></div>
         <div class="user-marker-inner" style="
-          position: absolute;
-          width: 12px;
-          height: 12px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
           background-color: ${main};
           border: 2px solid white;
-          top: -6px;
-          left: -6px;
+          position: absolute;
+          top: -7px;
+          left: -7px;
           z-index: 999;
-          pointer-events: none;
           box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         "></div>
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   });
   
   return icon;
