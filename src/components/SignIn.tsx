@@ -43,8 +43,11 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
           description: "You have been signed in successfully.",
         });
         
-        // Hard redirect to dashboard instead of using navigate
-        window.location.href = '/dashboard';
+        // Delay navigation slightly to allow toast to be seen
+        setTimeout(() => {
+          // Use navigate instead of hard redirect
+          navigate('/dashboard');
+        }, 300);
       }
     } catch (error: any) {
       console.error('Sign in error:', error);

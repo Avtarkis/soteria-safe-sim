@@ -1,7 +1,9 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { isTestMode } from '@/utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Hook for authentication methods - sign in, sign up, sign out, password reset
@@ -96,7 +98,13 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
       // Clear the user state
       setUser(null);
       
-      // Redirect to sign in page after sign out
+      // Toast notification
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully"
+      });
+      
+      // Redirect to login page after sign out using navigation API
       window.location.href = '/login';
     } catch (error) {
       console.error('Sign out error:', error);

@@ -62,8 +62,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
           onSuccess();
         }
         
-        // Use hard redirect instead of navigate
-        window.location.href = '/dashboard';
+        // Use navigate instead of direct location change for smoother transition
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 300);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
