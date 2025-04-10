@@ -51,8 +51,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     }
   });
   
-  // Always initialize the hook with default values if needed
-  // This prevents conditional hook calls
+  // Always initialize the location tracking hook - consistent hook call order
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking({
     map, 
     showUserLocation,

@@ -38,10 +38,12 @@ const useMapInitialization = ({
     [map, isMapReady]
   );
   
-  // Initialize map
+  // Initialize map - never conditionally call hooks
   useEffect(() => {
-    // Only initialize once
-    if (map || !containerRef.current || initAttemptedRef.current) return;
+    // Only initialize once, but don't put hooks in these conditions
+    if (map || !containerRef.current || initAttemptedRef.current) {
+      return; // Early return but no hooks after this
+    }
     
     // Mark that we've attempted initialization
     initAttemptedRef.current = true;

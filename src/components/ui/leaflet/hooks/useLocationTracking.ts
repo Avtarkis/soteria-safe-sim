@@ -18,10 +18,22 @@ const useLocationTracking = ({
   showUserLocation,
   threatMarkers = []
 }: LocationTrackingConfig) => {
-  // Filter out locations with poor accuracy (>50km)
+  // Initialize refs for state tracking that won't trigger re-renders
   const filteredLocation = useRef<[number, number] | null>(null);
   const filteredAccuracy = useRef<number>(0);
   const mapDebugLogShown = useRef<boolean>(false);
+  
+  // Always initialize the user location tracking hook - regardless of map status
+  // This ensures hooks are always called in the same order
+  const { 
+    userLocation, 
+    locationAccuracy, 
+    safetyLevel 
+  } = useUserLocationTracking({
+    map,
+    showUserLocation,
+    threatMarkers
+  });
   
   // Log map status for debugging - ensuring this hook is never conditional
   useEffect(() => {
@@ -34,18 +46,6 @@ const useLocationTracking = ({
       mapDebugLogShown.current = true;
     }
   }, [map]);
-  
-  // Always initialize the hook data regardless of map status
-  // Use the refactored hook, with proper null checking
-  const { 
-    userLocation, 
-    locationAccuracy, 
-    safetyLevel 
-  } = useUserLocationTracking({
-    map,
-    showUserLocation,
-    threatMarkers
-  });
   
   // Filter locations based on accuracy
   useEffect(() => {
