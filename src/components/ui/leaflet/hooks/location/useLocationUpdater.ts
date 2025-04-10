@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { useLocationMarkers } from './useLocationMarkers';
 import { useLocationEvents } from './useLocationEvents';
 import { ThreatMarker } from '@/types/threats';
+import { LocationRefType } from './useLocationRefs';
 
 interface LocationUpdaterProps {
   map: L.Map | null;
@@ -23,13 +24,18 @@ export function useLocationUpdater({
   const safetyLevelRef = useRef<'safe' | 'caution' | 'danger'>('safe');
   
   // Create dummy location refs since we don't have access to the actual refs from this hook
-  const locationRefs = {
+  const locationRefs: LocationRefType = {
     userLocationMarkerRef: { current: null },
     userLocationCircleRef: { current: null },
+    streetLabelRef: { current: null },
     userLocationLatLngRef,
     userLocationAccuracyRef,
     safetyLevelRef,
-    lastEventTimeRef: { current: 0 }
+    locationTrackingInitializedRef: { current: false },
+    watchIdRef: { current: null },
+    lastEventTimeRef: { current: 0 },
+    errorCountRef: { current: 0 },
+    highPrecisionModeRef: { current: false }
   };
   
   const { updateLocationMarkers, removeExistingMarkers } = useLocationMarkers(map, locationRefs, threatMarkers);
