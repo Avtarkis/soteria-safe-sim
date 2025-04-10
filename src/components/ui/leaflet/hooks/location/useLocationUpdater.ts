@@ -21,7 +21,18 @@ export function useLocationUpdater({
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
   const userLocationAccuracyRef = useRef<number>(0);
   const safetyLevelRef = useRef<'safe' | 'caution' | 'danger'>('safe');
-  const { updateLocationMarkers, removeExistingMarkers } = useLocationMarkers(map);
+  
+  // Create dummy location refs since we don't have access to the actual refs from this hook
+  const locationRefs = {
+    userLocationMarkerRef: { current: null },
+    userLocationCircleRef: { current: null },
+    userLocationLatLngRef,
+    userLocationAccuracyRef,
+    safetyLevelRef,
+    lastEventTimeRef: { current: 0 }
+  };
+  
+  const { updateLocationMarkers, removeExistingMarkers } = useLocationMarkers(map, locationRefs, threatMarkers);
   const { getSafetyLevel } = useLocationEvents(threatMarkers);
   
   // Handle location update
