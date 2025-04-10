@@ -1,11 +1,11 @@
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
-
-// Fix the import paths to reference the correct locations
-import { cleanupStreetLabels } from '../../leaflet/utils/streetLabels';
-import { LocationHandler } from '../../leaflet/utils/LocationHandler';
+import { useLocationRefs } from './location/useLocationRefs';
+import { useMapCleanup } from './location/useMapCleanup';
+import { cleanupStreetLabels } from '../utils/streetLabels';
+import { LocationHandler } from '../utils/LocationHandler';
 import useLocationUpdater from './location/useLocationUpdater';
 import useGeolocationWatcher from './location/useGeolocationWatcher';
 
@@ -23,43 +23,38 @@ const useUserLocationTracking = ({
   showUserLocation,
   threatMarkers = []
 }: UserLocationTrackingProps) => {
-  // References for tracking map objects and state
-  const userLocationMarkerRef = useRef<L.Marker | null>(null);
-  const userLocationCircleRef = useRef<L.Circle | null>(null);
-  const userLocationAccuracyRef = useRef<number>(0);
-  const userLocationLatLngRef = useRef<L.LatLng | null>(null);
-  const streetLabelRef = useRef<L.Marker | null>(null);
-  const locationTrackingInitializedRef = useRef<boolean>(false);
-  const watchIdRef = useRef<number | null>(null);
+  // Get all location refs
+  const locationRefs = useLocationRefs();
+  const {
+    userLocationMarkerRef,
+    userLocationCircleRef,
+    streetLabelRef,
+    userLocationLatLngRef,
+    userLocationAccuracyRef,
+    safetyLevelRef,
+    locationTrackingInitializedRef,
+    watchIdRef,
+    lastEventTimeRef,
+    errorCountRef,
+    highPrecisionModeRef
+  } = locationRefs;
+  
+  // State for tracking activation status
   const [isTracking, setIsTracking] = useState(false);
-  const lastEventTimeRef = useRef<number>(0);
-  const errorCountRef = useRef<number>(0);
-  const highPrecisionModeRef = useRef<boolean>(false);
-  const safetyLevelRef = useRef<'safe' | 'caution' | 'danger'>('safe');
+  
+  // Location handler reference
   const locationHandlerRef = useRef<LocationHandler | null>(null);
   
+  // Get cleanup utilities
+  const { safelyRemoveLayer } = useMapCleanup(map);
+  
   // IMPORTANT: Always call hooks at the top level, never conditionally
-  const { handleLocationUpdate, centerMapOnUserLocation, cleanupMarkers, locationState } = useLocationUpdater({ 
-    map, 
-    threatMarkers 
+  const { handleLocationUpdate, centerMapOnUserLocation, cleanupMarkers, locationState } = useLocationUpdater({
+    map,
+    threatMarkers
   });
   
   const { startHighAccuracyWatch, stopWatch } = useGeolocationWatcher(handleLocationUpdate);
-  
-  // Function to safely remove a map layer
-  const safelyRemoveLayer = useCallback((layer: L.Layer | null) => {
-    if (layer && map) {
-      try {
-        // Check if the layer is still on the map
-        if (map.hasLayer(layer)) {
-          map.removeLayer(layer);
-        }
-      } catch (error) {
-        console.error("Error removing layer:", error);
-      }
-    }
-    return null;
-  }, [map]);
   
   // Function to safely clean up all location layers
   const cleanupLocationLayers = useCallback(() => {
@@ -75,7 +70,7 @@ const useUserLocationTracking = ({
     } catch (error) {
       console.error("Error in location layers cleanup:", error);
     }
-  }, [map, safelyRemoveLayer]);
+  }, [map, safelyRemoveLayer, userLocationMarkerRef, userLocationCircleRef, streetLabelRef]);
   
   // Initialize location handler if not already done
   useEffect(() => {
@@ -101,7 +96,9 @@ const useUserLocationTracking = ({
       // Clean up location layers when component unmounts
       cleanupLocationLayers();
     };
-  }, [map, threatMarkers, cleanupLocationLayers]);
+  }, [map, threatMarkers, cleanupLocationLayers, userLocationMarkerRef, userLocationCircleRef, 
+      userLocationAccuracyRef, userLocationLatLngRef, streetLabelRef, highPrecisionModeRef,
+      safetyLevelRef, locationTrackingInitializedRef, errorCountRef, lastEventTimeRef]);
 
   /**
    * Effect to listen for high precision mode activation
@@ -126,7 +123,7 @@ const useUserLocationTracking = ({
     return () => {
       document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
     };
-  }, [map, centerMapOnUserLocation]);
+  }, [map, centerMapOnUserLocation, userLocationLatLngRef]);
 
   /**
    * Main effect to handle location tracking based on showUserLocation prop

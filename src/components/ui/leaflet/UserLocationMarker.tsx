@@ -26,7 +26,7 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
   const icon = L.divIcon({
     className: 'user-marker-pin',
     html: `
-      <div class="marker-pin" style="position: relative;">
+      <div class="marker-pin" style="position: relative; z-index: 1000;">
         <div class="user-marker-outer" style="
           position: absolute;
           width: 30px;
@@ -34,10 +34,11 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
           border-radius: 50%;
           background-color: ${pulse};
           opacity: 0.8;
-          animation: pulse 2s infinite;
           top: -15px;
           left: -15px;
-          z-index: 398;
+          z-index: 998;
+          pointer-events: none;
+          animation: pulse 2s infinite;
         "></div>
         <div class="user-marker-inner" style="
           position: absolute;
@@ -48,29 +49,14 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
           border: 2px solid white;
           top: -6px;
           left: -6px;
-          z-index: 399;
+          z-index: 999;
+          pointer-events: none;
           box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         "></div>
       </div>
-      <style>
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 0.8;
-          }
-          70% {
-            transform: scale(2);
-            opacity: 0.3;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 0.8;
-          }
-        }
-      </style>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
   
   return icon;

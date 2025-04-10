@@ -40,19 +40,36 @@ const PulsingStyles = () => {
         /* Ensure user marker is visible above other map elements */
         .user-marker-pin {
           z-index: 1000 !important;
+          pointer-events: auto !important;
         }
         
         .user-marker-pin .marker-pin {
           z-index: 1000 !important;
+          position: absolute !important;
         }
         
-        /* Ensure pulse animation is visible */
+        /* Style for the outer pulsing circle */
         .user-marker-outer {
           pointer-events: none;
+          animation: pulse 2s infinite;
+          z-index: 998 !important;
         }
         
+        /* Style for the inner dot */
         .user-marker-inner {
           pointer-events: none;
+          z-index: 999 !important;
+        }
+        
+        /* Fix for Safari animation issues */
+        @media not all and (min-resolution:.001dpcm) {
+          @supports (-webkit-appearance:none) {
+            .user-marker-outer {
+              animation-name: pulse !important;
+              animation-duration: 2s !important;
+              animation-iteration-count: infinite !important;
+            }
+          }
         }
       `;
       document.head.appendChild(style);

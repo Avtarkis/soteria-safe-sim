@@ -101,47 +101,38 @@ const LocationMarker = ({
     }
     
     try {
-      console.log(`Updating user location: ${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`);
+      console.log(`Updating user location: ${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}, safety: ${safetyLevel}`);
       const latlng = L.latLng(userLocation[0], userLocation[1]);
       
       // Create pulsing icon based on safety level
       const pulsingIcon = createPulsingIcon(safetyLevel);
       
-      if (!pulsingIcon) {
-        // Create a default icon if the pulsing icon fails
-        const defaultIcon = new L.Icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-          shadowSize: [41, 41]
-        });
-        
-        // Add user marker with default icon
-        userMarkerRef.current = L.marker(latlng, { icon: defaultIcon, zIndexOffset: 1000 })
-          .addTo(map)
-          .bindPopup(`
-            <b>Your Exact Location</b><br>
-            Lat: ${latlng.lat.toFixed(5)}<br>
-            Lng: ${latlng.lng.toFixed(5)}<br>
-            Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
-          `);
-      } else {
-        // Add user marker with pulsing icon
-        userMarkerRef.current = L.marker(latlng, { icon: pulsingIcon, zIndexOffset: 1000 })
-          .addTo(map)
-          .bindPopup(`
-            <b>Your Exact Location</b><br>
-            Lat: ${latlng.lat.toFixed(5)}<br>
-            Lng: ${latlng.lng.toFixed(5)}<br>
-            Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
-          `);
+      // Add user marker with pulsing icon and ensure it's visible
+      userMarkerRef.current = L.marker(latlng, { 
+        icon: pulsingIcon, 
+        zIndexOffset: 1000, // Ensure marker is on top
+        interactive: true, // Make marker clickable
+      })
+        .addTo(map)
+        .bindPopup(`
+          <b>Your Exact Location</b><br>
+          Lat: ${latlng.lat.toFixed(5)}<br>
+          Lng: ${latlng.lng.toFixed(5)}<br>
+          Accuracy: ±${accuracy < 1 ? accuracy.toFixed(2) : accuracy.toFixed(1)} meters
+        `);
+      
+      // Make sure marker is visible by bringing it to front
+      if (userMarkerRef.current) {
+        userMarkerRef.current.getElement()?.classList.add('user-marker-pin');
+        // Explicitly set z-index to ensure visibility
+        if (userMarkerRef.current.getElement()) {
+          userMarkerRef.current.getElement()!.style.zIndex = '1000';
+        }
       }
       
       // Color the accuracy circle based on safety level
       const circleColor = safetyLevel === 'safe' ? '#4F46E5' : 
-                        safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
+                          safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
       
       // Add accuracy circle
       accuracyCircleRef.current = L.circle(latlng, {
@@ -149,8 +140,13 @@ const LocationMarker = ({
         color: circleColor,
         fillColor: circleColor,
         fillOpacity: 0.1,
-        weight: 2
+        weight: 2,
+        zIndexOffset: 999,
       }).addTo(map);
+      
+      // Log for debugging
+      console.log(`Created user location marker at ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`);
+      
     } catch (error) {
       console.error("Error creating user location markers:", error);
     }
