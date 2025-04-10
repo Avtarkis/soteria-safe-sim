@@ -48,7 +48,16 @@ const MapContainer = ({
   }, [markersJSON, filteredMarkers]);
   
   // Memoize the center location to prevent unnecessary map movements
-  const center = userLocation || [37.0902, -95.7129];
+  // Ensure we always have valid fallback coordinates
+  const defaultCenter: [number, number] = [37.0902, -95.7129]; // USA center
+  const center = userLocation && 
+                userLocation[0] && 
+                userLocation[1] && 
+                !isNaN(userLocation[0]) && 
+                !isNaN(userLocation[1]) 
+                  ? userLocation 
+                  : defaultCenter;
+  
   const zoom = userLocation ? 12 : 4;
   
   // Handle resize once after initial render
@@ -119,12 +128,16 @@ const MapContainer = ({
         border: '1px solid #e5e7eb', 
         borderRadius: '8px', 
         overflow: 'hidden',
-        minHeight: '500px' 
+        minHeight: '500px',
+        display: 'block' // Ensure the container is visible
       }}
     >
       <div 
         className="h-full w-full relative" 
-        style={{ minHeight: isMobile ? '500px' : '600px' }}
+        style={{ 
+          minHeight: isMobile ? '500px' : '600px',
+          display: 'block' // Ensure the container is visible
+        }}
       >
         <LeafletMap 
           markers={memoizedMarkers.current}

@@ -70,7 +70,7 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
         email, 
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/map`
         }
       });
       
@@ -104,7 +104,7 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
         description: "You have been signed out successfully"
       });
       
-      // Redirect to login page after sign out using navigation API
+      // Redirect to login page after sign out
       window.location.href = '/login';
     } catch (error) {
       console.error('Sign out error:', error);

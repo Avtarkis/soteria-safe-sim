@@ -37,7 +37,7 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
           variant: "destructive",
         });
       } else {
-        console.log("Sign in successful, navigating to dashboard");
+        console.log("Sign in successful, navigating to map");
         toast({
           title: "Success!",
           description: "You have been signed in successfully.",
@@ -45,8 +45,8 @@ const SignIn: React.FC<SignInProps> = ({ toggleSignUp, toggleForgotPassword }) =
         
         // Delay navigation slightly to allow toast to be seen
         setTimeout(() => {
-          // Use navigate instead of hard redirect
-          navigate('/dashboard');
+          // Navigate to map page instead of dashboard
+          navigate('/map');
         }, 300);
       }
     } catch (error: any) {

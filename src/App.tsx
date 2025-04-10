@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import DashboardPage from '@/pages/Index';
@@ -24,14 +24,15 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        {/* Redirect dashboard to map */}
+        <Route index element={<Navigate to="/map" replace />} />
+        <Route path="dashboard" element={<Navigate to="/map" replace />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         
         {/* Protected routes */}
         <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="map" element={<ThreatsMap />} />
+        <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
         <Route path="alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
         <Route path="emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
         <Route path="travel" element={<ProtectedRoute><TravelPage /></ProtectedRoute>} />

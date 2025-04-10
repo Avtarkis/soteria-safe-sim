@@ -29,14 +29,14 @@ export const useUserLocationTracking = ({
   
   // Function to safely remove a map layer
   const safelyRemoveLayer = useCallback((layer: L.Layer | null) => {
-    if (layer && map) {
-      try {
-        if (map.hasLayer(layer)) {
-          map.removeLayer(layer);
-        }
-      } catch (error) {
-        console.error("Error removing layer:", error);
+    if (!layer || !map) return null;
+    
+    try {
+      if (map.hasLayer(layer)) {
+        map.removeLayer(layer);
       }
+    } catch (error) {
+      console.error("Error removing layer:", error);
     }
     return null;
   }, [map]);
@@ -106,11 +106,25 @@ export const useUserLocationTracking = ({
     } catch (error) {
       console.error("Error handling location update:", error);
     }
-  }, [map, threatMarkers, safelyRemoveLayer]);
+  }, [map, threatMarkers]);
   
   // Start/stop location tracking based on props
   useEffect(() => {
-    if (!map) return;
+    // Early return if no map or map container not in DOM
+    if (!map) {
+      console.log("Map not available for location tracking");
+      return;
+    }
+    
+    try {
+      if (!map.getContainer() || !document.body.contains(map.getContainer())) {
+        console.log("Map container not in DOM");
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking map container:", error);
+      return;
+    }
     
     if (showUserLocation && !isTracking) {
       console.log("Starting location tracking");
@@ -153,26 +167,32 @@ export const useUserLocationTracking = ({
   
   // Center map on user location
   const centerMapOnUserLocation = useCallback(() => {
-    if (map && userLocationLatLngRef.current) {
-      map.whenReady(() => {
-        try {
+    if (!map || !userLocationLatLngRef.current) return;
+    
+    map.whenReady(() => {
+      try {
+        // Ensure map container is still in the DOM before attempting to setView
+        if (map.getContainer() && document.body.contains(map.getContainer())) {
           map.setView(userLocationLatLngRef.current, 15, { animate: true });
-        } catch (error) {
-          console.error("Error centering map:", error);
         }
-      });
-    }
+      } catch (error) {
+        console.error("Error centering map:", error);
+      }
+    });
   }, [map]);
   
   // Listen for center map events
   useEffect(() => {
+    // Skip if no map
+    if (!map) return;
+    
     const handleCenterMap = () => centerMapOnUserLocation();
     document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
     
     return () => {
       document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
     };
-  }, [centerMapOnUserLocation]);
+  }, [centerMapOnUserLocation, map]);
 
   return {
     userLocation: userLocationLatLngRef.current 

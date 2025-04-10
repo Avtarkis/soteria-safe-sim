@@ -12,17 +12,6 @@ const useLocationTracking = (
   showUserLocation: boolean,
   threatMarkers: ThreatMarker[] = []
 ) => {
-  // Use the refactored hook
-  const { 
-    userLocation, 
-    locationAccuracy, 
-    safetyLevel 
-  } = useUserLocationTracking({
-    map,
-    showUserLocation,
-    threatMarkers
-  });
-
   // Log map status for debugging
   useEffect(() => {
     if (map) {
@@ -32,28 +21,40 @@ const useLocationTracking = (
     }
   }, [map]);
   
+  // Only initialize user location tracking if map exists
+  // Use the refactored hook, with proper null checking
+  const { 
+    userLocation, 
+    locationAccuracy, 
+    safetyLevel 
+  } = useUserLocationTracking({
+    map,
+    showUserLocation,
+    threatMarkers
+  });
+  
   // Filter out locations with poor accuracy (>50km)
   const filteredLocation = useRef<[number, number] | null>(null);
   const filteredAccuracy = useRef<number>(0);
   
   useEffect(() => {
-    if (userLocation) {
-      // Default accuracy threshold (meters)
-      const ACCURACY_THRESHOLD = 50000; // 50km - allowing for cell/wifi location
-      
-      if (locationAccuracy && locationAccuracy < ACCURACY_THRESHOLD) {
-        // Location accuracy is acceptable
+    if (!userLocation) return;
+    
+    // Default accuracy threshold (meters)
+    const ACCURACY_THRESHOLD = 50000; // 50km - allowing for cell/wifi location
+    
+    if (locationAccuracy && locationAccuracy < ACCURACY_THRESHOLD) {
+      // Location accuracy is acceptable
+      filteredLocation.current = userLocation;
+      filteredAccuracy.current = locationAccuracy;
+      console.log('Valid location update:', userLocation[0].toFixed(6), userLocation[1].toFixed(6), 'accuracy:', locationAccuracy.toFixed(1), 'm');
+    } else if (locationAccuracy) {
+      console.warn('Ignoring location with poor accuracy:', locationAccuracy, 'meters');
+      // If we have no better location, still use it
+      if (!filteredLocation.current) {
         filteredLocation.current = userLocation;
         filteredAccuracy.current = locationAccuracy;
-        console.log('Valid location update:', userLocation[0].toFixed(6), userLocation[1].toFixed(6), 'accuracy:', locationAccuracy.toFixed(1), 'm');
-      } else if (locationAccuracy) {
-        console.warn('Ignoring location with poor accuracy:', locationAccuracy, 'meters');
-        // If we have no better location, still use it
-        if (!filteredLocation.current) {
-          filteredLocation.current = userLocation;
-          filteredAccuracy.current = locationAccuracy;
-          console.log('Using first location despite poor accuracy');
-        }
+        console.log('Using first location despite poor accuracy');
       }
     }
   }, [userLocation, locationAccuracy]);
