@@ -55,8 +55,8 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
         "></div>
       </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
   });
   
   return icon;

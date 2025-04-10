@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
 import { useLocationRefs } from './location/useLocationRefs';

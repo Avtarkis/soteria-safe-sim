@@ -134,14 +134,13 @@ const LocationMarker = ({
       const circleColor = safetyLevel === 'safe' ? '#4F46E5' : 
                           safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
       
-      // Add accuracy circle
+      // Add accuracy circle - removed zIndexOffset as it's not valid for Circle options
       accuracyCircleRef.current = L.circle(latlng, {
         radius: Math.max(10, accuracy), // Ensure at least 10m radius for visibility
         color: circleColor,
         fillColor: circleColor,
         fillOpacity: 0.1,
-        weight: 2,
-        zIndexOffset: 999,
+        weight: 2
       }).addTo(map);
       
       // Log for debugging

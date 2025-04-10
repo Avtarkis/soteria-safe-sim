@@ -12,7 +12,7 @@ const PulsingStyles = () => {
       style.innerHTML = `
         @keyframes pulse {
           0% {
-            transform: scale(1);
+            transform: scale(0.95);
             opacity: 0.8;
           }
           70% {
@@ -20,24 +20,18 @@ const PulsingStyles = () => {
             opacity: 0.3;
           }
           100% {
-            transform: scale(1);
+            transform: scale(0.95);
             opacity: 0.8;
           }
         }
         
-        .user-marker-pulse {
-          animation: pulse 2s infinite;
+        /* Fix to ensure user marker is always visible and on top */
+        .leaflet-marker-icon.user-marker-pin,
+        .leaflet-marker-icon.user-marker-pin * {
+          z-index: 1000 !important;
         }
         
-        .user-location-marker .pulse {
-          width: 16px;
-          height: 16px;
-          background-color: #3388ff;
-          border-radius: 50%;
-          animation: pulse 2s infinite;
-        }
-        
-        /* Ensure user marker is visible above other map elements */
+        /* Important styles for marker positioning and visibility */
         .user-marker-pin {
           z-index: 1000 !important;
           pointer-events: auto !important;
@@ -46,6 +40,7 @@ const PulsingStyles = () => {
         .user-marker-pin .marker-pin {
           z-index: 1000 !important;
           position: absolute !important;
+          transform: translate(-50%, -50%);
         }
         
         /* Style for the outer pulsing circle */
@@ -61,7 +56,12 @@ const PulsingStyles = () => {
           z-index: 999 !important;
         }
         
-        /* Fix for Safari animation issues */
+        /* Pulse animation for all browsers */
+        .user-marker-pulse {
+          animation: pulse 2s infinite;
+        }
+        
+        /* Safari-specific fixes */
         @media not all and (min-resolution:.001dpcm) {
           @supports (-webkit-appearance:none) {
             .user-marker-outer {
@@ -69,6 +69,13 @@ const PulsingStyles = () => {
               animation-duration: 2s !important;
               animation-iteration-count: infinite !important;
             }
+          }
+        }
+        
+        /* Firefox-specific fixes */
+        @-moz-document url-prefix() {
+          .user-marker-outer {
+            animation: pulse 2s infinite;
           }
         }
       `;
