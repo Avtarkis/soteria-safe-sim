@@ -3,7 +3,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
-import DashboardPage from '@/pages/Index';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/SignupPage';
 import ProfilePage from '@/pages/ProfilePage';
@@ -24,26 +23,76 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        {/* Redirect dashboard to map */}
+        {/* Redirect home to map */}
         <Route index element={<Navigate to="/map" replace />} />
-        <Route path="dashboard" element={<Navigate to="/map" replace />} />
+        
+        {/* Auth routes */}
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         
         {/* Protected routes */}
-        <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="map" element={<ProtectedRoute><ThreatsMap /></ProtectedRoute>} />
-        <Route path="alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
-        <Route path="emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
-        <Route path="travel" element={<ProtectedRoute><TravelPage /></ProtectedRoute>} />
-        <Route path="family" element={<ProtectedRoute><FamilyPage /></ProtectedRoute>} />
-        <Route path="cyber" element={<ProtectedRoute><CyberSecurityPage /></ProtectedRoute>} />
-        <Route path="subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+        <Route path="profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="map" element={
+          <ProtectedRoute>
+            <ThreatsMap />
+          </ProtectedRoute>
+        } />
+        <Route path="dashboard" element={
+          <ProtectedRoute>
+            <Navigate to="/map" replace />
+          </ProtectedRoute>
+        } />
+        <Route path="alerts" element={
+          <ProtectedRoute>
+            <AlertsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="emergency" element={
+          <ProtectedRoute>
+            <EmergencyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="travel" element={
+          <ProtectedRoute>
+            <TravelPage />
+          </ProtectedRoute>
+        } />
+        <Route path="family" element={
+          <ProtectedRoute>
+            <FamilyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="cyber" element={
+          <ProtectedRoute>
+            <CyberSecurityPage />
+          </ProtectedRoute>
+        } />
+        <Route path="subscription" element={
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
+        } />
         
         {/* Admin routes */}
-        <Route path="admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-        <Route path="admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
-        <Route path="admin/threats" element={<ProtectedRoute><AdminThreatsPage /></ProtectedRoute>} />
+        <Route path="admin" element={
+          <ProtectedRoute>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/users" element={
+          <ProtectedRoute>
+            <AdminUsersPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/threats" element={
+          <ProtectedRoute>
+            <AdminThreatsPage />
+          </ProtectedRoute>
+        } />
         
         {/* Not found */}
         <Route path="*" element={<NotFoundPage />} />

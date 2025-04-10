@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
 import useUserLocationTracking from './hooks/useUserLocationTracking';
@@ -21,6 +21,10 @@ const useLocationTracking = (
     }
   }, [map]);
   
+  // Filter out locations with poor accuracy (>50km)
+  const filteredLocation = useRef<[number, number] | null>(null);
+  const filteredAccuracy = useRef<number>(0);
+  
   // Only initialize user location tracking if map exists
   // Use the refactored hook, with proper null checking
   const { 
@@ -32,10 +36,6 @@ const useLocationTracking = (
     showUserLocation,
     threatMarkers
   });
-  
-  // Filter out locations with poor accuracy (>50km)
-  const filteredLocation = useRef<[number, number] | null>(null);
-  const filteredAccuracy = useRef<number>(0);
   
   useEffect(() => {
     if (!userLocation) return;
