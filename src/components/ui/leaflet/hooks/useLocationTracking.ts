@@ -63,6 +63,7 @@ const useLocationTracking = ({
         console.log('Using first location despite poor accuracy');
       }
     }
+    // Don't return anything from useEffect
   }, [userLocation, locationAccuracy]);
   
   // Return location data for parent components
