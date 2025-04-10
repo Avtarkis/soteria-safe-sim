@@ -15,6 +15,21 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [notificationShown, setNotificationShown] = useState(false);
   const location = useLocation();
   
+  // Always call hooks at the top level - never conditionally
+  
+  // Use useEffect to show toast outside of render, and only once
+  useEffect(() => {
+    if (!user && !notificationShown && isTestMode()) {
+      // Show toast only once when entering protected route without auth in test mode
+      toast({
+        title: "Testing Mode Active",
+        description: "Authentication bypassed for testing",
+        variant: "default",
+      });
+      setNotificationShown(true);
+    }
+  }, [user, toast, notificationShown]);
+
   // Show loading state while checking authentication
   if (loading) {
     return (
@@ -23,22 +38,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       </div>
     );
   }
-  
-  // Use useEffect to show toast outside of render
-  useEffect(() => {
-    if (!user && !notificationShown) {
-      // Show toast only once when entering protected route without auth
-      if (isTestMode()) {
-        console.log("TEST MODE: Bypassing authentication for protected route");
-        toast({
-          title: "Testing Mode Active",
-          description: "Authentication bypassed for testing",
-          variant: "default",
-        });
-      }
-      setNotificationShown(true);
-    }
-  }, [user, toast, notificationShown]);
 
   // If not in test mode, check if user is authenticated
   if (!user && !isTestMode()) {
