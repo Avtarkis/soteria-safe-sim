@@ -50,11 +50,11 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   });
   
   // Track user location - Always initialize the hook, but conditionally enable tracking
-  const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
+  const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking({
     map, 
     showUserLocation,
-    markers
-  );
+    threatMarkers: markers
+  });
   
   // Expose the map instance via the ref
   useImperativeHandle(ref, () => {

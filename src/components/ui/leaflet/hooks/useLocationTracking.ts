@@ -1,9 +1,8 @@
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
-import { useGeolocationWatcher } from './location/useGeolocationWatcher';
-import { useLocationUpdater } from './location/useLocationUpdater';
+import useUserLocationTracking from './useUserLocationTracking';
 
 interface LocationTrackingConfig {
   map: L.Map | null;
@@ -12,101 +11,65 @@ interface LocationTrackingConfig {
 }
 
 /**
- * Hook to track and visualize user location on a Leaflet map
+ * Hook to handle location tracking for the Leaflet map
  */
-export const useLocationTracking = ({
+const useLocationTracking = ({
   map,
   showUserLocation,
   threatMarkers = []
 }: LocationTrackingConfig) => {
-  const [isTracking, setIsTracking] = useState(false);
-  const locationStateRef = useRef({
-    userLocation: null as [number, number] | null,
-    locationAccuracy: 0,
-    safetyLevel: 'safe' as 'safe' | 'caution' | 'danger'
-  });
-  
-  // Create location updater
-  const { 
-    handleLocationUpdate, 
-    centerMapOnUserLocation,
-    cleanupMarkers
-  } = useLocationUpdater({ map, threatMarkers });
-  
-  // Create geolocation watcher
-  const { startHighAccuracyWatch, stopWatch, setMap } = useGeolocationWatcher(handleLocationUpdate);
-  
-  // Set the map reference when it changes
+  // Log map status for debugging
   useEffect(() => {
     if (map) {
-      setMap(map);
+      console.log("Map instance provided to useLocationTracking:", map);
+    } else {
+      console.log("No map instance provided to useLocationTracking");
     }
-  }, [map, setMap]);
+  }, [map]);
   
-  // Start/stop location tracking based on props
+  // Filter out locations with poor accuracy (>50km)
+  const filteredLocation = useRef<[number, number] | null>(null);
+  const filteredAccuracy = useRef<number>(0);
+  
+  // Only initialize user location tracking if map exists
+  // Use the refactored hook, with proper null checking
+  const { 
+    userLocation, 
+    locationAccuracy, 
+    safetyLevel 
+  } = useUserLocationTracking({
+    map,
+    showUserLocation,
+    threatMarkers
+  });
+  
   useEffect(() => {
-    // Early return if no map or map container not in DOM
-    if (!map) {
-      console.log("Map not available for location tracking");
-      return;
-    }
+    if (!userLocation) return;
     
-    try {
-      if (!map.getContainer() || !document.body.contains(map.getContainer())) {
-        console.log("Map container not in DOM");
-        return;
+    // Default accuracy threshold (meters)
+    const ACCURACY_THRESHOLD = 50000; // 50km - allowing for cell/wifi location
+    
+    if (locationAccuracy && locationAccuracy < ACCURACY_THRESHOLD) {
+      // Location accuracy is acceptable
+      filteredLocation.current = userLocation;
+      filteredAccuracy.current = locationAccuracy;
+      console.log('Valid location update:', userLocation[0].toFixed(6), userLocation[1].toFixed(6), 'accuracy:', locationAccuracy.toFixed(1), 'm');
+    } else if (locationAccuracy) {
+      console.warn('Ignoring location with poor accuracy:', locationAccuracy, 'meters');
+      // If we have no better location, still use it
+      if (!filteredLocation.current) {
+        filteredLocation.current = userLocation;
+        filteredAccuracy.current = locationAccuracy;
+        console.log('Using first location despite poor accuracy');
       }
-    } catch (error) {
-      console.error("Error checking map container:", error);
-      return;
     }
-    
-    if (showUserLocation && !isTracking) {
-      console.log("Starting location tracking");
-      
-      // Start high accuracy tracking
-      startHighAccuracyWatch();
-      setIsTracking(true);
-    } else if (!showUserLocation && isTracking) {
-      console.log("Stopping location tracking");
-      
-      cleanupMarkers();
-      stopWatch();
-      setIsTracking(false);
-    }
-    
-    return () => {
-      stopWatch();
-      cleanupMarkers();
-    };
-  }, [map, showUserLocation, isTracking, cleanupMarkers, startHighAccuracyWatch, stopWatch]);
+  }, [userLocation, locationAccuracy]);
   
-  // Listen for center map events
-  useEffect(() => {
-    // Skip if no map
-    if (!map) return;
-    
-    const handleCenterMap = () => centerMapOnUserLocation();
-    document.addEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
-    
-    return () => {
-      document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
-    };
-  }, [centerMapOnUserLocation, map]);
-
-  // Update location state when location updater changes
-  useEffect(() => {
-    if (handleLocationUpdate) {
-      // This ensures we're always returning the same object shape
-      // regardless of whether location tracking is active
-      return locationStateRef.current;
-    }
-  }, [handleLocationUpdate]);
-
+  // Return location data for parent components
   return {
-    userLocation: locationStateRef.current.userLocation,
-    locationAccuracy: locationStateRef.current.locationAccuracy,
-    safetyLevel: locationStateRef.current.safetyLevel 
+    userLocation: filteredLocation.current || userLocation,
+    locationAccuracy: filteredAccuracy.current || locationAccuracy,
+    safetyLevel
   };
 };
 
