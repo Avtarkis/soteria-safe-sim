@@ -112,6 +112,7 @@ const LocationMarker = ({
         icon: pulsingIcon, 
         zIndexOffset: 1000, // Ensure marker is on top
         interactive: true, // Make marker clickable
+        bubblingMouseEvents: false // Stop events from propagating to underlying elements
       })
         .addTo(map)
         .bindPopup(`
@@ -122,19 +123,20 @@ const LocationMarker = ({
         `);
       
       // Make sure marker is visible by bringing it to front
-      if (userMarkerRef.current) {
-        if (userMarkerRef.current.getElement()) {
-          userMarkerRef.current.getElement()!.classList.add('user-marker-pin');
-          // Explicitly set z-index to ensure visibility
-          userMarkerRef.current.getElement()!.style.zIndex = '1000';
-        }
+      if (userMarkerRef.current && userMarkerRef.current.getElement()) {
+        userMarkerRef.current.getElement()!.classList.add('user-marker-pin');
+        // Explicitly set z-index to ensure visibility
+        userMarkerRef.current.getElement()!.style.zIndex = '10000';
+        
+        // Force marker to appear on top
+        userMarkerRef.current.setZIndexOffset(10000);
       }
       
       // Color the accuracy circle based on safety level
       const circleColor = safetyLevel === 'safe' ? '#4F46E5' : 
                           safetyLevel === 'caution' ? '#F59E0B' : '#EF4444';
       
-      // Add accuracy circle - removed zIndexOffset as it's not valid for Circle options
+      // Add accuracy circle - use appropriate options structure
       accuracyCircleRef.current = L.circle(latlng, {
         radius: Math.max(10, accuracy), // Ensure at least 10m radius for visibility
         color: circleColor,

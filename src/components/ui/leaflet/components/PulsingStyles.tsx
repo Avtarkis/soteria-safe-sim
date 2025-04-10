@@ -29,23 +29,23 @@ const PulsingStyles = () => {
           }
         }
         
-        /* Ensure z-index for all marker elements */
+        /* Force higher z-index for user location marker */
         .leaflet-marker-icon.user-marker-pin {
-          z-index: 1000 !important;
+          z-index: 10000 !important;
         }
         
         .leaflet-marker-icon.user-marker-pin * {
-          z-index: 1000 !important;
+          z-index: 10000 !important;
         }
         
         /* User marker container styling */
         .user-marker-pin {
-          z-index: 1000 !important;
+          z-index: 10000 !important;
           pointer-events: auto !important;
         }
         
         .user-marker-pin .marker-pin {
-          z-index: 1000 !important;
+          z-index: 10000 !important;
           position: absolute !important;
           transform: translate(-50%, -50%);
         }
@@ -57,13 +57,13 @@ const PulsingStyles = () => {
         
         /* Outer circle styling */
         .user-marker-outer {
-          z-index: 998 !important;
+          z-index: 9998 !important;
           pointer-events: none;
         }
         
         /* Inner dot styling */
         .user-marker-inner {
-          z-index: 999 !important;
+          z-index: 9999 !important;
           pointer-events: none;
         }
         

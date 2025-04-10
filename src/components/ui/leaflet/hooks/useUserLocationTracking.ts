@@ -1,13 +1,11 @@
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import L from 'leaflet';
 import { ThreatMarker } from '@/types/threats';
 import { useLocationRefs } from './location/useLocationRefs';
 import { useMapCleanup } from './location/useMapCleanup';
-import { cleanupStreetLabels } from '../utils/streetLabels';
-import { LocationHandler } from '../utils/LocationHandler';
-import useLocationUpdater from './location/useLocationUpdater';
-import useGeolocationWatcher from './location/useGeolocationWatcher';
+import { useLocationMarkers } from './location/useLocationMarkers';
+import { useLocationWatcher } from './location/useLocationWatcher';
 
 interface UserLocationTrackingProps {
   map: L.Map | null;
@@ -26,95 +24,37 @@ const useUserLocationTracking = ({
   // Get all location refs
   const locationRefs = useLocationRefs();
   const {
-    userLocationMarkerRef,
-    userLocationCircleRef,
-    streetLabelRef,
     userLocationLatLngRef,
     userLocationAccuracyRef,
     safetyLevelRef,
     locationTrackingInitializedRef,
-    watchIdRef,
-    lastEventTimeRef,
-    errorCountRef,
     highPrecisionModeRef
   } = locationRefs;
   
-  // State for tracking activation status
-  const [isTracking, setIsTracking] = useState(false);
-  
-  // Location handler reference
-  const locationHandlerRef = useRef<LocationHandler | null>(null);
-  
   // Get cleanup utilities
-  const { safelyRemoveLayer } = useMapCleanup(map);
+  const { cleanupLocationLayers } = useMapCleanup(map, locationRefs);
   
-  // IMPORTANT: Always call hooks at the top level, never conditionally
-  const { handleLocationUpdate, centerMapOnUserLocation, cleanupMarkers, locationState } = useLocationUpdater({
-    map,
-    threatMarkers
-  });
+  // Get location markers manager
+  const { updateLocationMarkers, removeExistingMarkers } = useLocationMarkers(map, locationRefs, threatMarkers);
   
-  const { startHighAccuracyWatch, stopWatch } = useGeolocationWatcher(handleLocationUpdate);
-  
-  // Function to safely clean up all location layers
-  const cleanupLocationLayers = useCallback(() => {
-    if (!map) return;
-    
-    try {
-      userLocationMarkerRef.current = safelyRemoveLayer(userLocationMarkerRef.current);
-      userLocationCircleRef.current = safelyRemoveLayer(userLocationCircleRef.current);
-      streetLabelRef.current = safelyRemoveLayer(streetLabelRef.current);
-      
-      // Additional cleanup for street labels
-      cleanupStreetLabels();
-    } catch (error) {
-      console.error("Error in location layers cleanup:", error);
-    }
-  }, [map, safelyRemoveLayer, userLocationMarkerRef, userLocationCircleRef, streetLabelRef]);
-  
-  // Initialize location handler if not already done
-  useEffect(() => {
-    if (map && !locationHandlerRef.current) {
-      locationHandlerRef.current = new LocationHandler({
-        map,
-        userLocationMarkerRef,
-        userLocationCircleRef,
-        userLocationAccuracyRef,
-        userLocationLatLngRef,
-        streetLabelRef,
-        highPrecisionModeRef,
-        safetyLevelRef,
-        locationTrackingInitializedRef,
-        threatMarkers,
-        setUserLocation: undefined,
-        errorCountRef,
-        lastEventTimeRef
-      });
-    }
-    
-    return () => {
-      // Clean up location layers when component unmounts
-      cleanupLocationLayers();
-    };
-  }, [map, threatMarkers, cleanupLocationLayers, userLocationMarkerRef, userLocationCircleRef, 
-      userLocationAccuracyRef, userLocationLatLngRef, streetLabelRef, highPrecisionModeRef,
-      safetyLevelRef, locationTrackingInitializedRef, errorCountRef, lastEventTimeRef]);
+  // Get location watcher
+  const { startLocationWatch, stopLocationWatch } = useLocationWatcher(
+    map, 
+    updateLocationMarkers,
+    locationRefs
+  );
 
   /**
-   * Effect to listen for high precision mode activation
+   * Effect to handle high precision mode activation
    */
   useEffect(() => {
     const handleHighPrecisionMode = () => {
       highPrecisionModeRef.current = true;
       
-      // Update map if we have a current user location
-      if (userLocationLatLngRef.current && map && locationHandlerRef.current) {
-        // Safely call with try/catch
-        try {
-          centerMapOnUserLocation();
-        } catch (error) {
-          console.error("Error centering map on high precision mode:", error);
-        }
+      // If we're already tracking, restart with high precision
+      if (locationTrackingInitializedRef.current && showUserLocation) {
+        stopLocationWatch();
+        startLocationWatch();
       }
     };
     
@@ -123,7 +63,7 @@ const useUserLocationTracking = ({
     return () => {
       document.removeEventListener('highPrecisionModeActivated', handleHighPrecisionMode);
     };
-  }, [map, centerMapOnUserLocation, userLocationLatLngRef]);
+  }, [locationTrackingInitializedRef, showUserLocation, highPrecisionModeRef, startLocationWatch, stopLocationWatch]);
 
   /**
    * Main effect to handle location tracking based on showUserLocation prop
@@ -146,31 +86,27 @@ const useUserLocationTracking = ({
 
     if (showUserLocation) {
       console.log("Starting location tracking");
-      startHighAccuracyWatch();
+      startLocationWatch();
     } else {
       console.log("Stopping location tracking");
-      cleanupMarkers();
-      stopWatch();
+      cleanupLocationLayers();
+      stopLocationWatch();
     }
 
-    // Always set tracking state based on prop — no conditions
-    setIsTracking(showUserLocation);
-
     return () => {
-      stopWatch();
-      cleanupMarkers();
-      setIsTracking(false); // Reset on unmount
+      stopLocationWatch();
+      cleanupLocationLayers();
     };
-  }, [map, showUserLocation, cleanupMarkers, startHighAccuracyWatch, stopWatch]);
+  }, [map, showUserLocation, cleanupLocationLayers, startLocationWatch, stopLocationWatch]);
 
   /**
    * Effect to handle "center map on user" requests
    */
   useEffect(() => {
     const handleCenterMap = () => {
-      if (locationHandlerRef.current) {
+      if (map && userLocationLatLngRef.current) {
         try {
-          locationHandlerRef.current.centerMapOnUserLocation();
+          map.setView(userLocationLatLngRef.current, 15, { animate: true });
         } catch (error) {
           console.error("Error centering map on user location:", error);
         }
@@ -182,7 +118,7 @@ const useUserLocationTracking = ({
     return () => {
       document.removeEventListener('centerMapOnUserLocation', handleCenterMap as EventListener);
     };
-  }, [map]);
+  }, [map, userLocationLatLngRef]);
 
   return {
     getUserLocation: (): [number, number] | null => {
