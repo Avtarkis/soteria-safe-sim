@@ -4,12 +4,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
-import useLocationTracking from './leaflet/hooks/useLocationTracking';
 import useMapInitialization from './leaflet/hooks/useMapInitialization';
 import PulsingStyles from './leaflet/components/PulsingStyles';
 import MapTileLayer from './leaflet/components/MapTileLayer';
 import MarkersLayer from './leaflet/components/MarkersLayer';
 import MapError from './leaflet/MapError';
+
+// Always import useLocationTracking separately - never conditionally
+import useLocationTracking from './leaflet/hooks/useLocationTracking';
 
 interface LeafletMapProps {
   className?: string;
@@ -31,7 +33,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceKey = useRef(`map-instance-${Date.now()}`).current;
   
-  // Initialize map
+  // Initialize map 
   const {
     map,
     isMapReady,
@@ -49,7 +51,8 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     }
   });
   
-  // Track user location - Always initialize the hook, but conditionally enable tracking
+  // Always initialize the hook with default values if needed
+  // This prevents conditional hook calls
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking({
     map, 
     showUserLocation,

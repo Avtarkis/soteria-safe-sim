@@ -18,20 +18,24 @@ const useLocationTracking = ({
   showUserLocation,
   threatMarkers = []
 }: LocationTrackingConfig) => {
-  // Log map status for debugging
-  useEffect(() => {
-    if (map) {
-      console.log("Map instance provided to useLocationTracking:", map);
-    } else {
-      console.log("No map instance provided to useLocationTracking");
-    }
-  }, [map]);
-  
   // Filter out locations with poor accuracy (>50km)
   const filteredLocation = useRef<[number, number] | null>(null);
   const filteredAccuracy = useRef<number>(0);
+  const mapDebugLogShown = useRef<boolean>(false);
   
-  // Only initialize user location tracking if map exists
+  // Log map status for debugging - ensuring this hook is never conditional
+  useEffect(() => {
+    if (!mapDebugLogShown.current) {
+      if (map) {
+        console.log("Map instance provided to useLocationTracking:", map);
+      } else {
+        console.log("No map instance provided to useLocationTracking");
+      }
+      mapDebugLogShown.current = true;
+    }
+  }, [map]);
+  
+  // Always initialize the hook data regardless of map status
   // Use the refactored hook, with proper null checking
   const { 
     userLocation, 
@@ -43,6 +47,7 @@ const useLocationTracking = ({
     threatMarkers
   });
   
+  // Filter locations based on accuracy
   useEffect(() => {
     if (!userLocation) return;
     
