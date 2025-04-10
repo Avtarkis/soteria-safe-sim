@@ -18,13 +18,14 @@ import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
 import ThreatsMap from '@/components/ThreatsMap';
+import Dashboard from '@/components/Dashboard';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        {/* Redirect home to map */}
-        <Route index element={<Navigate to="/map" replace />} />
+        {/* Redirect home to dashboard */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
         
         {/* Auth routes */}
         <Route path="login" element={<LoginPage />} />
@@ -43,7 +44,7 @@ function App() {
         } />
         <Route path="dashboard" element={
           <ProtectedRoute>
-            <Navigate to="/map" replace />
+            <Dashboard />
           </ProtectedRoute>
         } />
         <Route path="alerts" element={

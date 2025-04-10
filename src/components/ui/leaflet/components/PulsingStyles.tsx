@@ -24,15 +24,35 @@ const PulsingStyles = () => {
             opacity: 0.8;
           }
         }
+        
         .user-marker-pulse {
           animation: pulse 2s infinite;
         }
+        
         .user-location-marker .pulse {
           width: 16px;
           height: 16px;
           background-color: #3388ff;
           border-radius: 50%;
           animation: pulse 2s infinite;
+        }
+        
+        /* Ensure user marker is visible above other map elements */
+        .user-marker-pin {
+          z-index: 1000 !important;
+        }
+        
+        .user-marker-pin .marker-pin {
+          z-index: 1000 !important;
+        }
+        
+        /* Ensure pulse animation is visible */
+        .user-marker-outer {
+          pointer-events: none;
+        }
+        
+        .user-marker-inner {
+          pointer-events: none;
         }
       `;
       document.head.appendChild(style);

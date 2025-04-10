@@ -24,7 +24,7 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
   
   // Create a custom marker icon with CSS animation
   const icon = L.divIcon({
-    className: 'custom-div-icon',
+    className: 'user-marker-pin',
     html: `
       <div class="marker-pin" style="position: relative;">
         <div class="user-marker-outer" style="
@@ -37,7 +37,7 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
           animation: pulse 2s infinite;
           top: -15px;
           left: -15px;
-          z-index: 1;
+          z-index: 398;
         "></div>
         <div class="user-marker-inner" style="
           position: absolute;
@@ -48,7 +48,8 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
           border: 2px solid white;
           top: -6px;
           left: -6px;
-          z-index: 2;
+          z-index: 399;
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         "></div>
       </div>
       <style>
@@ -68,8 +69,8 @@ export const createPulsingIcon = (safetyLevel: 'safe' | 'caution' | 'danger' = '
         }
       </style>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   });
   
   return icon;
