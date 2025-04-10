@@ -37,7 +37,14 @@ export function useGeolocationWatcher(
           };
         }
       },
-      timestamp: e.timestamp
+      timestamp: e.timestamp,
+      // Add required toJSON method to the position object
+      toJSON: function() {
+        return {
+          coords: this.coords.toJSON(),
+          timestamp: this.timestamp
+        };
+      }
     };
     
     onPositionUpdate(syntheticPosition);

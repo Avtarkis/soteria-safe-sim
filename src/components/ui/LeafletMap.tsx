@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cn } from '@/lib/utils';
 import { ThreatMarker } from '@/types/threats';
-import useLocationTracking from './leaflet/useLocationTracking';
+import useLocationTracking from './leaflet/hooks/useLocationTracking';
 import useMapInitialization from './leaflet/hooks/useMapInitialization';
 import PulsingStyles from './leaflet/components/PulsingStyles';
 import MapTileLayer from './leaflet/components/MapTileLayer';
@@ -49,9 +49,9 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     }
   });
   
-  // Track user location - Only run after map is ready
+  // Track user location - Always initialize the hook, but conditionally enable tracking
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
-    isMapReady ? map : null, 
+    map, 
     showUserLocation,
     markers
   );

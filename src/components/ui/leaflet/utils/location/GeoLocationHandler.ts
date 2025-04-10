@@ -135,7 +135,14 @@ export class GeoLocationHandler {
           };
         }
       },
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      // Add required toJSON method to the position object
+      toJSON: function() {
+        return {
+          coords: this.coords.toJSON(),
+          timestamp: this.timestamp
+        };
+      }
     };
   }
 }
