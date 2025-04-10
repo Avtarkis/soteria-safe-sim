@@ -51,6 +51,15 @@ interface LeafletMapProps {
   showUserLocation?: boolean;
 }
 
+// Debounce function to limit frequent view updates
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: any[]) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 // Use React.memo to prevent unnecessary re-renders
 const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   className,
@@ -62,8 +71,8 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 }, ref) => {
   const [map, setMap] = useState<L.Map | null>(null);
   const [isMapReady, setIsMapReady] = useState<boolean>(false);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const mapInitializedRef = useRef<boolean>(false);
   
   // Track user location
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
@@ -74,15 +83,12 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   
   // Add pulsing animation styles
   useEffect(() => {
-    // Create ref to the container
-    mapContainerRef.current = document.createElement('div');
-    
     addPulsingStyles();
     
     // Trigger global resize event to help Leaflet recognize container size
     setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
-    }, 500);
+    }, 300);
     
     return () => {
       const styleElem = document.getElementById('pulsing-marker-style');
@@ -97,30 +103,59 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     return map as L.Map;
   }, [map]);
   
+  // Create debounced setView function to prevent rapid updates
+  const debouncedSetView = useRef(
+    debounce((targetMap: L.Map, viewCenter: [number, number], viewZoom: number) => {
+      if (!targetMap || !targetMap.getContainer() || !document.body.contains(targetMap.getContainer())) {
+        return;
+      }
+      
+      targetMap.whenReady(() => {
+        try {
+          targetMap.setView(viewCenter, viewZoom, { animate: false });
+          console.log("✅ Debounced setView executed successfully");
+        } catch (error) {
+          console.error("❌ Debounced setView failed:", error);
+        }
+      });
+    }, 300)
+  ).current;
+  
+  // Update view when center or zoom changes
+  useEffect(() => {
+    if (map && isMapReady) {
+      debouncedSetView(map, center, zoom);
+    }
+  }, [map, isMapReady, center, zoom, debouncedSetView]);
+  
   // Handle map initialization with improved error handling
   const handleMapReady = (newMap: L.Map) => {
     console.log("Map base is now ready");
     
-    if (newMap && newMap.getContainer()) {
-      // Ensure map container is visible and has size
-      newMap.invalidateSize(true);
-      
+    if (newMap && newMap.getContainer() && document.body.contains(newMap.getContainer())) {
       // Set map state
       setMap(newMap);
       
-      // Delay setting view to ensure container is fully rendered
-      setTimeout(() => {
+      // Use whenReady to ensure map is fully initialized before setting view
+      newMap.whenReady(() => {
         try {
-          if (newMap && document.body.contains(newMap.getContainer())) {
+          if (document.body.contains(newMap.getContainer())) {
+            // Force a resize of the map to ensure proper dimensions
+            newMap.invalidateSize(true);
+            
+            // Set initial view without animation
             newMap.setView(center, zoom, { animate: false, duration: 0 });
-            console.log("Map is fully ready for operations");
+            console.log("✅ Map is fully ready for operations");
+            
+            // Mark map as ready for other operations
+            mapInitializedRef.current = true;
             setIsMapReady(true);
           }
         } catch (error) {
-          console.error("Initial setView failed:", error);
+          console.error("❌ Initial setView failed:", error);
           setMapError("Failed to set map view. Please refresh the page.");
         }
-      }, 100);
+      });
     } else {
       console.error("Map container not ready");
       setMapError("Map container not ready. Please refresh the page.");
@@ -131,6 +166,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   useEffect(() => {
     return () => {
       console.log("LeafletMap component unmounting");
+      mapInitializedRef.current = false;
       setIsMapReady(false);
       setMap(null);
     };
