@@ -23,7 +23,19 @@ export function useGeolocationWatcher(
         altitude: null,
         altitudeAccuracy: null,
         heading: null,
-        speed: null
+        speed: null,
+        // Add required toJSON method
+        toJSON: function() {
+          return {
+            latitude: this.latitude,
+            longitude: this.longitude,
+            accuracy: this.accuracy,
+            altitude: this.altitude,
+            altitudeAccuracy: this.altitudeAccuracy,
+            heading: this.heading,
+            speed: this.speed
+          };
+        }
       },
       timestamp: e.timestamp
     };

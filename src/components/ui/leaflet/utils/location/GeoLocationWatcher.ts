@@ -109,7 +109,12 @@ export class GeoLocationWatcher {
       } as L.LocationEvent;
       
       // Dispatch global event
-      dispatchLocationUpdate(position.coords.latitude, position.coords.longitude, accuracy);
+      dispatchLocationUpdate(
+        position.coords.latitude, 
+        position.coords.longitude, 
+        accuracy,
+        'safe' // Add the missing 4th argument (default safety level)
+      );
       
       // Call the provided callback
       this.options.onPositionUpdate(locationEvent);
