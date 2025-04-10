@@ -21,7 +21,7 @@ export function useLocationUpdater({
   const userLocationLatLngRef = useRef<L.LatLng | null>(null);
   const userLocationAccuracyRef = useRef<number>(0);
   const safetyLevelRef = useRef<'safe' | 'caution' | 'danger'>('safe');
-  const { createOrUpdateMarkers, cleanupMarkers } = useLocationMarkers(map);
+  const { updateLocationMarkers, removeExistingMarkers } = useLocationMarkers(map);
   const { getSafetyLevel } = useLocationEvents(threatMarkers);
   
   // Handle location update
@@ -43,15 +43,15 @@ export function useLocationUpdater({
       userLocationLatLngRef.current = L.latLng(latitude, longitude);
       userLocationAccuracyRef.current = accuracy;
       
-      // Create or update markers
-      createOrUpdateMarkers(latitude, longitude, accuracy);
+      // Create or update markers - use updateLocationMarkers instead of createOrUpdateMarkers
+      updateLocationMarkers(latitude, longitude, accuracy);
       
       // Determine safety level based on proximity to threats
       safetyLevelRef.current = getSafetyLevel(latitude, longitude);
     } catch (error) {
       console.error("Error handling location update:", error);
     }
-  }, [map, createOrUpdateMarkers, getSafetyLevel]);
+  }, [map, updateLocationMarkers, getSafetyLevel]);
   
   // Center map on user location
   const centerMapOnUserLocation = useCallback(() => {
@@ -72,7 +72,7 @@ export function useLocationUpdater({
   return {
     handleLocationUpdate,
     centerMapOnUserLocation,
-    cleanupMarkers,
+    cleanupMarkers: removeExistingMarkers, // Rename to match what's expected by consumers
     locationState: {
       userLocation: userLocationLatLngRef.current 
         ? [userLocationLatLngRef.current.lat, userLocationLatLngRef.current.lng] as [number, number]
