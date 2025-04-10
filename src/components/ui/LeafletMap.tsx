@@ -73,8 +73,9 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const [isMapReady, setIsMapReady] = useState<boolean>(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const mapInitializedRef = useRef<boolean>(false);
+  const mapInstanceKey = useRef(`map-instance-${Date.now()}`).current;
   
-  // Track user location
+  // Track user location - Only run after map is ready
   const { userLocation, locationAccuracy, safetyLevel } = useLocationTracking(
     isMapReady ? map : null, 
     showUserLocation,
@@ -86,11 +87,12 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
     addPulsingStyles();
     
     // Trigger global resize event to help Leaflet recognize container size
-    setTimeout(() => {
+    const resizeTimer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
-    }, 300);
+    }, 500);
     
     return () => {
+      clearTimeout(resizeTimer);
       const styleElem = document.getElementById('pulsing-marker-style');
       if (styleElem) {
         styleElem.remove();
@@ -107,12 +109,22 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   const debouncedSetView = useRef(
     debounce((targetMap: L.Map, viewCenter: [number, number], viewZoom: number) => {
       if (!targetMap || !targetMap.getContainer() || !document.body.contains(targetMap.getContainer())) {
+        console.warn("Cannot set view - map container not available");
         return;
       }
       
       targetMap.whenReady(() => {
         try {
+          console.log("Setting view with debounced function:", viewCenter, viewZoom);
           targetMap.setView(viewCenter, viewZoom, { animate: false });
+          
+          // Force map to update its size after view change
+          setTimeout(() => {
+            if (targetMap && document.body.contains(targetMap.getContainer())) {
+              targetMap.invalidateSize(true);
+            }
+          }, 100);
+          
           console.log("✅ Debounced setView executed successfully");
         } catch (error) {
           console.error("❌ Debounced setView failed:", error);
@@ -124,6 +136,7 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
   // Update view when center or zoom changes
   useEffect(() => {
     if (map && isMapReady) {
+      console.log("Center or zoom changed, updating view");
       debouncedSetView(map, center, zoom);
     }
   }, [map, isMapReady, center, zoom, debouncedSetView]);
@@ -144,12 +157,22 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
             newMap.invalidateSize(true);
             
             // Set initial view without animation
+            console.log("Setting initial view from handleMapReady", center, zoom);
             newMap.setView(center, zoom, { animate: false, duration: 0 });
-            console.log("✅ Map is fully ready for operations");
             
-            // Mark map as ready for other operations
-            mapInitializedRef.current = true;
-            setIsMapReady(true);
+            // Add a small delay before marking as ready
+            setTimeout(() => {
+              console.log("✅ Map is fully ready for operations");
+              
+              // Mark map as ready for other operations
+              mapInitializedRef.current = true;
+              setIsMapReady(true);
+              
+              // Final forced resize
+              if (newMap && document.body.contains(newMap.getContainer())) {
+                newMap.invalidateSize(true);
+              }
+            }, 200);
           }
         } catch (error) {
           console.error("❌ Initial setView failed:", error);
@@ -180,11 +203,14 @@ const LeafletMap = forwardRef<L.Map, LeafletMapProps>(({
 
   return (
     <div className={cn("relative w-full h-full min-h-[500px]", className)}>
-      <MapBase 
-        center={center} 
-        zoom={zoom} 
-        onMapReady={handleMapReady}
-      />
+      {/* Use a unique key to prevent React from reusing the same instance */}
+      <div key={mapInstanceKey} className="absolute inset-0" style={{ minHeight: '500px' }}>
+        <MapBase 
+          center={center} 
+          zoom={zoom} 
+          onMapReady={handleMapReady}
+        />
+      </div>
       
       {map && isMapReady && (
         <>
