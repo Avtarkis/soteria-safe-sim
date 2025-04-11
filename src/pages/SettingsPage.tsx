@@ -1,13 +1,8 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import AccountSettings from '@/components/settings/AccountSettings';
-import NotificationSettings from '@/components/settings/NotificationSettings';
-import PrivacySecuritySettings from '@/components/settings/PrivacySecuritySettings';
-import RegionalSettings from '@/components/settings/RegionalSettings';
-import AppearanceSettings from '@/components/settings/AppearanceSettings';
-import AdvancedSettings from '@/components/settings/AdvancedSettings';
+import SettingsHeader from '@/components/settings/SettingsHeader';
+import SettingsContent from '@/components/settings/SettingsContent';
 import SettingsFooter from '@/components/settings/SettingsFooter';
 
 const SettingsPage = () => {
@@ -43,35 +38,21 @@ const SettingsPage = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <Button onClick={handleSaveSettings} disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
-      
-      <AccountSettings />
-      
-      <NotificationSettings 
-        notifications={notifications}
-        setNotifications={setNotifications}
+      <SettingsHeader 
+        loading={loading} 
+        onSave={handleSaveSettings} 
       />
       
-      <PrivacySecuritySettings />
-      
-      <RegionalSettings 
+      <SettingsContent 
+        notifications={notifications}
+        setNotifications={setNotifications}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
         language={language}
         setLanguage={setLanguage}
         units={units}
         setUnits={setUnits}
       />
-      
-      <AppearanceSettings 
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-      />
-      
-      <AdvancedSettings />
       
       <SettingsFooter />
     </div>
