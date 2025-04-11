@@ -19,6 +19,7 @@ import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
 import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
+import SettingsPage from '@/pages/SettingsPage';
 
 function App() {
   return (
@@ -35,6 +36,11 @@ function App() {
         <Route path="profile" element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         } />
         <Route path="map" element={
