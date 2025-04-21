@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const SubscriptionPage = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
-  
-  // Feature list for the subscription plans
+  const [currency, setCurrency] = useState<'usd' | 'ngn'>('usd');
+
   const features = [
     { id: 'ai-threat', name: 'AI Threat Detection', free: 'Basic', premium: 'Advanced', family: 'Advanced+' },
     { id: 'dark-web', name: 'Dark Web Monitoring', free: 'Limited', premium: 'Comprehensive', family: 'Comprehensive' },
@@ -23,8 +23,7 @@ const SubscriptionPage = () => {
     { id: 'health', name: 'Health Monitoring', free: false, premium: true, family: true },
     { id: 'family-location', name: 'Family Location Sharing', free: false, premium: false, family: true },
   ];
-  
-  // Feature showcase detail items
+
   const featureShowcase = [
     {
       id: 'ai-emergency',
@@ -99,8 +98,7 @@ const SubscriptionPage = () => {
       description: 'Works in the background undetected by attackers.'
     }
   ];
-  
-  // FAQ items
+
   const faqItems = [
     {
       question: 'Can I cancel my subscription at any time?',
@@ -120,6 +118,16 @@ const SubscriptionPage = () => {
     }
   ];
 
+  const getIndividualPrice = () =>
+    currency === 'usd'
+      ? '$4.99'
+      : '₦499';
+
+  const getFamilyPrice = () =>
+    currency === 'usd'
+      ? '$19.99'
+      : '₦1,499';
+
   return (
     <div className="container pb-10 animate-fade-in">
       <div className="space-y-2 mb-6">
@@ -127,6 +135,22 @@ const SubscriptionPage = () => {
         <p className="text-muted-foreground">
           Choose the right plan for your security needs.
         </p>
+      </div>
+
+      <div className="flex justify-center items-center mb-4">
+        <span className="text-sm mr-2 font-medium">Currency:</span>
+        <button
+          className={`px-3 py-1 rounded-l-full border border-primary-foreground/20 transition-colors ${
+            currency === 'usd' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+          }`}
+          onClick={() => setCurrency('usd')}
+        >USD ($)</button>
+        <button
+          className={`px-3 py-1 rounded-r-full border border-primary-foreground/20 transition-colors ${
+            currency === 'ngn' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+          }`}
+          onClick={() => setCurrency('ngn')}
+        >NGN (₦)</button>
       </div>
 
       <div className="mb-10">
@@ -153,7 +177,6 @@ const SubscriptionPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Free Plan */}
           <Card className="border-2 border-border">
             <CardHeader>
               <CardTitle>
@@ -238,7 +261,6 @@ const SubscriptionPage = () => {
             </CardContent>
           </Card>
           
-          {/* Premium Plan */}
           <Card className="border-2 border-primary relative">
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
               Most Popular
@@ -253,7 +275,7 @@ const SubscriptionPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '4.99' : '4.99'}</div>
+                <div className="text-4xl font-bold">{getIndividualPrice()}</div>
                 <div className="text-sm text-muted-foreground">/month</div>
                 <div className="mt-2 text-sm">Advanced protection for individuals</div>
               </div>
@@ -361,7 +383,6 @@ const SubscriptionPage = () => {
             </CardContent>
           </Card>
           
-          {/* Family Plan */}
           <Card className="border-2 border-border">
             <CardHeader>
               <CardTitle>
@@ -373,7 +394,7 @@ const SubscriptionPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <div className="text-4xl font-bold">${billingCycle === 'monthly' ? '19.99' : '19.99'}</div>
+                <div className="text-4xl font-bold">{getFamilyPrice()}</div>
                 <div className="text-sm text-muted-foreground">/month</div>
                 <div className="mt-2 text-sm">Complete protection for your entire family</div>
               </div>
