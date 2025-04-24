@@ -1,6 +1,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { toast } from './use-toast';
+import { connectivityService } from '@/utils/voice/connectivity';
+import { HybridCommandProcessor } from '@/utils/voice/hybridCommandProcessor';
 
 export function useWebAudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -11,6 +13,16 @@ export function useWebAudioRecorder() {
   const startRecording = useCallback(async () => {
     audioChunksRef.current = [];
     setAudioBlob(null);
+    
+    // Check network status before starting
+    const networkStatus = connectivityService.getCurrentStatus();
+    if (networkStatus === 'poor') {
+      toast({
+        title: "Poor Connection Detected",
+        description: "Using basic voice recognition mode.",
+        variant: "warning"
+      });
+    }
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
