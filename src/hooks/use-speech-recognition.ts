@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { deepgramService } from '@/services/deepgramService';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,20 @@ export function useSpeechRecognition(
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const hasRecognitionSupport = 'MediaRecorder' in window;
+
+  // Move the stopListening function declaration before its usage
+  const stopListening = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Stop all tracks in the stream to release the microphone
+    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+    
+    setIsListening(false);
+  }, []);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -116,9 +131,12 @@ export function useSpeechRecognition(
           }
         }, 3000); // Process audio every 3 seconds
         
-        // Clear interval when recording stops
-        return () => clearInterval(interval);
+        // Fix the return type issue by not returning the cleanup function directly
+        // Instead, we'll set up the cleanup in the returned Promise
+        return Promise.resolve();
       }
+      
+      return Promise.resolve();
     } catch (err) {
       console.error('Error accessing microphone:', err);
       setError('Could not access microphone. Please check permissions.');
@@ -126,21 +144,9 @@ export function useSpeechRecognition(
         title: "Microphone Access Denied",
         description: "Please allow microphone access to use voice features."
       });
+      return Promise.resolve();
     }
   }, [options.continuous, processAudioChunks, resetTranscript, hasRecognitionSupport]);
-
-  const stopListening = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    // Stop all tracks in the stream to release the microphone
-    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    setIsListening(false);
-  }, []);
 
   return {
     isListening,
