@@ -6,10 +6,11 @@ import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useTextToSpeech } from '@/hooks/use-text-to-speech';
 import { processCommand } from '@/utils/voice/commandProcessor';
 import { generateResponse } from '@/utils/voice/responseGenerator';
-import { ProcessedCommand } from '@/utils/voice/types';
+import { ProcessedCommand, VoiceCommandType } from '@/utils/voice/types';
 import VoiceButton from './VoiceButton';
 import TranscriptDisplay from './TranscriptDisplay';
 import CommandsList from './CommandsList';
+import { toast } from '@/hooks/use-toast';
 
 interface VoiceAssistantProps {
   className?: string;
@@ -36,9 +37,20 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ className }) => {
           setActiveCommand(command);
           const response = await generateResponse(command);
           await speak(response);
+          
+          // Notify the user about recognized commands
+          toast({
+            title: `Command: ${command.type.replace('_', ' ')}`,
+            description: "Command recognized and processed"
+          });
         }
       } catch (error) {
         console.error('Error processing command:', error);
+        toast({
+          title: "Command Error",
+          description: "Failed to process voice command",
+          variant: "destructive"
+        });
       } finally {
         setIsProcessing(false);
       }
@@ -52,18 +64,25 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ className }) => {
   const toggleListening = useCallback(async () => {
     if (isListening) {
       stopListening();
-      if (!activeCommand) {
-        setActiveCommand(null);
-      }
+      toast({
+        title: "Voice Assistant Paused",
+        description: "Voice recognition turned off"
+      });
     } else {
       await startListening();
+      toast({
+        title: "Voice Assistant Active",
+        description: "Listening for commands..."
+      });
+      
+      // Auto-stop after 10 seconds if no command detected
       setTimeout(() => {
         if (isListening) {
           stopListening();
         }
       }, 10000);
     }
-  }, [isListening, startListening, stopListening, activeCommand]);
+  }, [isListening, startListening, stopListening]);
 
   return (
     <Card className={className}>

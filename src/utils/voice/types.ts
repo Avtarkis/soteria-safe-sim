@@ -24,3 +24,16 @@ export interface CommandResponse {
   text: string;
   action?: () => void;
 }
+
+// New types for Web Audio API recorder
+export interface AudioRecorderState {
+  isRecording: boolean;
+  audioUrl: string | null;
+  error: string | null;
+}
+
+export interface RecordedAudioData {
+  blob: Blob;
+  duration: number;
+  url: string;
+}

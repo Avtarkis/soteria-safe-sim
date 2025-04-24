@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { deepgramService } from '@/services/deepgramService';
 import { toast } from '@/hooks/use-toast';
+import { useWebAudioRecorder } from './use-web-audio-recorder';
 
 export interface SpeechRecognitionOptions {
   language?: string;
@@ -28,42 +29,35 @@ export function useSpeechRecognition(
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const { 
+    startRecording, 
+    stopRecording, 
+    isRecording, 
+    audioBlob, 
+    getAudioAsBase64 
+  } = useWebAudioRecorder();
+  
   const hasRecognitionSupport = 'MediaRecorder' in window;
-
-  // Move the stopListening function declaration before its usage
-  const stopListening = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    // Stop all tracks in the stream to release the microphone
-    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    setIsListening(false);
-  }, []);
+  const processingIntervalRef = useRef<number | null>(null);
 
   // Clean up on component unmount
   useEffect(() => {
     return () => {
       stopListening();
+      if (processingIntervalRef.current) {
+        window.clearInterval(processingIntervalRef.current);
+      }
     };
-  }, [stopListening]);
+  }, []);
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
   }, []);
 
   const processAudioChunks = useCallback(async () => {
-    if (audioChunksRef.current.length === 0) return;
+    if (!audioBlob) return;
     
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      audioChunksRef.current = []; // Reset chunks
-      
       // Use Deepgram to transcribe
       const result = await deepgramService.transcribeAudio(audioBlob, {
         language: options.language || 'en',
@@ -85,7 +79,14 @@ export function useSpeechRecognition(
       console.error('Error processing audio:', err);
       setError('Failed to process audio. Please try again.');
     }
-  }, [options.language, onTranscriptUpdate]);
+  }, [audioBlob, options.language, onTranscriptUpdate]);
+
+  // Effect to process audio when the blob changes
+  useEffect(() => {
+    if (audioBlob) {
+      processAudioChunks();
+    }
+  }, [audioBlob, processAudioChunks]);
 
   const startListening = useCallback(async () => {
     resetTranscript();
@@ -101,42 +102,19 @@ export function useSpeechRecognition(
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const started = await startRecording();
       
-      // Setup media recorder
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = processAudioChunks;
-      
-      // Start recording
-      mediaRecorder.start();
-      setIsListening(true);
-      
-      // For continuous recognition, process chunks at intervals
-      if (options.continuous) {
-        const interval = setInterval(() => {
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.start();
-          } else {
-            clearInterval(interval);
-          }
-        }, 3000); // Process audio every 3 seconds
+      if (started) {
+        setIsListening(true);
         
-        // Fix the return type issue by not returning the cleanup function directly
-        // Instead, we'll set up the cleanup in the returned Promise
-        return Promise.resolve();
+        // For continuous recognition, process chunks at intervals
+        if (options.continuous) {
+          processingIntervalRef.current = window.setInterval(() => {
+            stopRecording();
+            startRecording();
+          }, 3000); // Process audio every 3 seconds
+        }
       }
-      
-      return Promise.resolve();
     } catch (err) {
       console.error('Error accessing microphone:', err);
       setError('Could not access microphone. Please check permissions.');
@@ -144,9 +122,18 @@ export function useSpeechRecognition(
         title: "Microphone Access Denied",
         description: "Please allow microphone access to use voice features."
       });
-      return Promise.resolve();
     }
-  }, [options.continuous, processAudioChunks, resetTranscript, hasRecognitionSupport]);
+  }, [options.continuous, resetTranscript, hasRecognitionSupport, startRecording, stopRecording]);
+
+  const stopListening = useCallback(() => {
+    if (processingIntervalRef.current) {
+      window.clearInterval(processingIntervalRef.current);
+      processingIntervalRef.current = null;
+    }
+    
+    stopRecording();
+    setIsListening(false);
+  }, [stopRecording]);
 
   return {
     isListening,
