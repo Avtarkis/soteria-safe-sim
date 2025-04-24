@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { deepgramService } from '@/services/deepgramService';
 import { toast } from '@/hooks/use-toast';
@@ -37,7 +36,7 @@ export function useSpeechRecognition(
     return () => {
       stopListening();
     };
-  }, []);
+  }, [stopListening]);
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
@@ -117,10 +116,8 @@ export function useSpeechRecognition(
           }
         }, 3000); // Process audio every 3 seconds
         
-        // Return a cleanup function rather than a function that returns a cleanup function
-        setTimeout(() => {
-          clearInterval(interval);
-        }, 0);
+        // Clear interval when recording stops
+        return () => clearInterval(interval);
       }
     } catch (err) {
       console.error('Error accessing microphone:', err);
