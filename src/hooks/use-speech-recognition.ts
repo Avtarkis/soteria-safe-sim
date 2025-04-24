@@ -117,10 +117,10 @@ export function useSpeechRecognition(
           }
         }, 3000); // Process audio every 3 seconds
         
-        return () => {
+        // Return a cleanup function rather than a function that returns a cleanup function
+        setTimeout(() => {
           clearInterval(interval);
-          stopListening();
-        };
+        }, 0);
       }
     } catch (err) {
       console.error('Error accessing microphone:', err);
