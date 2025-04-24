@@ -17,7 +17,7 @@ class ConnectivityService {
     setInterval(() => this.checkConnectionQuality(), 10000);
   }
 
-  private async checkConnectionQuality(): Promise<void> {
+  public async checkConnectionQuality(): Promise<NetworkStatus> {
     try {
       const start = performance.now();
       const response = await fetch('https://www.google.com/favicon.ico');
@@ -25,17 +25,20 @@ class ConnectivityService {
       
       if (!response.ok) {
         this.updateStatus('poor');
-        return;
+        return 'poor';
       }
 
       const latency = end - start;
-      this.updateStatus(latency > 1000 ? 'poor' : 'online');
+      const status = latency > 1000 ? 'poor' : 'online';
+      this.updateStatus(status);
+      return status;
     } catch {
       this.updateStatus('offline');
+      return 'offline';
     }
   }
 
-  private updateStatus(status: NetworkStatus) {
+  public updateStatus(status: NetworkStatus) {
     this.connectionQuality = status;
     this.notifyListeners();
   }

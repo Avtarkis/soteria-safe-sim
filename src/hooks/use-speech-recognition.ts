@@ -3,6 +3,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { deepgramService } from '@/services/deepgramService';
 import { toast } from '@/hooks/use-toast';
 import { useWebAudioRecorder } from './use-web-audio-recorder';
+import { NetworkStatusMonitor } from '@/utils/voice/networkStatusMonitor';
+import { HybridCommandProcessor } from '@/utils/voice/hybridCommandProcessor';
+import { FallbackProcessor } from '@/utils/voice/fallbackProcessor';
 
 export interface SpeechRecognitionOptions {
   language?: string;
@@ -28,6 +31,7 @@ export function useSpeechRecognition(
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'poor'>('online');
   
   const { 
     startRecording, 
@@ -39,6 +43,21 @@ export function useSpeechRecognition(
   
   const hasRecognitionSupport = 'MediaRecorder' in window;
   const processingIntervalRef = useRef<number | null>(null);
+  const networkMonitorUnsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Subscribe to network status changes
+  useEffect(() => {
+    networkMonitorUnsubscribeRef.current = NetworkStatusMonitor.subscribe((status) => {
+      setNetworkStatus(status);
+      console.log('Network status updated:', status);
+    });
+    
+    return () => {
+      if (networkMonitorUnsubscribeRef.current) {
+        networkMonitorUnsubscribeRef.current();
+      }
+    };
+  }, []);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -54,16 +73,35 @@ export function useSpeechRecognition(
     setTranscript('');
   }, []);
 
+  // Process audio using appropriate service based on network status
   const processAudioChunks = useCallback(async () => {
     if (!audioBlob) return;
     
     try {
-      // Use Deepgram to transcribe
-      const result = await deepgramService.transcribeAudio(audioBlob, {
-        language: options.language || 'en',
-        punctuate: true,
-        smartFormat: true
-      });
+      let result = '';
+      
+      // Use hybrid processor to determine processing method
+      if (networkStatus === 'online') {
+        // Use advanced processing
+        try {
+          // Attempt to use Deepgram for transcription
+          result = await deepgramService.transcribeAudio(audioBlob, {
+            language: options.language || 'en',
+            punctuate: true,
+            smartFormat: true
+          });
+        } catch (err) {
+          console.error('Error with advanced processing, falling back to local:', err);
+          // Fall back to local processing
+          const processedCommand = FallbackProcessor.processText(transcript);
+          result = processedCommand.normalizedText;
+        }
+      } else {
+        // Use local processing for offline or poor connection
+        console.log('Using local processing due to network status:', networkStatus);
+        const processedCommand = FallbackProcessor.processText(transcript);
+        result = processedCommand.normalizedText;
+      }
       
       setTranscript(prev => {
         const newTranscript = `${prev} ${result}`.trim();
@@ -79,7 +117,7 @@ export function useSpeechRecognition(
       console.error('Error processing audio:', err);
       setError('Failed to process audio. Please try again.');
     }
-  }, [audioBlob, options.language, onTranscriptUpdate]);
+  }, [audioBlob, options.language, onTranscriptUpdate, transcript, networkStatus]);
 
   // Effect to process audio when the blob changes
   useEffect(() => {
@@ -107,6 +145,17 @@ export function useSpeechRecognition(
       if (started) {
         setIsListening(true);
         
+        // Show network status toast if not online
+        if (networkStatus !== 'online') {
+          toast({
+            title: networkStatus === 'offline' ? "Offline Mode" : "Poor Connection",
+            description: networkStatus === 'offline'
+              ? "Using offline voice recognition. Limited features available."
+              : "Connection quality is poor. Some voice features may be limited.",
+            variant: "default"
+          });
+        }
+        
         // For continuous recognition, process chunks at intervals
         if (options.continuous) {
           processingIntervalRef.current = window.setInterval(() => {
@@ -120,10 +169,11 @@ export function useSpeechRecognition(
       setError('Could not access microphone. Please check permissions.');
       toast({
         title: "Microphone Access Denied",
-        description: "Please allow microphone access to use voice features."
+        description: "Please allow microphone access to use voice features.",
+        variant: "destructive"
       });
     }
-  }, [options.continuous, resetTranscript, hasRecognitionSupport, startRecording, stopRecording]);
+  }, [options.continuous, resetTranscript, hasRecognitionSupport, startRecording, stopRecording, networkStatus]);
 
   const stopListening = useCallback(() => {
     if (processingIntervalRef.current) {

@@ -35,7 +35,8 @@ export class HybridCommandProcessor {
     // Check cache first
     const cachedResponse = responseCache.get(text);
     if (cachedResponse) {
-      return JSON.parse(cachedResponse);
+      // Parse the cached response string back to a ProcessedCommand object
+      return JSON.parse(cachedResponse) as ProcessedCommand;
     }
 
     try {
