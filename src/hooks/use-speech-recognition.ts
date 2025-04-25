@@ -6,6 +6,7 @@ import { useWebAudioRecorder } from './use-web-audio-recorder';
 import { NetworkStatusMonitor } from '@/utils/voice/networkStatusMonitor';
 import { HybridCommandProcessor } from '@/utils/voice/hybridCommandProcessor';
 import { FallbackProcessor } from '@/utils/voice/fallbackProcessor';
+import { ProcessedCommand } from '@/utils/voice/types';
 
 export interface SpeechRecognitionOptions {
   language?: string;
@@ -78,41 +79,37 @@ export function useSpeechRecognition(
     if (!audioBlob) return;
     
     try {
-      let result = '';
+      let processedResult: ProcessedCommand | null = null;
       
       // Use hybrid processor to determine processing method
       if (networkStatus === 'online') {
         // Use advanced processing
         try {
           // Attempt to use Deepgram for transcription
-          result = await deepgramService.transcribeAudio(audioBlob, {
-            language: options.language || 'en',
-            punctuate: true,
-            smartFormat: true
-          });
+          processedResult = await HybridCommandProcessor.processCommand(transcript, audioBlob);
         } catch (err) {
           console.error('Error with advanced processing, falling back to local:', err);
           // Fall back to local processing
-          const processedCommand = FallbackProcessor.processText(transcript);
-          result = processedCommand.normalizedText;
+          processedResult = FallbackProcessor.processText(transcript);
         }
       } else {
         // Use local processing for offline or poor connection
         console.log('Using local processing due to network status:', networkStatus);
-        const processedCommand = FallbackProcessor.processText(transcript);
-        result = processedCommand.normalizedText;
+        processedResult = FallbackProcessor.processText(transcript);
       }
       
-      setTranscript(prev => {
-        const newTranscript = `${prev} ${result}`.trim();
-        
-        // Call the callback if provided
-        if (onTranscriptUpdate) {
-          onTranscriptUpdate(newTranscript);
-        }
-        
-        return newTranscript;
-      });
+      if (processedResult) {
+        setTranscript(prev => {
+          const newTranscript = `${prev} ${processedResult?.normalizedText}`.trim();
+          
+          // Call the callback if provided
+          if (onTranscriptUpdate) {
+            onTranscriptUpdate(newTranscript);
+          }
+          
+          return newTranscript;
+        });
+      }
     } catch (err) {
       console.error('Error processing audio:', err);
       setError('Failed to process audio. Please try again.');
