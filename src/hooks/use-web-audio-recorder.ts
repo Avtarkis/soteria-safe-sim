@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 import { toast } from './use-toast';
 import { connectivityService } from '@/utils/voice/connectivity';
@@ -19,7 +20,7 @@ export function useWebAudioRecorder() {
       toast({
         title: "Poor Connection Detected",
         description: "Using basic voice recognition mode.",
-        variant: "default"
+        variant: "default"  // Changed from "warning" to "default"
       });
     }
     

@@ -28,6 +28,7 @@ class ResponseCacheService {
 
   /**
    * Get a response from the cache if it exists and is not expired
+   * @returns The cached response text or null if not found or expired
    */
   public get(command: string, minConfidence = 0): string | null {
     const cached = this.cache.get(command);

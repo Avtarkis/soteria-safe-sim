@@ -3,6 +3,7 @@ import { ProcessedCommand, VoiceCommandType } from './types';
 import { connectivityService } from './connectivity';
 import { responseCache } from './responseCache';
 import { deepgramService } from '@/services/deepgramService';
+import { FallbackProcessor } from './fallbackProcessor';
 
 const SIMPLE_COMMANDS = new Set<VoiceCommandType>([
   'emergency_call',
@@ -36,14 +37,20 @@ export class HybridCommandProcessor {
     const cachedResponse = responseCache.get(text);
     if (cachedResponse) {
       // Parse the cached response string back to a ProcessedCommand object
-      return JSON.parse(cachedResponse) as ProcessedCommand;
+      try {
+        // Make sure we're properly parsing the cached response as a ProcessedCommand
+        return JSON.parse(cachedResponse) as ProcessedCommand;
+      } catch (error) {
+        console.error('Error parsing cached response:', error);
+        // If parsing fails, fall back to local processing
+      }
     }
 
     try {
       // Attempt to use advanced processing if available
       if (connectivityService.getCurrentStatus() === 'online' && audioBlob) {
         const result = await deepgramService.transcribeAudio(audioBlob);
-        // Cache the result
+        // Cache the result as a JSON string
         responseCache.set(text, JSON.stringify(result), result.confidence);
         return result;
       }
@@ -56,18 +63,8 @@ export class HybridCommandProcessor {
   }
 
   private static processLocally(text: string): ProcessedCommand {
-    // Use the existing local command processing logic
-    // This is a simplified version - you can expand it based on your needs
-    const normalizedText = text.toLowerCase();
-    const type = this.determineCommandType(normalizedText);
-    
-    return {
-      type,
-      confidence: 0.8, // Default confidence for local processing
-      originalText: text,
-      normalizedText,
-      urgency: 'medium'
-    };
+    // Use the FallbackProcessor for local processing
+    return FallbackProcessor.processText(text);
   }
 
   private static determineCommandType(text: string): VoiceCommandType {
