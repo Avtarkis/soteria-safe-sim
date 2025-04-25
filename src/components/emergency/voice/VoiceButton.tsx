@@ -1,8 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Mic, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useWebAudioRecorder } from '@/hooks/use-web-audio-recorder';
 
 interface VoiceButtonProps {
   isListening: boolean;
@@ -19,13 +18,8 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
   hasRecognitionSupport,
   onToggle
 }) => {
-  const { isRecording } = useWebAudioRecorder();
-
-  // Combine the native isListening state with our web recorder state
-  const effectivelyListening = isListening || isRecording;
-
   const getButtonState = () => {
-    if (effectivelyListening) return 'listening';
+    if (isListening) return 'listening';
     if (isProcessing) return 'processing';
     if (isSpeaking) return 'speaking';
     return 'idle';
