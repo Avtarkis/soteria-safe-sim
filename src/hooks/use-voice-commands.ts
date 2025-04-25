@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { ProcessedCommand } from '@/utils/voice/types';
 import { processVoiceCommand, generateCommandResponse } from '@/utils/voice-command-processor';
-import { toast } from '@/hooks/use-toast';
+import { toast } from './use-toast';
 
 export function useVoiceCommands() {
   const [activeCommand, setActiveCommand] = useState<ProcessedCommand | null>(null);

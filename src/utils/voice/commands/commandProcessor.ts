@@ -1,8 +1,9 @@
 
 import { ProcessedCommand, VoiceCommandType } from '../types';
-import { determineUrgency } from './urgencyDetector';
+import { determineUrgency } from '../commandTypes';
 import { extractParameters } from './parameterExtractor';
 import { deepgramService } from '@/services/deepgramService';
+import { determineCommandType } from '../commandTypes';
 
 export class CommandProcessor {
   public static async processCommand(text: string): Promise<ProcessedCommand | null> {
@@ -34,7 +35,10 @@ export class CommandProcessor {
     try {
       const sentiment = await deepgramService.analyzeSentiment(text);
       if (sentiment && sentiment.confidence > 0.8) {
-        return sentiment.commandType;
+        // Assuming the deepgramService now returns a type field instead of commandType
+        if ('type' in sentiment) {
+          return sentiment.type as VoiceCommandType;
+        }
       }
     } catch (error) {
       console.warn('Deepgram service unavailable, falling back to local processing');

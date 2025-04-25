@@ -1,82 +1,74 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSpeechRecognition } from './use-speech-recognition';
-import { enhancedDeepgramService } from '@/services/enhancedDeepgramService';
-import { openaiService } from '@/services/openaiService';
-import { toast } from '@/hooks/use-toast';
+import { useTextToSpeech } from './use-text-to-speech';
 import { processVoiceCommand, generateCommandResponse } from '@/utils/voice-command-processor';
+import { ProcessedCommand } from '@/utils/voice/types';
+import { toast } from './use-toast';
 
 interface UseVoiceAssistantOptions {
-  onCommand?: (command: string) => void;
+  onCommand?: (command: ProcessedCommand) => void;
   onResponse?: (response: string) => void;
+  onProcessingStateChange?: (isProcessing: boolean) => void;
 }
 
 export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResponse, setLastResponse] = useState<string>('');
-  const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
+  const [activeCommand, setActiveCommand] = useState<ProcessedCommand | null>(null);
+  const [lastTranscript, setLastTranscript] = useState('');
+  
+  const { speak, isSpeaking } = useTextToSpeech();
+  const { isListening, transcript, startListening, stopListening, error } = useSpeechRecognition();
 
-  const handleTranscript = useCallback(async (transcript: string) => {
-    if (!transcript.toLowerCase().includes('soteria')) {
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      // First, check if it's a command
-      const command = await processVoiceCommand(transcript);
+  // Process transcript to detect commands
+  useEffect(() => {
+    const processTranscript = async () => {
+      if (!transcript || transcript === lastTranscript) return;
       
-      if (command && command.type !== 'unknown' && command.type !== 'conversation') {
-        const response = await generateCommandResponse(command);
-        setLastResponse(response);
-        if (options.onResponse) {
-          options.onResponse(response);
-        }
-        
-        // Handle command execution
-        if (options.onCommand) {
-          options.onCommand(command.type);
-        }
-      } else {
-        // Handle as conversation
-        const messages = [
-          {
-            role: 'system' as const,
-            content: 'You are Soteria, an AI safety assistant. You help users with travel advice, cybersecurity, emergency situations, and finding safe routes. Be concise and helpful.'
-          },
-          ...conversationHistory,
-          { role: 'user' as const, content: transcript }
-        ];
-
-        const response = await openaiService.generateResponse(messages);
-        setLastResponse(response);
-        
-        if (options.onResponse) {
-          options.onResponse(response);
-        }
-
-        // Update conversation history
-        setConversationHistory(prev => [...prev, 
-          { role: 'user', content: transcript },
-          { role: 'assistant', content: response }
-        ]);
+      setLastTranscript(transcript);
+      setIsProcessing(true);
+      
+      if (options.onProcessingStateChange) {
+        options.onProcessingStateChange(true);
       }
-    } catch (error) {
-      console.error('Error processing voice input:', error);
-      toast({
-        title: "Processing Error",
-        description: "Failed to process your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [options, conversationHistory]);
-
-  const { isListening, startListening, stopListening, transcript, error } = useSpeechRecognition({
-    continuous: true,
-    language: 'en-US'
-  }, handleTranscript);
+      
+      try {
+        const command = await processVoiceCommand(transcript);
+        
+        if (command && command.type !== 'unknown') {
+          setActiveCommand(command);
+          
+          if (options.onCommand) {
+            options.onCommand(command);
+          }
+          
+          // Generate and speak response
+          const response = await generateCommandResponse(command);
+          setLastResponse(response);
+          
+          if (options.onResponse) {
+            options.onResponse(response);
+          }
+          
+          await speak(response);
+        }
+      } catch (error) {
+        console.error('Error processing transcript:', error);
+        toast({
+          title: "Command Processing Error",
+          description: "Failed to process your voice command."
+        });
+      } finally {
+        setIsProcessing(false);
+        if (options.onProcessingStateChange) {
+          options.onProcessingStateChange(false);
+        }
+      }
+    };
+    
+    processTranscript();
+  }, [transcript, lastTranscript, options, speak]);
 
   return {
     isListening,
@@ -85,7 +77,8 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
     stopListening,
     transcript,
     lastResponse,
+    activeCommand,
     error,
-    conversationHistory
+    isSpeaking
   };
 }
