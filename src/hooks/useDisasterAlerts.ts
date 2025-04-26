@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { DisasterAlert, DisasterAlertType, DisasterAlertSeverity } from '@/types/disasters.d';
+import { DisasterAlert } from '@/types/disasters';
 import reliefWebService from '@/services/reliefWebService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -53,7 +53,7 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
           id: '1',
           title: 'Flash Flood Warning',
           type: 'flood',
-          severity: 'medium',
+          severity: 'watch',
           location: 'Downtown Area',
           coordinates: [37.7749, -122.4194],
           description: 'Flash flooding possible in low-lying areas. Where every second counts, move to higher ground immediately.',
@@ -66,8 +66,8 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
         {
           id: '2',
           title: 'Wildfire Alert',
-          type: 'fire',
-          severity: 'high',
+          type: 'wildfire',
+          severity: 'warning',
           location: 'North County',
           coordinates: [37.8044, -122.2712],
           description: 'Rapidly spreading wildfire. Evacuation orders in effect. Where every second counts, follow evacuation routes.',
@@ -81,7 +81,7 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
           id: '3',
           title: 'Earthquake Advisory',
           type: 'earthquake',
-          severity: 'low',
+          severity: 'advisory',
           location: 'Regional',
           coordinates: [37.7858, -122.4064],
           description: 'Minor seismic activity detected. No immediate danger, but remain alert. Every second counts when preparing.',

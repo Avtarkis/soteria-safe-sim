@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/CardWrapper';
 import { AlertTriangle, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DisasterAlert } from '@/types/disasters.d';
+import { DisasterAlert } from '@/types/disasters';
 import { useToast } from '@/hooks/use-toast';
 
 interface DisasterAlertsCardProps {

@@ -18,3 +18,24 @@ export interface DisasterAlert {
   region: string;
   url?: string;
 }
+
+export interface WeatherAlert {
+  id: string;
+  title: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  location: string;
+  description: string;
+  date: string;
+  source: string;
+  expires?: string;
+  active: boolean;
+}
+
+export interface EmergencyService {
+  id: string;
+  name: string;
+  type: 'police' | 'fire' | 'medical' | 'general';
+  phoneNumber: string;
+  response_time?: number;
+}
