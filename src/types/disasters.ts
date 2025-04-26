@@ -8,11 +8,13 @@ export interface DisasterAlert {
   title: string;
   type: DisasterAlertType;
   severity: DisasterAlertSeverity;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  timestamp: string;
+  location: string;
+  coordinates: [number, number];
   description: string;
+  date: string;
   source: string;
+  active: boolean;
+  country: string;
+  region: string;
+  url?: string;
 }

@@ -31,7 +31,8 @@ const ThreatsMap = () => {
     threatMarkers, 
     disasterAlerts, 
     emergencyNumbers, 
-    handleRefresh 
+    handleRefresh,
+    checkForNewDisasterAlerts
   } = useThreatData(userLocation);
   
   // Get map state - initialize with legend showing
@@ -104,6 +105,15 @@ const ThreatsMap = () => {
     return destination;
   }, [destination]);
 
+  // Handler for refreshing disaster alerts
+  const handleRefreshDisasterAlerts = useCallback(() => {
+    checkForNewDisasterAlerts?.();
+    toast({
+      title: "Checking for Disaster Alerts",
+      description: "Fetching the latest humanitarian crisis information...",
+    });
+  }, [checkForNewDisasterAlerts, toast]);
+
   return (
     <div className="container pb-10 animate-fade-in">
       <ThreatsMapHeader destination={formattedDestination} />
@@ -153,6 +163,7 @@ const ThreatsMap = () => {
 
             <DisasterAlertsCard
               disasterAlerts={disasterAlerts}
+              onRefresh={handleRefreshDisasterAlerts}
             />
 
             <TravelAdvisoryCard />

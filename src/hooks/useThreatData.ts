@@ -15,7 +15,7 @@ export const useThreatData = (userLocation: [number, number] | null) => {
 
   // Use the split hooks
   const { loading: markersLoading, threatMarkers, loadThreatMarkers } = useThreatMarkers(userLocation);
-  const { disasterAlerts, loadDisasterAlerts } = useDisasterAlerts(userLocation);
+  const { disasterAlerts, loadDisasterAlerts, checkForNewAlerts: checkForNewDisasterAlerts } = useDisasterAlerts(userLocation);
   const { emergencyNumbers, loadEmergencyServices } = useEmergencyServices(userLocation);
 
   const handleRefresh = useCallback(async () => {
@@ -49,7 +49,8 @@ export const useThreatData = (userLocation: [number, number] | null) => {
     threatMarkers,
     disasterAlerts,
     emergencyNumbers,
-    handleRefresh
+    handleRefresh,
+    checkForNewDisasterAlerts
   };
 };
 
