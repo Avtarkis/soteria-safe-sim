@@ -12,7 +12,11 @@ const CommandsList: React.FC<CommandsListProps> = ({ activeCommand }) => {
     { type: 'emergency_call', text: "Soteria, call emergency services" },
     { type: 'location_share', text: "Soteria, send my location to contacts" },
     { type: 'start_recording', text: "Soteria, start recording evidence" },
-    { type: 'silent_alarm', text: "Soteria, activate silent alarm" }
+    { type: 'silent_alarm', text: "Soteria, activate silent alarm" },
+    { type: 'travel_advice', text: "Soteria, give me travel advice" },
+    { type: 'safe_route', text: "Soteria, find me a safe route" },
+    { type: 'help', text: "Soteria, help me" },
+    { type: 'weather_alert', text: "Soteria, check weather alerts" }
   ];
 
   return (

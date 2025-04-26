@@ -10,6 +10,7 @@ interface UseVoiceAssistantOptions {
   onCommand?: (command: ProcessedCommand) => void;
   onResponse?: (response: string) => void;
   onProcessingStateChange?: (isProcessing: boolean) => void;
+  fallbackMode?: 'aggressive' | 'normal' | 'minimal';
 }
 
 export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
@@ -17,9 +18,17 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
   const [lastResponse, setLastResponse] = useState<string>('');
   const [activeCommand, setActiveCommand] = useState<ProcessedCommand | null>(null);
   const [lastTranscript, setLastTranscript] = useState('');
+  const [errorCount, setErrorCount] = useState(0);
   
   const { speak, isSpeaking } = useTextToSpeech();
   const { isListening, transcript, startListening, stopListening, error } = useSpeechRecognition();
+
+  // Reset error count when starting listening
+  useEffect(() => {
+    if (isListening) {
+      setErrorCount(0);
+    }
+  }, [isListening]);
 
   // Process transcript to detect commands
   useEffect(() => {
@@ -52,13 +61,37 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
           }
           
           await speak(response);
+          setErrorCount(0); // Reset error count on successful command
+        } else if (command && command.type === 'unknown') {
+          // Handle unknown command
+          toast({
+            title: "Command Not Recognized",
+            description: "I'm not sure what you're asking. Try saying 'Soteria, help' for assistance.",
+            variant: "default"
+          });
+          
+          // Increase error count for unknown commands
+          setErrorCount(prev => prev + 1);
+          
+          // If multiple errors in a row, provide more guidance
+          if (errorCount >= 2) {
+            await speak("I'm having trouble understanding you. Try speaking clearly and saying 'Soteria' before your command.");
+          }
         }
-      } catch (error) {
-        console.error('Error processing transcript:', error);
+      } catch (err) {
+        console.error('Error processing transcript:', err);
+        setErrorCount(prev => prev + 1);
+        
         toast({
           title: "Command Processing Error",
-          description: "Failed to process your voice command."
+          description: "Failed to process your voice command. Please try again.",
+          variant: "destructive"
         });
+        
+        // Provide guidance after multiple errors
+        if (errorCount >= 2) {
+          await speak("I'm having technical difficulties. Please try again or check your microphone.");
+        }
       } finally {
         setIsProcessing(false);
         if (options.onProcessingStateChange) {
@@ -68,7 +101,7 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
     };
     
     processTranscript();
-  }, [transcript, lastTranscript, options, speak]);
+  }, [transcript, lastTranscript, options, speak, errorCount]);
 
   return {
     isListening,
@@ -79,6 +112,7 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
     lastResponse,
     activeCommand,
     error,
-    isSpeaking
+    isSpeaking,
+    errorCount
   };
 }

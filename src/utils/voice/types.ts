@@ -8,6 +8,12 @@ export type VoiceCommandType =
   | 'cybersecurity_info'
   | 'family_location'
   | 'safe_route'
+  | 'help'
+  | 'stop'
+  | 'cancel'
+  | 'weather_alert'
+  | 'medical_advice'
+  | 'personal_safety'
   | 'conversation'
   | 'unknown';
 
