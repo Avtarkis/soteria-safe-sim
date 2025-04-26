@@ -8,7 +8,7 @@ export const COMMAND_KEYWORDS = {
   silent_alarm: ['silent', 'alarm', 'alert', 'quiet', 'discreet'],
   travel_advice: ['travel', 'trip', 'journey', 'vacation', 'route', 'destination'],
   cybersecurity_info: ['cyber', 'security', 'password', 'hack', 'digital', 'online', 'privacy'],
-  family_location: ['family', 'kids', 'child', 'parent', 'locate', 'tracking'],
+  family_location: ['family', 'kids', 'child', 'parent', 'locate', 'tracking', 'grandma', 'grandpa', 'son', 'daughter', 'mom', 'dad'],
   safe_route: ['route', 'path', 'directions', 'navigate', 'safest', 'way'],
   help: ['help', 'assist', 'guide', 'support', 'information'],
   stop: ['stop', 'end', 'finish', 'terminate', 'halt'],
@@ -19,13 +19,22 @@ export const COMMAND_KEYWORDS = {
 } as const;
 
 export const determineCommandType = (text: string): VoiceCommandType => {
+  // First check for specific command keywords
   const scores = Object.entries(COMMAND_KEYWORDS).map(([type, keywords]) => ({
     type,
     score: keywords.filter(keyword => text.includes(keyword)).length
   }));
   
   scores.sort((a, b) => b.score - a.score);
-  return scores[0].score > 0 ? scores[0].type as VoiceCommandType : 'conversation';
+  
+  // If we have a clear command match with multiple keyword matches, use it
+  if (scores[0].score >= 2) {
+    return scores[0].type as VoiceCommandType;
+  }
+  
+  // If we have a weak match (just one keyword) or no match, 
+  // treat it as a conversation query
+  return 'conversation';
 };
 
 export const determineUrgency = (text: string): 'low' | 'medium' | 'high' => {

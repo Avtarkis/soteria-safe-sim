@@ -47,11 +47,12 @@ export const generateResponse = async (command: ProcessedCommand): Promise<strin
       return `I'll provide you with the latest cybersecurity information and safety tips.`;
       
     case 'family_location':
+      const familyMember = command.params?.member || 'family members';
       toast({
         title: "Family Locator",
-        description: "Locating family members."
+        description: `Locating ${familyMember}.`
       });
-      return `I'm checking the location of your family members now.`;
+      return `I'm checking the location of ${familyMember} now.`;
       
     case 'safe_route':
       toast({
@@ -93,7 +94,9 @@ export const generateResponse = async (command: ProcessedCommand): Promise<strin
       return `Here are some personal safety tips for your situation.`;
       
     case 'conversation':
-      return `I'm here to help. You can ask me to call emergency services, share your location, start recording, or activate a silent alarm.`;
+      // This should normally be handled by the openaiService in the voice-command-processor.ts
+      // This is a fallback in case the OpenAI call fails
+      return `I'm here to help with any safety or security concerns. What would you like to know?`;
       
     default:
       return `I didn't quite catch that. You can ask me to call for help, share your location, start recording, or activate a silent alarm.`;
