@@ -1,17 +1,17 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { DisasterAlert } from '@/types/disasters';
 import reliefWebService from '@/services/reliefWebService';
-import { useToast } from '@/hooks/use-toast';
 import { useLocationMapping } from './disaster-alerts/useLocationMapping';
 import { useSampleAlerts } from './disaster-alerts/useSampleAlerts';
 import { useAlertChecker } from './disaster-alerts/useAlertChecker';
+import { useAlertLocalization } from './disaster-alerts/useAlertLocalization';
 
 export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const [disasterAlerts, setDisasterAlerts] = useState<DisasterAlert[]>([]);
   const { getUserCountry } = useLocationMapping();
   const { getSampleDisasters } = useSampleAlerts();
   const { checkForNewAlerts } = useAlertChecker(userLocation);
+  const { localizeAlerts } = useAlertLocalization();
   
   const loadDisasterAlerts = useCallback(async (forceRefresh = false) => {
     try {
@@ -24,42 +24,24 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
       }
       
       const sampleDisasters = getSampleDisasters();
+      let alerts = sampleDisasters;
       
       if (userLocation) {
-        const localizedAlerts = [...sampleDisasters];
-        
-        if (userLocation[0] > 40 && userLocation[0] < 50 && userLocation[1] > -80 && userLocation[1] < -70) {
-          localizedAlerts.forEach(alert => {
-            alert.country = 'United States';
-            alert.region = 'New York';
-            alert.location = 'Northeast Region';
-          });
-        } else if (userLocation[0] > 30 && userLocation[0] < 40 && userLocation[1] > -100 && userLocation[1] < -90) {
-          localizedAlerts.forEach(alert => {
-            alert.country = 'United States';
-            alert.region = 'Texas';
-            alert.location = 'Southern Region';
-          });
-        }
-        
-        setDisasterAlerts(localizedAlerts);
-        return localizedAlerts;
+        alerts = localizeAlerts(sampleDisasters, userLocation);
       }
       
-      setDisasterAlerts(sampleDisasters);
-      return sampleDisasters;
+      setDisasterAlerts(alerts);
+      return alerts;
     } catch (error) {
       console.error('Error loading disaster alerts:', error);
       return [];
     }
-  }, [userLocation, getUserCountry, getSampleDisasters]);
+  }, [userLocation, getUserCountry, getSampleDisasters, localizeAlerts]);
   
-  // Initial load of alerts
   useEffect(() => {
     loadDisasterAlerts();
   }, [loadDisasterAlerts]);
   
-  // Periodic check for new alerts
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const userCountry = getUserCountry(userLocation);
