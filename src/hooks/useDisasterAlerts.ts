@@ -9,7 +9,6 @@ import { useAlertChecker } from './disaster-alerts/useAlertChecker';
 
 export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const [disasterAlerts, setDisasterAlerts] = useState<DisasterAlert[]>([]);
-  const { toast } = useToast();
   const { getUserCountry } = useLocationMapping();
   const { getSampleDisasters } = useSampleAlerts();
   const { checkForNewAlerts } = useAlertChecker(userLocation);
