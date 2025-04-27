@@ -5,13 +5,14 @@ import reliefWebService from '@/services/reliefWebService';
 import { useToast } from '@/hooks/use-toast';
 import { useLocationMapping } from './disaster-alerts/useLocationMapping';
 import { useSampleAlerts } from './disaster-alerts/useSampleAlerts';
+import { useAlertChecker } from './disaster-alerts/useAlertChecker';
 
 export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const [disasterAlerts, setDisasterAlerts] = useState<DisasterAlert[]>([]);
-  const [lastCheckTime, setLastCheckTime] = useState<string>(new Date().toISOString());
   const { toast } = useToast();
   const { getUserCountry } = useLocationMapping();
   const { getSampleDisasters } = useSampleAlerts();
+  const { checkForNewAlerts } = useAlertChecker(userLocation);
   
   const loadDisasterAlerts = useCallback(async (forceRefresh = false) => {
     try {
@@ -54,68 +55,38 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
     }
   }, [userLocation, getUserCountry, getSampleDisasters]);
   
-  const checkForNewAlerts = useCallback(async () => {
-    try {
-      const userCountry = getUserCountry(userLocation);
-      const newAlerts = await reliefWebService.checkForNewAlerts(lastCheckTime, userCountry);
-      
-      setLastCheckTime(new Date().toISOString());
-      
-      if (newAlerts.length > 0) {
-        setDisasterAlerts(prevAlerts => {
-          const newAlertsToAdd = newAlerts.filter(
-            newAlert => !prevAlerts.some(prevAlert => prevAlert.id === newAlert.id)
-          );
-          
-          if (newAlertsToAdd.length > 0) {
-            const highPriorityAlerts = newAlertsToAdd.filter(alert => alert.severity === 'warning');
-            
-            if (highPriorityAlerts.length > 0) {
-              toast({
-                title: "Urgent Humanitarian Alert",
-                description: highPriorityAlerts[0].title,
-                variant: "destructive"
-              });
-            } else {
-              toast({
-                title: "New Humanitarian Alert",
-                description: `${newAlertsToAdd[0].title} - ${newAlertsToAdd[0].location}`,
-              });
-            }
-          }
-          
-          return [...newAlertsToAdd, ...prevAlerts]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        });
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Error checking for new disaster alerts:', error);
-      return false;
-    }
-  }, [lastCheckTime, getUserCountry, userLocation, toast]);
-  
+  // Initial load of alerts
   useEffect(() => {
     loadDisasterAlerts();
   }, [loadDisasterAlerts]);
   
+  // Periodic check for new alerts
   useEffect(() => {
     const checkInterval = setInterval(() => {
-      checkForNewAlerts();
-    }, 3600000);
+      const userCountry = getUserCountry(userLocation);
+      checkForNewAlerts(userCountry).then(hasNewAlerts => {
+        if (hasNewAlerts) {
+          loadDisasterAlerts(true);
+        }
+      });
+    }, 3600000); // Check every hour
     
     return () => {
       clearInterval(checkInterval);
     };
-  }, [checkForNewAlerts]);
+  }, [checkForNewAlerts, getUserCountry, userLocation, loadDisasterAlerts]);
   
   return {
     disasterAlerts,
     loadDisasterAlerts,
-    checkForNewAlerts
+    checkForNewAlerts: async () => {
+      const userCountry = getUserCountry(userLocation);
+      const hasNewAlerts = await checkForNewAlerts(userCountry);
+      if (hasNewAlerts) {
+        await loadDisasterAlerts(true);
+      }
+      return hasNewAlerts;
+    }
   };
 };
 
