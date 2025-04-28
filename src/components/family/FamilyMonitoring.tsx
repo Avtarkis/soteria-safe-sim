@@ -52,23 +52,45 @@ const FamilyMonitoring = () => {
             switch (type) {
               case 'child': return `Child ${shortId}`;
               case 'senior': return `Senior ${shortId}`;
-              default: return `Adult ${shortId}`;
+              case 'adult': return `Adult ${shortId}`;
+              default: return `Family Member ${shortId}`;
             }
           };
           
-          const memberType = member.type as 'child' | 'adult' | 'senior';
+          // Ensure type is one of the allowed values in our FamilyMember interface
+          const memberType: 'child' | 'adult' | 'senior' = 
+            member.type === 'child' || member.type === 'senior' ? 
+            member.type as 'child' | 'senior' : 'adult';
           
+          // Safely extract location data with type checking
+          const locationData = member.member_locations && member.member_locations[0] ? member.member_locations[0] : null;
+          
+          // Default coordinates if none are available
+          const defaultCoords: [number, number] = userLocation || [37.7749, -122.4194];
+          
+          // Extract coordinates safely with proper typing
+          let coordinates: [number, number];
+          if (locationData && locationData.coordinates) {
+            // Handle PostgreSQL point data type conversion
+            const coords = locationData.coordinates;
+            if (typeof coords === 'object' && 'x' in coords && 'y' in coords) {
+              coordinates = [coords.x as number, coords.y as number];
+            } else {
+              coordinates = defaultCoords;
+            }
+          } else {
+            coordinates = defaultCoords;
+          }
+
           return {
             id: member.id,
             name: getMemberName(memberType, member.id),
             type: memberType,
             location: {
-              name: member.member_locations?.[0]?.location_name || 'Unknown',
-              type: (member.member_locations?.[0]?.location_type || 'other') as 'home' | 'school' | 'work' | 'other',
-              coordinates: member.member_locations?.[0]?.coordinates 
-                ? [(member.member_locations[0].coordinates as any).x, (member.member_locations[0].coordinates as any).y] as [number, number]
-                : [0, 0] as [number, number],
-              lastUpdated: member.member_locations?.[0]?.last_updated || new Date().toISOString()
+              name: locationData?.location_name || 'Unknown',
+              type: (locationData?.location_type as 'home' | 'school' | 'work' | 'other') || 'other',
+              coordinates: coordinates,
+              lastUpdated: locationData?.last_updated || new Date().toISOString()
             },
             status: 'online',
             lastCheckIn: new Date().toISOString(),
@@ -134,18 +156,28 @@ const FamilyMonitoring = () => {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'member_locations' },
         (payload) => {
+          if (!payload.new) return;
+          
           setMembers(currentMembers => {
             return currentMembers.map(member => {
+              // Check if this update is for this member
               if (member.id === payload.new.member_id) {
-                const newCoords = payload.new.coordinates 
-                  ? [(payload.new.coordinates as any).x, (payload.new.coordinates as any).y] as [number, number]
-                  : member.location.coordinates;
-                  
+                // Safely extract new coordinates with proper typing
+                let newCoords: [number, number] = member.location.coordinates;
+                
+                if (payload.new.coordinates) {
+                  // Handle PostgreSQL point data type
+                  const coords = payload.new.coordinates;
+                  if (typeof coords === 'object' && 'x' in coords && 'y' in coords) {
+                    newCoords = [coords.x as number, coords.y as number];
+                  }
+                }
+                
                 return {
                   ...member,
                   location: {
                     name: payload.new.location_name || member.location.name,
-                    type: (payload.new.location_type || member.location.type) as 'home' | 'school' | 'work' | 'other',
+                    type: (payload.new.location_type as 'home' | 'school' | 'work' | 'other') || member.location.type,
                     coordinates: newCoords,
                     lastUpdated: payload.new.last_updated || member.location.lastUpdated
                   }

@@ -11,6 +11,7 @@ import AlertsPage from '@/pages/AlertsPage';
 import EmergencyPage from '@/pages/EmergencyPage';
 import CyberSecurityPage from '@/pages/CyberSecurityPage';
 import FamilyPage from '@/pages/FamilyPage';
+import FamilyInvitePage from '@/pages/FamilyInvitePage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import NotFoundPage from '@/pages/NotFound';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -71,6 +72,11 @@ function App() {
         <Route path="family" element={
           <ProtectedRoute>
             <FamilyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="family/invite" element={
+          <ProtectedRoute>
+            <FamilyInvitePage />
           </ProtectedRoute>
         } />
         <Route path="cyber" element={
