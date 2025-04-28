@@ -30,7 +30,8 @@ const ThreatsMap = () => {
     refreshing, 
     threatMarkers, 
     disasterAlerts, 
-    emergencyNumbers, 
+    emergencyNumbers,
+    countryCode,
     handleRefresh,
     checkForNewDisasterAlerts
   } = useThreatData(userLocation);
@@ -154,6 +155,8 @@ const ThreatsMap = () => {
             
             <EmergencyNumbersCard
               emergencyNumbers={emergencyNumbers}
+              userLocation={userLocation}
+              countryCode={countryCode}
             />
             
             <NearbyAlertsCard
@@ -166,7 +169,10 @@ const ThreatsMap = () => {
               onRefresh={handleRefreshDisasterAlerts}
             />
 
-            <TravelAdvisoryCard />
+            <TravelAdvisoryCard 
+              userLocation={userLocation}
+              countryCode={countryCode}
+            />
           </div>
         </div>
       </div>

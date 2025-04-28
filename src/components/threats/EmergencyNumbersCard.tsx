@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { PhoneCall, Clock, Globe, ShieldAlert } from 'lucide-react';
@@ -18,6 +19,47 @@ const EmergencyNumbersCard = ({
   const [emergencyNumbers, setEmergencyNumbers] = useState<EmergencyService[]>(initialEmergencyNumbers);
   const [locationBased, setLocationBased] = useState<boolean>(false);
   const [loadingLocation, setLoadingLocation] = useState<boolean>(false);
+
+  // Set default numbers if none are provided
+  useEffect(() => {
+    if (initialEmergencyNumbers && initialEmergencyNumbers.length > 0) {
+      setEmergencyNumbers(initialEmergencyNumbers);
+      setLocationBased(true);
+    } else {
+      // Default emergency numbers if none are provided
+      const defaultNumbers = [
+        {
+          id: '1',
+          name: 'Emergency Services',
+          type: 'general',
+          phoneNumber: '911',
+          response_time: 5
+        },
+        {
+          id: '2',
+          name: 'Police Department',
+          type: 'police',
+          phoneNumber: '911',
+          response_time: 7
+        },
+        {
+          id: '3',
+          name: 'Medical Emergency',
+          type: 'medical',
+          phoneNumber: '911',
+          response_time: 6
+        },
+        {
+          id: '4',
+          name: 'Fire Department',
+          type: 'fire',
+          phoneNumber: '911',
+          response_time: 8
+        }
+      ];
+      setEmergencyNumbers(defaultNumbers);
+    }
+  }, [initialEmergencyNumbers]);
 
   useEffect(() => {
     const fetchLocationBasedNumbers = async () => {

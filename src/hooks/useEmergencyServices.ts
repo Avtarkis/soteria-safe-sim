@@ -114,8 +114,8 @@ export const useEmergencyServices = (userLocation: [number, number] | null) => {
   
   return {
     emergencyNumbers,
-    loadEmergencyServices,
     countryCode,
+    loadEmergencyServices,
     isLoading
   };
 };

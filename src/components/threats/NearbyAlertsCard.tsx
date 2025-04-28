@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { AlertTriangle, CheckCircle2, Info, MapPin, Shield } from 'lucide-react';
@@ -15,24 +16,47 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
   const { toast } = useToast();
   const alertShownRef = React.useRef(false);
   
+  // Using a ref to track if we've already generated alerts to prevent the titles from changing
+  const alertsGeneratedRef = React.useRef(false);
+  
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !alertsGeneratedRef.current) {
       try {
         const nearbyThreats = getNearbyAlerts();
         
         // Filter to ensure we're not showing too many alerts
-        const filteredThreats = nearbyThreats.slice(0, 1); // Limit to max 1 alert
+        const filteredThreats = nearbyThreats.slice(0, 2); // Limit to max 2 alerts
         
-        // Ensure we don't show high-level alerts too often by downgrading some
-        const limitedThreats = filteredThreats.map(threat => {
-          // Reduce the chance of high alerts - make all alerts low for now to avoid blinking
-          return { ...threat, level: 'low' as 'low' };
+        // Ensure we only show stable, consistent alerts
+        const stableThreats = filteredThreats.map((threat, index) => {
+          // Create stable, consistent titles based on the threat's type and location
+          const stableTitles = {
+            physical: 'Local Community Notice',
+            cyber: 'Digital Security Alert',
+            weather: 'Local Weather Update'
+          };
+          
+          return { 
+            ...threat, 
+            level: 'low' as 'low',
+            title: stableTitles[threat.type as keyof typeof stableTitles] || 'Local Information'
+          };
         });
         
-        setAlerts(limitedThreats);
+        if (stableThreats.length === 0) {
+          // If no threats nearby, add a default community notice
+          stableThreats.push({
+            id: 'default-local-info',
+            position: [0, 0],
+            level: 'low' as 'low',
+            title: 'Local Community Notice',
+            details: 'No specific alerts in your area at this time.',
+            type: 'physical'
+          });
+        }
         
-        // Completely disable toast notifications for now to prevent blinking
-        // We'll only show in the UI
+        setAlerts(stableThreats);
+        alertsGeneratedRef.current = true; // Mark that we've generated alerts
       } catch (error) {
         console.error("Error loading nearby alerts:", error);
       }
@@ -112,6 +136,9 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
                        alert.level === 'medium' ? 'Info' : 'General Info'}
                     </span>
                   </div>
+                  {alert.details && (
+                    <p className="text-xs mt-1 text-muted-foreground">{alert.details}</p>
+                  )}
                 </div>
               </div>
             ))
