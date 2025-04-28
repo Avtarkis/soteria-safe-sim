@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Crosshair, Navigation, Eye, EyeOff, RefreshCw, MapPin } from 'lucide-react';
@@ -80,6 +79,7 @@ const MapActionButtons = ({
     });
   }, [showUserLocation, toggleUserLocation, toast]);
   
+
   return (
     <div className={cn(
       "absolute top-4 left-4 z-30",
