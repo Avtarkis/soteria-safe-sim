@@ -9,7 +9,167 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      family_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      family_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          family_group_id: string
+          id: string
+          invitation_code: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          family_group_id: string
+          id?: string
+          invitation_code: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          family_group_id?: string
+          id?: string
+          invitation_code?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_invitations_family_group_id_fkey"
+            columns: ["family_group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_members: {
+        Row: {
+          created_at: string
+          family_group_id: string
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_group_id: string
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          family_group_id?: string
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_group_id_fkey"
+            columns: ["family_group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_locations: {
+        Row: {
+          coordinates: unknown
+          id: string
+          last_updated: string
+          location_name: string
+          location_type: string
+          member_id: string
+        }
+        Insert: {
+          coordinates: unknown
+          id?: string
+          last_updated?: string
+          location_name: string
+          location_type: string
+          member_id: string
+        }
+        Update: {
+          coordinates?: unknown
+          id?: string
+          last_updated?: string
+          location_name?: string
+          location_type?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_locations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sharing_permissions: {
+        Row: {
+          id: string
+          member_id: string
+          shares_health: boolean | null
+          shares_location: boolean | null
+          shares_safety: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          shares_health?: boolean | null
+          shares_location?: boolean | null
+          shares_safety?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          member_id?: string
+          shares_health?: boolean | null
+          shares_location?: boolean | null
+          shares_safety?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sharing_permissions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

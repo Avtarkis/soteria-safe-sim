@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/CardWr
 import { Button } from '@/components/ui/button';
 import { School, Heart, Briefcase, UserPlus } from 'lucide-react';
 import { FamilyMember } from '@/types/family';
+import { useNavigate } from 'react-router-dom';
 
 interface FamilyMemberListProps {
   members: FamilyMember[];
@@ -13,6 +14,8 @@ interface FamilyMemberListProps {
 }
 
 const FamilyMemberList = ({ members, selectedMemberId, onSelectMember, loading }: FamilyMemberListProps) => {
+  const navigate = useNavigate();
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -26,12 +29,16 @@ const FamilyMemberList = ({ members, selectedMemberId, onSelectMember, loading }
     }
   };
 
+  const handleAddMember = () => {
+    navigate('/family/invite');
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center justify-between">
           Family Members
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleAddMember}>
             <UserPlus className="h-4 w-4" />
           </Button>
         </CardTitle>
@@ -60,7 +67,9 @@ const FamilyMemberList = ({ members, selectedMemberId, onSelectMember, loading }
                         <Briefcase className="h-5 w-5 text-primary" />
                       )}
                     </div>
-                    <div className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${getStatusColor(member.status)}`}></div>
+                    <div 
+                      className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${getStatusColor(member.status)}`}
+                    />
                   </div>
                   <div>
                     <div className="font-medium">{member.name}</div>

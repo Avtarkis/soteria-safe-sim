@@ -23,3 +23,30 @@ export interface FamilyMember {
     description?: string;
   };
 }
+
+export interface FamilyGroup {
+  id: string;
+  name: string;
+  createdAt: string;
+  createdBy: string;
+  members: FamilyMember[];
+}
+
+export interface FamilyInvitation {
+  id: string;
+  familyGroupId: string;
+  email: string;
+  invitationCode: string;
+  status: 'pending' | 'accepted' | 'expired';
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface SharingPermissions {
+  id: string;
+  memberId: string;
+  sharesLocation: boolean;
+  sharesHealth: boolean;
+  sharesSafety: boolean;
+  updatedAt: string;
+}

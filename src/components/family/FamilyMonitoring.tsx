@@ -3,7 +3,8 @@ import { useToast } from '@/hooks/use-toast';
 import FamilyMemberList from './FamilyMemberList';
 import FamilyMemberDetails from './FamilyMemberDetails';
 import useUserLocation from '@/hooks/useUserLocation';
-import { FamilyMember } from '@/types/family';
+import { FamilyMember, FamilyGroup } from '@/types/family';
+import { supabase } from '@/integrations/supabase/client';
 
 const FamilyMonitoring = () => {
   const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -12,92 +13,50 @@ const FamilyMonitoring = () => {
   const { toast } = useToast();
   const { userLocation } = useUserLocation();
 
-  // Load family members
   useEffect(() => {
     const fetchFamilyMembers = async () => {
-      setLoading(true);
       try {
-        // In a real app, this would come from an API
-        const baseCoords: [number, number] = userLocation || [34.052235, -118.243683];
-        
-        const mockMembers: FamilyMember[] = [
-          {
-            id: '1',
-            name: 'Sarah',
-            type: 'child',
-            location: {
-              name: 'Lincoln High School',
-              type: 'school',
-              coordinates: [
-                baseCoords[0] + 0.01, 
-                baseCoords[1] - 0.005
-              ],
-              lastUpdated: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-            },
-            status: 'online',
-            lastCheckIn: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            batteryLevel: 78,
-            safeZones: [
-              { id: '1', name: 'Home', type: 'home', status: 'outside' },
-              { id: '2', name: 'School', type: 'school', status: 'inside' },
-              { id: '3', name: 'Grandparents', type: 'other', status: 'outside' },
-            ],
-            healthStatus: {
-              status: 'normal',
-              description: 'All vital signs normal',
-            },
-          },
-          {
-            id: '2',
-            name: 'John',
-            type: 'adult',
-            location: {
-              name: 'Downtown Office',
-              type: 'work',
-              coordinates: [
-                baseCoords[0] - 0.005, 
-                baseCoords[1] + 0.01
-              ],
-              lastUpdated: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-            },
-            status: 'online',
-            lastCheckIn: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            batteryLevel: 45,
-            safeZones: [
-              { id: '1', name: 'Home', type: 'home', status: 'outside' },
-              { id: '4', name: 'Office', type: 'work', status: 'inside' },
-            ],
-          },
-          {
-            id: '3',
-            name: 'Grandma',
-            type: 'senior',
-            location: {
-              name: 'Home',
-              type: 'home',
-              coordinates: [
-                baseCoords[0] + 0.008, 
-                baseCoords[1] + 0.007
-              ],
-              lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            },
-            status: 'online',
-            lastCheckIn: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            batteryLevel: 92,
-            safeZones: [
-              { id: '5', name: 'Home', type: 'home', status: 'inside' },
-              { id: '6', name: 'Community Center', type: 'other', status: 'outside' },
-            ],
-            healthStatus: {
-              status: 'warning',
-              description: 'Slightly elevated heart rate, monitoring',
-            },
-          },
-        ];
+        const { data: familyGroups, error: groupsError } = await supabase
+          .from('family_groups')
+          .select('*');
 
-        setMembers(mockMembers);
-        if (mockMembers.length > 0) {
-          setSelectedMemberId(mockMembers[0].id);
+        if (groupsError) throw groupsError;
+
+        const { data: members, error: membersError } = await supabase
+          .from('family_members')
+          .select(`
+            *,
+            member_locations (
+              location_name,
+              location_type,
+              coordinates,
+              last_updated
+            ),
+            sharing_permissions (*)
+          `)
+          .in('family_group_id', familyGroups.map(g => g.id));
+
+        if (membersError) throw membersError;
+
+        const transformedMembers: FamilyMember[] = members.map(member => ({
+          id: member.id,
+          name: member.name,
+          type: member.type,
+          location: {
+            name: member.member_locations?.[0]?.location_name || 'Unknown',
+            type: member.member_locations?.[0]?.location_type || 'other',
+            coordinates: member.member_locations?.[0]?.coordinates || [0, 0],
+            lastUpdated: member.member_locations?.[0]?.last_updated || new Date().toISOString()
+          },
+          status: 'online',
+          lastCheckIn: new Date().toISOString(),
+          batteryLevel: 100,
+          safeZones: []
+        }));
+
+        setMembers(transformedMembers);
+        if (transformedMembers.length > 0 && !selectedMemberId) {
+          setSelectedMemberId(transformedMembers[0].id);
         }
       } catch (error) {
         console.error('Error fetching family members:', error);
@@ -112,10 +71,37 @@ const FamilyMonitoring = () => {
     };
 
     fetchFamilyMembers();
+
+    const channel = supabase
+      .channel('family-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'member_locations' },
+        (payload) => {
+          setMembers(currentMembers => {
+            return currentMembers.map(member => {
+              if (member.id === payload.new.member_id) {
+                return {
+                  ...member,
+                  location: {
+                    name: payload.new.location_name,
+                    type: payload.new.location_type,
+                    coordinates: payload.new.coordinates,
+                    lastUpdated: payload.new.last_updated
+                  }
+                };
+              }
+              return member;
+            });
+          });
+        })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [toast, userLocation]);
 
-  // Request check-in
-  const requestCheckIn = (memberId: string) => {
+  const requestCheckIn = async (memberId: string) => {
     const member = members.find(m => m.id === memberId);
     if (!member) return;
     
@@ -125,8 +111,7 @@ const FamilyMonitoring = () => {
     });
   };
 
-  // Make emergency call
-  const callEmergency = (memberId: string) => {
+  const callEmergency = async (memberId: string) => {
     const member = members.find(m => m.id === memberId);
     if (!member) return;
     
