@@ -33,7 +33,7 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
           const stableTitle = 
             threat.type === 'physical' ? 'Local Community Notice' :
             threat.type === 'cyber' ? 'Digital Security Alert' :
-            threat.type === 'weather' ? 'Local Weather Update' :
+            threat.type === 'environmental' ? 'Local Weather Update' : // Changed from 'weather' to 'environmental'
             'Local Information';
           
           return { 
