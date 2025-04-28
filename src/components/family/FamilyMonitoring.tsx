@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Clock, School, Briefcase, Phone, UserPlus, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import FamilyMap from './FamilyMap';
+import useUserLocation from '@/hooks/useUserLocation';
 
 interface FamilyMember {
   id: string;
@@ -37,6 +39,7 @@ const FamilyMonitoring = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { userLocation } = useUserLocation();
 
   // Load family members
   useEffect(() => {
@@ -44,6 +47,9 @@ const FamilyMonitoring = () => {
       setLoading(true);
       try {
         // In a real app, this would come from an API
+        // We're using dynamic coordinates based on user's location or defaults
+        const baseCoords: [number, number] = userLocation || [34.052235, -118.243683];
+        
         const mockMembers: FamilyMember[] = [
           {
             id: '1',
@@ -52,7 +58,10 @@ const FamilyMonitoring = () => {
             location: {
               name: 'Lincoln High School',
               type: 'school',
-              coordinates: [34.052235, -118.243683],
+              coordinates: [
+                baseCoords[0] + 0.01, 
+                baseCoords[1] - 0.005
+              ],
               lastUpdated: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
             },
             status: 'online',
@@ -75,7 +84,10 @@ const FamilyMonitoring = () => {
             location: {
               name: 'Downtown Office',
               type: 'work',
-              coordinates: [34.043979, -118.251339],
+              coordinates: [
+                baseCoords[0] - 0.005, 
+                baseCoords[1] + 0.01
+              ],
               lastUpdated: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
             },
             status: 'online',
@@ -93,7 +105,10 @@ const FamilyMonitoring = () => {
             location: {
               name: 'Home',
               type: 'home',
-              coordinates: [34.061899, -118.299004],
+              coordinates: [
+                baseCoords[0] + 0.008, 
+                baseCoords[1] + 0.007
+              ],
               lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
             },
             status: 'online',
@@ -127,7 +142,7 @@ const FamilyMonitoring = () => {
     };
 
     fetchFamilyMembers();
-  }, [toast]);
+  }, [toast, userLocation]);
 
   // Send check-in request
   const requestCheckIn = (memberId: string) => {
@@ -152,6 +167,7 @@ const FamilyMonitoring = () => {
     });
   };
 
+  // Utility functions
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -321,9 +337,12 @@ const FamilyMonitoring = () => {
                     
                     <TabsContent value="location" className="py-4">
                       <div className="space-y-4">
-                        <div className="rounded-lg bg-muted h-[200px] flex items-center justify-center">
-                          <MapPin className="h-8 w-8 text-muted-foreground" />
-                          <span className="ml-2 text-muted-foreground">Map view</span>
+                        <div className="rounded-lg bg-muted h-[200px] overflow-hidden relative">
+                          <FamilyMap 
+                            selectedMember={selectedMember} 
+                            familyMembers={members}
+                            userLocation={userLocation}
+                          />
                         </div>
                         
                         <div className="space-y-2">

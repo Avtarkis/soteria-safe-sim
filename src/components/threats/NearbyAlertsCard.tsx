@@ -27,19 +27,19 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
         // Filter to ensure we're not showing too many alerts
         const filteredThreats = nearbyThreats.slice(0, 2); // Limit to max 2 alerts
         
-        // Ensure we only show stable, consistent alerts
-        const stableThreats = filteredThreats.map((threat, index) => {
-          // Create stable, consistent titles based on the threat's type and location
-          const stableTitles = {
-            physical: 'Local Community Notice',
-            cyber: 'Digital Security Alert',
-            weather: 'Local Weather Update'
-          };
+        // Create stable, consistent titles for alerts
+        const stableThreats = filteredThreats.map((threat) => {
+          // Fixed titles based on the threat's type
+          const stableTitle = 
+            threat.type === 'physical' ? 'Local Community Notice' :
+            threat.type === 'cyber' ? 'Digital Security Alert' :
+            threat.type === 'weather' ? 'Local Weather Update' :
+            'Local Information';
           
           return { 
             ...threat, 
-            level: 'low' as 'low',
-            title: stableTitles[threat.type as keyof typeof stableTitles] || 'Local Information'
+            level: threat.level || 'low',
+            title: stableTitle
           };
         });
         
@@ -48,7 +48,7 @@ const NearbyAlertsCard = ({ loading, getNearbyAlerts }: NearbyAlertsCardProps) =
           stableThreats.push({
             id: 'default-local-info',
             position: [0, 0],
-            level: 'low' as 'low',
+            level: 'low',
             title: 'Local Community Notice',
             details: 'No specific alerts in your area at this time.',
             type: 'physical'

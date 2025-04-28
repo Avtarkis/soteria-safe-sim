@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { EmergencyService } from '@/types/disasters.d';
+import { EmergencyService } from '@/types/emergency.d';
 import { emergencyService } from '@/services/emergencyService';
 
 export const useEmergencyServices = (userLocation: [number, number] | null) => {

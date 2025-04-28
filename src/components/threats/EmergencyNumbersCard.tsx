@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { PhoneCall, Clock, Globe, ShieldAlert } from 'lucide-react';
-import { EmergencyService } from '@/types/disasters.d';
+import { EmergencyService } from '@/types/emergency.d';
 import { emergencyService } from '@/services/emergencyService';
 
 interface EmergencyNumbersCardProps {
@@ -27,7 +27,7 @@ const EmergencyNumbersCard = ({
       setLocationBased(true);
     } else {
       // Default emergency numbers if none are provided
-      const defaultNumbers = [
+      const defaultNumbers: EmergencyService[] = [
         {
           id: '1',
           name: 'Emergency Services',
