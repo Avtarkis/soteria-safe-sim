@@ -73,9 +73,9 @@ const TicketDetailPage = () => {
           userId: ticketData.user_id,
           title: ticketData.title,
           description: ticketData.description,
-          status: ticketData.status,
-          priority: ticketData.priority,
-          category: ticketData.category,
+          status: ticketData.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+          priority: ticketData.priority as 'low' | 'medium' | 'high' | 'urgent',
+          category: ticketData.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticketData.created_at,
           updatedAt: ticketData.updated_at
         });
@@ -92,7 +92,7 @@ const TicketDetailPage = () => {
         setMessages(messagesData.map(msg => ({
           id: msg.id,
           ticketId: msg.ticket_id,
-          userId: msg.user_id,
+          userId: msg.user_id || '',
           isAdmin: msg.is_admin,
           message: msg.message,
           attachmentUrl: msg.attachment_url,
@@ -122,7 +122,7 @@ const TicketDetailPage = () => {
           setMessages(current => [...current, {
             id: newMsg.id,
             ticketId: newMsg.ticket_id,
-            userId: newMsg.user_id,
+            userId: newMsg.user_id || '',
             isAdmin: newMsg.is_admin,
             message: newMsg.message,
             attachmentUrl: newMsg.attachment_url,
@@ -141,7 +141,7 @@ const TicketDetailPage = () => {
           const updatedTicket = payload.new as any;
           setTicket(current => current ? {
             ...current,
-            status: updatedTicket.status,
+            status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
             updatedAt: updatedTicket.updated_at
           } : null);
         }

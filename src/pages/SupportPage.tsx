@@ -55,9 +55,9 @@ const SupportPage = () => {
           userId: ticket.user_id,
           title: ticket.title,
           description: ticket.description,
-          status: ticket.status,
-          priority: ticket.priority,
-          category: ticket.category,
+          status: ticket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+          priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
+          category: ticket.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at
         })));
