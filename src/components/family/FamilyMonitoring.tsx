@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import FamilyMemberList from './FamilyMemberList';
@@ -156,18 +155,27 @@ const FamilyMonitoring = () => {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'member_locations' },
         (payload) => {
-          if (!payload.new) return;
+          // Type assertion to ensure we have access to the properties
+          const newData = payload.new as {
+            member_id?: string;
+            coordinates?: { x: number; y: number } | any;
+            location_name?: string;
+            location_type?: string;
+            last_updated?: string;
+          } | null;
+          
+          if (!newData || !newData.member_id) return;
           
           setMembers(currentMembers => {
             return currentMembers.map(member => {
               // Check if this update is for this member
-              if (member.id === payload.new.member_id) {
+              if (member.id === newData.member_id) {
                 // Safely extract new coordinates with proper typing
                 let newCoords: [number, number] = member.location.coordinates;
                 
-                if (payload.new.coordinates) {
+                if (newData.coordinates) {
                   // Handle PostgreSQL point data type
-                  const coords = payload.new.coordinates;
+                  const coords = newData.coordinates;
                   if (typeof coords === 'object' && 'x' in coords && 'y' in coords) {
                     newCoords = [coords.x as number, coords.y as number];
                   }
@@ -176,10 +184,10 @@ const FamilyMonitoring = () => {
                 return {
                   ...member,
                   location: {
-                    name: payload.new.location_name || member.location.name,
-                    type: (payload.new.location_type as 'home' | 'school' | 'work' | 'other') || member.location.type,
+                    name: newData.location_name || member.location.name,
+                    type: (newData.location_type as 'home' | 'school' | 'work' | 'other') || member.location.type,
                     coordinates: newCoords,
-                    lastUpdated: payload.new.last_updated || member.location.lastUpdated
+                    lastUpdated: newData.last_updated || member.location.lastUpdated
                   }
                 };
               }

@@ -18,6 +18,10 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
+import AdminSupportPage from '@/pages/AdminSupportPage';
+import AdminTicketDetailPage from '@/pages/AdminTicketDetailPage';
+import SupportPage from '@/pages/SupportPage';
+import TicketDetailPage from '@/pages/TicketDetailPage';
 import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
 import SettingsPage from '@/pages/SettingsPage';
@@ -90,6 +94,18 @@ function App() {
           </ProtectedRoute>
         } />
         
+        {/* Support routes */}
+        <Route path="support" element={
+          <ProtectedRoute>
+            <SupportPage />
+          </ProtectedRoute>
+        } />
+        <Route path="support/ticket/:ticketId" element={
+          <ProtectedRoute>
+            <TicketDetailPage />
+          </ProtectedRoute>
+        } />
+        
         {/* Admin routes */}
         <Route path="admin" element={
           <ProtectedRoute>
@@ -104,6 +120,16 @@ function App() {
         <Route path="admin/threats" element={
           <ProtectedRoute>
             <AdminThreatsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/support" element={
+          <ProtectedRoute>
+            <AdminSupportPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/support/ticket/:ticketId" element={
+          <ProtectedRoute>
+            <AdminTicketDetailPage />
           </ProtectedRoute>
         } />
         
