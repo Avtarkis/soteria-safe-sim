@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import FamilyMemberList from './FamilyMemberList';
@@ -162,7 +163,7 @@ const FamilyMonitoring = () => {
             location_name?: string;
             location_type?: string;
             last_updated?: string;
-          } | null;
+          };
           
           if (!newData || !newData.member_id) return;
           

@@ -52,7 +52,7 @@ export const AdminSupportManagement = () => {
       setLoading(true);
       try {
         // Start with the basic query
-        let query = supabase
+        const { data, error } = await supabase
           .from('support_tickets')
           .select(`
             *,
@@ -60,30 +60,22 @@ export const AdminSupportManagement = () => {
           `)
           .order('created_at', { ascending: false });
 
-        // Add filters if they're not set to 'all'
-        if (statusFilter !== 'all') {
-          query = query.eq('status', statusFilter);
-        }
-        
-        // Execute the query
-        const { data, error } = await query;
-        
         if (error) throw error;
         
-        // Transform the data
-        const transformedTickets: SupportTicket[] = data.map(ticket => ({
+        // Transform the data to match our interface
+        const transformedTickets: SupportTicket[] = (data || []).map(ticket => ({
           id: ticket.id,
           userId: ticket.user_id,
           title: ticket.title,
           description: ticket.description,
-          status: ticket.status,
-          priority: ticket.priority,
-          category: ticket.category,
+          status: ticket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+          priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
+          category: ticket.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at,
           // Add the user email from the joined data
           userEmail: ticket.users?.email || 'Unknown'
-        })) as SupportTicket[];
+        }));
         
         setTickets(transformedTickets);
       } catch (error) {
@@ -121,11 +113,12 @@ export const AdminSupportManagement = () => {
     const matchesSearch = 
       ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.userEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+      (ticket.userEmail && ticket.userEmail.toLowerCase().includes(searchTerm.toLowerCase()));
       
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
       
-    return matchesSearch && matchesPriority;
+    return matchesSearch && matchesPriority && matchesStatus;
   });
   
   const getStatusIcon = (status: string) => {
@@ -316,7 +309,7 @@ export const AdminSupportManagement = () => {
                   filteredTickets.map((ticket) => (
                     <TableRow key={ticket.id} className="group">
                       <TableCell className="font-mono text-xs">{ticket.id.substring(0, 8)}</TableCell>
-                      <TableCell>{(ticket as any).userEmail || 'Unknown'}</TableCell>
+                      <TableCell>{ticket.userEmail || 'Unknown'}</TableCell>
                       <TableCell className="font-medium">{ticket.title}</TableCell>
                       <TableCell>{getCategoryLabel(ticket.category)}</TableCell>
                       <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>

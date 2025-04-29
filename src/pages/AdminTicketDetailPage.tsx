@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -88,9 +88,9 @@ const AdminTicketDetailPage = () => {
           userId: ticketData.user_id,
           title: ticketData.title,
           description: ticketData.description,
-          status: ticketData.status,
-          priority: ticketData.priority,
-          category: ticketData.category,
+          status: ticketData.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+          priority: ticketData.priority as 'low' | 'medium' | 'high' | 'urgent',
+          category: ticketData.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticketData.created_at,
           updatedAt: ticketData.updated_at,
           userEmail: ticketData.users?.email
@@ -157,7 +157,7 @@ const AdminTicketDetailPage = () => {
           const updatedTicket = payload.new as any;
           setTicket(current => current ? {
             ...current,
-            status: updatedTicket.status,
+            status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
             updatedAt: updatedTicket.updated_at
           } : null);
         }
@@ -211,7 +211,7 @@ const AdminTicketDetailPage = () => {
     }
   };
   
-  const handleUpdateStatus = async (newStatus: string) => {
+  const handleUpdateStatus = async (newStatus: 'open' | 'in_progress' | 'resolved' | 'closed') => {
     if (!ticket) return;
     
     setUpdatingStatus(true);
@@ -381,7 +381,7 @@ const AdminTicketDetailPage = () => {
             <div className="flex items-center gap-2">
               <Select
                 value={ticket.status}
-                onValueChange={handleUpdateStatus}
+                onValueChange={(value) => handleUpdateStatus(value as 'open' | 'in_progress' | 'resolved' | 'closed')}
                 disabled={updatingStatus}
               >
                 <SelectTrigger className="w-[180px]">

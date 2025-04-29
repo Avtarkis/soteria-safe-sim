@@ -9,6 +9,7 @@ export interface SupportTicket {
   category: 'technical' | 'billing' | 'account' | 'feature_request' | 'other';
   createdAt: string;
   updatedAt: string;
+  userEmail?: string; // Adding this to support the email display
 }
 
 export interface TicketMessage {
