@@ -50,7 +50,7 @@ const SupportPage = () => {
         
         if (error) throw error;
         
-        setTickets(data.map(ticket => ({
+        const transformedTickets: SupportTicket[] = data.map(ticket => ({
           id: ticket.id,
           userId: ticket.user_id,
           title: ticket.title,
@@ -60,7 +60,9 @@ const SupportPage = () => {
           category: ticket.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at
-        })));
+        }));
+        
+        setTickets(transformedTickets);
       } catch (error) {
         console.error('Error fetching tickets:', error);
         toast({ 

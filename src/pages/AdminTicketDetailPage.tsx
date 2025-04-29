@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -27,7 +27,6 @@ const AdminTicketDetailPage = () => {
   const { isAdmin } = useAdmin();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Consider it admin for testing in development
   const hasAdminAccess = isAdmin || import.meta.env.DEV;
@@ -41,7 +40,7 @@ const AdminTicketDetailPage = () => {
         // Fetch ticket
         const { data: ticketData, error: ticketError } = await supabase
           .from('support_tickets')
-          .select('*, users:user_id(email)')
+          .select('*')
           .eq('id', ticketId)
           .single();
           
@@ -57,6 +56,20 @@ const AdminTicketDetailPage = () => {
           return;
         }
         
+        // Get user email separately
+        let userEmail = 'Unknown';
+        if (ticketData.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from('users') // Assuming there's a users table for profiles
+            .select('email')
+            .eq('id', ticketData.user_id)
+            .single();
+            
+          if (!userError && userData) {
+            userEmail = userData.email;
+          }
+        }
+        
         setTicket({
           id: ticketData.id,
           userId: ticketData.user_id,
@@ -67,7 +80,7 @@ const AdminTicketDetailPage = () => {
           category: ticketData.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticketData.created_at,
           updatedAt: ticketData.updated_at,
-          userEmail: ticketData.users?.email
+          userEmail
         });
         
         // Fetch messages
@@ -102,7 +115,7 @@ const AdminTicketDetailPage = () => {
     
     fetchTicketDetails();
     
-    // Set up real-time listeners for messages
+    // Set up real-time listeners for messages and ticket updates
     const messagesChannel = supabase
       .channel('admin-ticket-messages')
       .on('postgres_changes',
@@ -122,7 +135,6 @@ const AdminTicketDetailPage = () => {
       )
       .subscribe();
       
-    // Set up real-time listeners for ticket updates
     const ticketChannel = supabase
       .channel('admin-ticket-updates')
       .on('postgres_changes',
@@ -144,18 +156,6 @@ const AdminTicketDetailPage = () => {
     };
   }, [ticketId, user, hasAdminAccess, toast, navigate]);
   
-  // Scroll to bottom of messages when new ones appear
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-  
-  // Redirect non-admin users
-  if (!user || !hasAdminAccess) {
-    return <Navigate to="/login" replace />;
-  }
-
   const handleSendMessage = async (message: string) => {
     if (!message.trim() || !user || !ticket) return;
     
@@ -204,7 +204,7 @@ const AdminTicketDetailPage = () => {
         description: `Ticket status changed to ${newStatus.replace('_', ' ')}`,
       });
       
-      // If the status was just updated to in_progress, add a system message
+      // Add system messages based on status change
       if (newStatus === 'in_progress') {
         await supabase
           .from('ticket_messages')
@@ -212,11 +212,10 @@ const AdminTicketDetailPage = () => {
             ticket_id: ticket.id,
             is_admin: true,
             message: "A support agent has started working on your ticket. We'll respond as soon as possible.",
-            user_id: user.id
+            user_id: user?.id
           });
       }
       
-      // If the status was just updated to resolved, add a system message
       if (newStatus === 'resolved') {
         await supabase
           .from('ticket_messages')
@@ -224,7 +223,7 @@ const AdminTicketDetailPage = () => {
             ticket_id: ticket.id,
             is_admin: true,
             message: "Your ticket has been resolved. If you're still experiencing issues, please let us know and we'll reopen the ticket.",
-            user_id: user.id
+            user_id: user?.id
           });
       }
       

@@ -112,7 +112,7 @@ const TicketDetailPage = () => {
     
     fetchTicketDetails();
     
-    // Set up real-time listeners for messages
+    // Set up real-time listeners for messages and ticket updates
     const messagesChannel = supabase
       .channel('ticket-messages')
       .on('postgres_changes',
@@ -132,7 +132,6 @@ const TicketDetailPage = () => {
       )
       .subscribe();
       
-    // Set up real-time listeners for ticket updates
     const ticketChannel = supabase
       .channel('ticket-updates')
       .on('postgres_changes',

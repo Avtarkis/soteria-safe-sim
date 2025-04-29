@@ -20,6 +20,7 @@ export const AdminSupportManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -30,8 +31,7 @@ export const AdminSupportManagement = () => {
         // Start with the basic query
         let query = supabase
           .from('support_tickets')
-          .select('*, users:user_id(email)')
-          .order('created_at', { ascending: false });
+          .select('*');
         
         // Apply filters if needed
         if (statusFilter !== 'all') {
@@ -41,10 +41,32 @@ export const AdminSupportManagement = () => {
         if (priorityFilter !== 'all') {
           query = query.eq('priority', priorityFilter);
         }
+
+        if (categoryFilter !== 'all') {
+          query = query.eq('category', categoryFilter);
+        }
           
-        const { data, error } = await query;
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
+        
+        // Get user emails in a separate query since we can't join directly
+        const userIds = Array.from(new Set((data || []).map(ticket => ticket.user_id)));
+        
+        let userEmails: Record<string, string> = {};
+        if (userIds.length > 0) {
+          const { data: userData, error: userError } = await supabase
+            .from('users') // Assuming there's a users table for profiles
+            .select('id, email')
+            .in('id', userIds);
+            
+          if (!userError && userData) {
+            userEmails = userData.reduce((acc: Record<string, string>, user: any) => {
+              acc[user.id] = user.email || 'Unknown';
+              return acc;
+            }, {});
+          }
+        }
         
         // Transform the data to match our interface
         const transformedTickets: SupportTicket[] = (data || []).map(ticket => ({
@@ -57,7 +79,7 @@ export const AdminSupportManagement = () => {
           category: ticket.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at,
-          userEmail: ticket.users?.email || 'Unknown'
+          userEmail: userEmails[ticket.user_id] || 'Unknown'
         }));
         
         setTickets(transformedTickets);
@@ -89,7 +111,7 @@ export const AdminSupportManagement = () => {
     return () => {
       supabase.removeChannel(ticketChannel);
     };
-  }, [toast, statusFilter, priorityFilter]);
+  }, [toast, statusFilter, priorityFilter, categoryFilter]);
   
   // Filter tickets based on search term
   const filteredTickets = tickets.filter(ticket => {
@@ -165,9 +187,11 @@ export const AdminSupportManagement = () => {
         searchTerm={searchTerm}
         statusFilter={statusFilter}
         priorityFilter={priorityFilter}
+        categoryFilter={categoryFilter}
         onSearchChange={setSearchTerm}
         onStatusFilterChange={setStatusFilter}
         onPriorityFilterChange={setPriorityFilter}
+        onCategoryFilterChange={setCategoryFilter}
       />
       
       <Card>
