@@ -9,9 +9,6 @@ import { TicketFilters } from '@/components/admin/support/TicketFilters';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
 } from '@/components/ui/card';
 
 export const AdminSupportManagement = () => {
@@ -50,21 +47,22 @@ export const AdminSupportManagement = () => {
 
         if (error) throw error;
         
-        // Get user emails in a separate query since we can't join directly
+        // Get user emails 
         const userIds = Array.from(new Set((data || []).map(ticket => ticket.user_id)));
         
         let userEmails: Record<string, string> = {};
         if (userIds.length > 0) {
-          const { data: userData, error: userError } = await supabase
-            .from('users') // Assuming there's a users table for profiles
-            .select('id, email')
-            .in('id', userIds);
-            
-          if (!userError && userData) {
-            userEmails = userData.reduce((acc: Record<string, string>, user: any) => {
-              acc[user.id] = user.email || 'Unknown';
-              return acc;
-            }, {});
+          // Use a custom RPC function or a direct query to get user information
+          // For this example, let's use auth.users directly but in production,
+          // we should set up a view or function to expose this safely
+          
+          // Note: In actual implementation, you would set up a profiles table
+          // This is a simplified approach for development
+          for (const userId of userIds) {
+            const { data: userData } = await supabase.auth.admin.getUserById(userId);
+            if (userData?.user) {
+              userEmails[userId] = userData.user.email || 'Unknown';
+            }
           }
         }
         

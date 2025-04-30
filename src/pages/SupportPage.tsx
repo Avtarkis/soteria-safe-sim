@@ -9,7 +9,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
@@ -50,6 +49,7 @@ const SupportPage = () => {
         
         if (error) throw error;
         
+        // Ensure the data is properly cast to the expected types
         const transformedTickets: SupportTicket[] = data.map(ticket => ({
           id: ticket.id,
           userId: ticket.user_id,
@@ -82,7 +82,7 @@ const SupportPage = () => {
       .channel('support-ticket-updates')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'support_tickets', filter: `user_id=eq.${user.id}` },
-        payload => {
+        () => {
           fetchTickets();
         }
       )
