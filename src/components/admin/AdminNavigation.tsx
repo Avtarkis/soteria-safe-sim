@@ -20,6 +20,13 @@ const AdminNavigation = () => {
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <>
       <div className="p-4 border-b">
@@ -40,7 +47,7 @@ const AdminNavigation = () => {
             to={item.path}
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-              location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path))
+              isActive(item.path)
                 ? "bg-primary/10 text-primary font-medium"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}

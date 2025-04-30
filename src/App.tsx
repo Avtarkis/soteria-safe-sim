@@ -15,6 +15,7 @@ import FamilyInvitePage from '@/pages/FamilyInvitePage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import NotFoundPage from '@/pages/NotFound';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminProtectedRoute from '@/components/admin/AdminProtectedRoute';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
@@ -107,36 +108,36 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Admin routes */}
+        {/* Admin routes - use AdminProtectedRoute */}
         <Route path="admin" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminDashboardPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         <Route path="admin/users" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminUsersPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         <Route path="admin/threats" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminThreatsPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         <Route path="admin/support" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminSupportPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         <Route path="admin/support/ticket/:ticketId" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminTicketDetailPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         <Route path="admin/settings" element={
-          <ProtectedRoute>
+          <AdminProtectedRoute>
             <AdminSettingsPage />
-          </ProtectedRoute>
+          </AdminProtectedRoute>
         } />
         
         {/* Not found */}
