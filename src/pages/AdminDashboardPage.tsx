@@ -27,17 +27,14 @@ const AdminDashboardPage = () => {
   }
   
   // In development mode, bypass authentication check
-  if (import.meta.env.DEV && !user) {
-    console.log("Admin authentication bypassed in development mode");
-    return (
-      <AdminLayout>
-        <AdminOverview />
-      </AdminLayout>
-    );
-  }
+  const hasAdminAccess = isAdmin || import.meta.env.DEV;
   
   // Redirect non-admin users
-  if (!isAdmin) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!hasAdminAccess) {
     return <Navigate to="/dashboard" replace />;
   }
 
