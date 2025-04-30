@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe } from 'lucide-react';
+import { MenuIcon, Home, Map, Bell, Shield, CreditCard, User, Heart, AlertTriangle, Globe, LifeBuoy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -182,6 +183,7 @@ const Navbar = () => {
     { to: '/family', icon: <Heart className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Family' },
     { to: '/travel', icon: <Globe className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Travel' },
     { to: '/cyber', icon: <Shield className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Cyber Security' },
+    { to: '/support', icon: <LifeBuoy className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Support Center' },
     { to: '/subscription', icon: <CreditCard className={isMobile ? "h-5 w-5" : "h-4 w-4"} />, label: 'Subscription' },
   ].map(item => ({
     ...item,

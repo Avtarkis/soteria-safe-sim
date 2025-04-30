@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { getUserById } from '@/lib/auth';
 
 interface TicketDetailContentProps {
   ticketId: string;
@@ -58,7 +59,16 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
           .eq('user_id', user.id)
           .single();
           
-        if (ticketError) throw ticketError;
+        if (ticketError) {
+          console.error('Error fetching ticket:', ticketError);
+          toast({
+            title: "Error loading ticket",
+            description: "Failed to load ticket details. Please try again later.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
         
         if (!ticketData) {
           toast({
@@ -89,17 +99,24 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
           .eq('ticket_id', ticketId)
           .order('created_at', { ascending: true });
           
-        if (messagesError) throw messagesError;
-        
-        setMessages(messagesData.map(msg => ({
-          id: msg.id,
-          ticketId: msg.ticket_id,
-          userId: msg.user_id || '',
-          isAdmin: msg.is_admin,
-          message: msg.message,
-          attachmentUrl: msg.attachment_url,
-          createdAt: msg.created_at
-        })));
+        if (messagesError) {
+          console.error('Error fetching messages:', messagesError);
+          toast({
+            title: "Error loading messages",
+            description: "Failed to load ticket messages. Please try again later.",
+            variant: "destructive"
+          });
+        } else {
+          setMessages(messagesData.map(msg => ({
+            id: msg.id,
+            ticketId: msg.ticket_id,
+            userId: msg.user_id || '',
+            isAdmin: msg.is_admin,
+            message: msg.message,
+            attachmentUrl: msg.attachment_url,
+            createdAt: msg.created_at
+          })));
+        }
       } catch (error) {
         console.error('Error fetching ticket details:', error);
         toast({

@@ -80,6 +80,15 @@ const MainNav = () => {
         Cyber Security
       </Link>
       <Link 
+        to="/support" 
+        className={cn(
+          "text-sm font-medium transition-colors hover:text-primary",
+          isActive('/support') ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        Support
+      </Link>
+      <Link 
         to="/subscription" 
         className={cn(
           "text-sm font-medium transition-colors hover:text-primary",

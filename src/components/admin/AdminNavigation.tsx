@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  Users, Shield, BarChart2, Settings, LogOut
+  Users, Shield, BarChart2, Settings, LogOut, LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ const AdminNavigation = () => {
     { icon: BarChart2, label: 'Overview', path: '/admin' },
     { icon: Users, label: 'User Management', path: '/admin/users' },
     { icon: Shield, label: 'Threat Management', path: '/admin/threats' },
+    { icon: LifeBuoy, label: 'Support Management', path: '/admin/support' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 

@@ -47,7 +47,15 @@ const SupportPage = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching tickets:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          setTickets([]);
+          return;
+        }
         
         // Ensure the data is properly cast to the expected types
         const transformedTickets: SupportTicket[] = data.map(ticket => ({

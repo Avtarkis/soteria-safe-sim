@@ -14,6 +14,7 @@ import {
   CardContent
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { getUserById } from '@/lib/auth';
 
 interface AdminTicketDetailContentProps {
   ticketId: string;
@@ -46,7 +47,16 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
           .eq('id', ticketId)
           .single();
           
-        if (ticketError) throw ticketError;
+        if (ticketError) {
+          console.error('Error fetching ticket:', ticketError);
+          toast({
+            title: "Error loading ticket",
+            description: "Failed to load ticket details. Please try again later.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
         
         if (!ticketData) {
           toast({
@@ -61,13 +71,9 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
         // Get user email separately through auth admin API or user profile
         let userEmail = 'Unknown';
         
-        // Note: In a real implementation, you would have a profiles table or use auth admin APIs
-        // This is a simplified approach for development
         try {
-          const { data: authData } = await supabase.auth.admin.getUserById(ticketData.user_id);
-          if (authData?.user) {
-            userEmail = authData.user.email || 'Unknown';
-          }
+          const userData = await getUserById(ticketData.user_id);
+          userEmail = userData.email || 'Unknown';
         } catch (emailError) {
           console.error('Error fetching user email:', emailError);
         }
@@ -92,17 +98,24 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
           .eq('ticket_id', ticketId)
           .order('created_at', { ascending: true });
           
-        if (messagesError) throw messagesError;
-        
-        setMessages(messagesData.map(msg => ({
-          id: msg.id,
-          ticketId: msg.ticket_id,
-          userId: msg.user_id || '',
-          isAdmin: msg.is_admin,
-          message: msg.message,
-          attachmentUrl: msg.attachment_url,
-          createdAt: msg.created_at
-        })));
+        if (messagesError) {
+          console.error('Error fetching messages:', messagesError);
+          toast({
+            title: "Error loading messages",
+            description: "Failed to load ticket messages. Please try again later.",
+            variant: "destructive"
+          });
+        } else {
+          setMessages(messagesData.map(msg => ({
+            id: msg.id,
+            ticketId: msg.ticket_id,
+            userId: msg.user_id || '',
+            isAdmin: msg.is_admin,
+            message: msg.message,
+            attachmentUrl: msg.attachment_url,
+            createdAt: msg.created_at
+          })));
+        }
       } catch (error) {
         console.error('Error fetching ticket details:', error);
         toast({

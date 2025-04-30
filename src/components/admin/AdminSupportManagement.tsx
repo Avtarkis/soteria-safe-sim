@@ -10,6 +10,7 @@ import {
   Card,
   CardContent,
 } from '@/components/ui/card';
+import { getUserById } from '@/lib/auth';
 
 export const AdminSupportManagement = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -45,23 +46,29 @@ export const AdminSupportManagement = () => {
           
         const { data, error } = await query.order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching tickets:', error);
+          throw error;
+        }
+        
+        if (!data || data.length === 0) {
+          setTickets([]);
+          setLoading(false);
+          return;
+        }
         
         // Get user emails 
         const userIds = Array.from(new Set((data || []).map(ticket => ticket.user_id)));
         
         let userEmails: Record<string, string> = {};
         if (userIds.length > 0) {
-          // Use a custom RPC function or a direct query to get user information
-          // For this example, let's use auth.users directly but in production,
-          // we should set up a view or function to expose this safely
-          
-          // Note: In actual implementation, you would set up a profiles table
-          // This is a simplified approach for development
           for (const userId of userIds) {
-            const { data: userData } = await supabase.auth.admin.getUserById(userId);
-            if (userData?.user) {
-              userEmails[userId] = userData.user.email || 'Unknown';
+            try {
+              const userData = await getUserById(userId);
+              userEmails[userId] = userData.email || 'Unknown';
+            } catch (error) {
+              console.error(`Error fetching user ${userId}:`, error);
+              userEmails[userId] = 'Unknown';
             }
           }
         }

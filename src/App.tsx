@@ -20,6 +20,7 @@ import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminThreatsPage from '@/pages/AdminThreatsPage';
 import AdminSupportPage from '@/pages/AdminSupportPage';
 import AdminTicketDetailPage from '@/pages/AdminTicketDetailPage';
+import AdminSettingsPage from '@/pages/AdminSettingsPage';
 import SupportPage from '@/pages/SupportPage';
 import TicketDetailPage from '@/pages/TicketDetailPage';
 import ThreatsMap from '@/components/ThreatsMap';
@@ -130,6 +131,11 @@ function App() {
         <Route path="admin/support/ticket/:ticketId" element={
           <ProtectedRoute>
             <AdminTicketDetailPage />
+          </ProtectedRoute>
+        } />
+        <Route path="admin/settings" element={
+          <ProtectedRoute>
+            <AdminSettingsPage />
           </ProtectedRoute>
         } />
         
