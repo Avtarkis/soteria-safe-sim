@@ -244,6 +244,48 @@ export type Database = {
           },
         ]
       }
+      user_alerts: {
+        Row: {
+          action_link: string | null
+          action_text: string | null
+          category: string
+          created_at: string
+          description: string
+          icon: string | null
+          id: string
+          severity: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_link?: string | null
+          action_text?: string | null
+          category: string
+          created_at?: string
+          description: string
+          icon?: string | null
+          id?: string
+          severity: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_link?: string | null
+          action_text?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          icon?: string | null
+          id?: string
+          severity?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

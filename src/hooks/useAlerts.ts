@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Alert, AlertStatus, AlertCategory } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { threatService } from '@/services/threatService';
@@ -13,6 +13,7 @@ export const useAlerts = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Function to fetch alerts from different sources and combine them
   const fetchAlerts = useCallback(async () => {
     if (!user?.id) {
       setAlerts([]);
@@ -24,18 +25,26 @@ export const useAlerts = () => {
     setError(null);
 
     try {
-      // Fetch alerts from Supabase
-      // We'll use a custom query since the table might not exist yet
+      // Fetch alerts from Supabase using raw query instead of table reference
       let storedAlerts: any[] = [];
       try {
         const { data, error } = await supabase
-          .from('user_alerts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .rpc('get_user_alerts', { user_uuid: user.id })
+          .returns();
           
-        if (error) throw error;
-        storedAlerts = data || [];
+        if (error) {
+          // If the RPC doesn't exist, fall back to direct querying
+          const { data: directData, error: directError } = await supabase
+            .from('user_alerts')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+            
+          if (directError) throw directError;
+          storedAlerts = directData || [];
+        } else {
+          storedAlerts = data || [];
+        }
       } catch (dbError) {
         console.error('Database error:', dbError);
         // Continue execution even if database error occurs
@@ -100,49 +109,39 @@ export const useAlerts = () => {
     }
   }, [user, toast]);
 
+  // Function to update alert status
   const updateAlertStatus = useCallback(async (alertId: string, status: AlertStatus) => {
     if (!user?.id) return false;
 
     try {
-      // First check if it's in our alerts table
-      let updated = false;
-      
+      // Use raw SQL via RPC or direct query to update
       try {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('user_alerts')
           .update({ status })
           .eq('id', alertId)
           .eq('user_id', user.id);
         
-        if (!error) {
-          updated = true;
-        }
+        if (error) throw error;
       } catch (dbError) {
         console.error('Database error updating alert:', dbError);
-      }
-      
-      // If not in our table or error, try resolving it as a threat
-      if (!updated) {
+        
+        // Try resolving it as a threat
         try {
           await threatService.resolveThreat(alertId, user.id);
-          updated = true;
         } catch (threatError) {
           console.error('Error updating threat status:', threatError);
           throw threatError;
         }
       }
       
-      // Update the UI state if anything succeeded
-      if (updated) {
-        setAlerts(prev => 
-          prev.map(alert => 
-            alert.id === alertId ? { ...alert, status } : alert
-          )
-        );
-        return true;
-      } else {
-        throw new Error('Could not update alert status');
-      }
+      // Update the UI state
+      setAlerts(prev => 
+        prev.map(alert => 
+          alert.id === alertId ? { ...alert, status } : alert
+        )
+      );
+      return true;
     } catch (error) {
       console.error('Error updating alert status:', error);
       toast({
