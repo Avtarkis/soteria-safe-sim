@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state
+  const from = location.state?.from || '/dashboard';
 
   const { signIn, signUp } = useAuth();
 
@@ -48,8 +52,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
           variant: "destructive",
         });
       } else {
-        // Success - navigate to dashboard
-        console.log(`${type === 'login' ? 'Login' : 'Signup'} successful, navigating to dashboard`);
+        // Success - navigate to the original intended destination or dashboard
+        console.log(`${type === 'login' ? 'Login' : 'Signup'} successful, navigating to ${from}`);
         toast({
           title: type === 'login' ? "Login successful" : "Account created",
           description: type === 'login' 
@@ -62,9 +66,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
           onSuccess();
         }
         
-        // Use navigate instead of direct location change for smoother transition
+        // Navigate to the original destination if coming from a protected route
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate(from);
         }, 300);
       }
     } catch (err: any) {

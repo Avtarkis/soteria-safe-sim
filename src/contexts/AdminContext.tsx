@@ -17,6 +17,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // This centralizes the admin check logic in one place
   const isAdmin = Boolean(user?.email?.endsWith('@soteria.com'));
   
+  // For development/testing purposes only
+  console.log('AdminContext - User:', user?.email, 'isAdmin:', isAdmin);
+  
   return (
     <AdminContext.Provider value={{ isAdmin }}>
       {children}

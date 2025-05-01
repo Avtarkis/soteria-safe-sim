@@ -43,9 +43,10 @@ const AdminProtectedRoute = ({ children }: AdminProtectedRouteProps) => {
     );
   }
 
-  // If user is not logged in, redirect to login
+  // If user is not logged in, redirect to login with return path
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Save the intended destination to redirect back after login
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   
   // If user is logged in but not admin, redirect to dashboard
