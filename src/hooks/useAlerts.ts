@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Alert } from '@/types/alerts';
+import { Alert, AlertStatus, AlertCategory } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { threatService } from '@/services/threatService';
 
@@ -25,14 +25,20 @@ export const useAlerts = () => {
 
     try {
       // Fetch alerts from Supabase
-      const { data: storedAlerts, error: alertsError } = await supabase
-        .from('user_alerts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (alertsError) {
-        throw alertsError;
+      // We'll use a custom query since the table might not exist yet
+      let storedAlerts: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('user_alerts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        storedAlerts = data || [];
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Continue execution even if database error occurs
       }
 
       // Try to get real-time threat data as well
@@ -99,34 +105,43 @@ export const useAlerts = () => {
 
     try {
       // First check if it's in our alerts table
-      const { data, error } = await supabase
-        .from('user_alerts')
-        .update({ status })
-        .eq('id', alertId)
-        .eq('user_id', user.id);
+      let updated = false;
       
-      if (error) {
-        // If not in our table, try resolving it as a threat
+      try {
+        const { data, error } = await supabase
+          .from('user_alerts')
+          .update({ status })
+          .eq('id', alertId)
+          .eq('user_id', user.id);
+        
+        if (!error) {
+          updated = true;
+        }
+      } catch (dbError) {
+        console.error('Database error updating alert:', dbError);
+      }
+      
+      // If not in our table or error, try resolving it as a threat
+      if (!updated) {
         try {
           await threatService.resolveThreat(alertId, user.id);
-          setAlerts(prev => 
-            prev.map(alert => 
-              alert.id === alertId ? { ...alert, status } : alert
-            )
-          );
-          return true;
+          updated = true;
         } catch (threatError) {
           console.error('Error updating threat status:', threatError);
           throw threatError;
         }
-      } else {
-        // Update succeeded in our table
+      }
+      
+      // Update the UI state if anything succeeded
+      if (updated) {
         setAlerts(prev => 
           prev.map(alert => 
             alert.id === alertId ? { ...alert, status } : alert
           )
         );
         return true;
+      } else {
+        throw new Error('Could not update alert status');
       }
     } catch (error) {
       console.error('Error updating alert status:', error);
