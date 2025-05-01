@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -39,6 +38,7 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -46,10 +46,23 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!ticketId || !user) return;
+    // Initialize with not found state if no ticketId or user
+    if (!ticketId) {
+      setLoading(false);
+      setError("No ticket ID provided");
+      return;
+    }
+    
+    if (!user) {
+      setLoading(false);
+      setError("You must be logged in to view tickets");
+      return;
+    }
     
     const fetchTicketDetails = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         // Fetch ticket
         const { data: ticketData, error: ticketError } = await supabase
@@ -57,10 +70,11 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
           .select('*')
           .eq('id', ticketId)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
           
         if (ticketError) {
           console.error('Error fetching ticket:', ticketError);
+          setError("Failed to load ticket details. Please try again later.");
           toast({
             title: "Error loading ticket",
             description: "Failed to load ticket details. Please try again later.",
@@ -71,12 +85,13 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
         }
         
         if (!ticketData) {
+          setError("The requested ticket does not exist or you don't have access to it");
           toast({
             title: "Ticket not found",
             description: "The requested ticket does not exist or you don't have access to it",
             variant: "destructive"
           });
-          navigate('/support');
+          setLoading(false);
           return;
         }
         
@@ -106,19 +121,22 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
             description: "Failed to load ticket messages. Please try again later.",
             variant: "destructive"
           });
-        } else {
-          setMessages(messagesData.map(msg => ({
-            id: msg.id,
-            ticketId: msg.ticket_id,
-            userId: msg.user_id || '',
-            isAdmin: msg.is_admin,
-            message: msg.message,
-            attachmentUrl: msg.attachment_url,
-            createdAt: msg.created_at
-          })));
+          // Continue execution - we can still show the ticket without messages
         }
+        
+        setMessages(messagesData ? messagesData.map(msg => ({
+          id: msg.id,
+          ticketId: msg.ticket_id,
+          userId: msg.user_id || '',
+          isAdmin: msg.is_admin,
+          message: msg.message,
+          attachmentUrl: msg.attachment_url,
+          createdAt: msg.created_at
+        })) : []);
+        
       } catch (error) {
         console.error('Error fetching ticket details:', error);
+        setError("Failed to load ticket details. Please try again later.");
         toast({
           title: "Error loading ticket",
           description: "Failed to load ticket details. Please try again later.",
@@ -132,44 +150,46 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
     fetchTicketDetails();
     
     // Set up real-time listeners for messages and ticket updates
-    const messagesChannel = supabase
-      .channel('ticket-messages')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${ticketId}` },
-        payload => {
-          const newMsg = payload.new as any;
-          setMessages(current => [...current, {
-            id: newMsg.id,
-            ticketId: newMsg.ticket_id,
-            userId: newMsg.user_id || '',
-            isAdmin: newMsg.is_admin,
-            message: newMsg.message,
-            attachmentUrl: newMsg.attachment_url,
-            createdAt: newMsg.created_at
-          }]);
-        }
-      )
-      .subscribe();
+    if (user) {
+      const messagesChannel = supabase
+        .channel('ticket-messages')
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${ticketId}` },
+          payload => {
+            const newMsg = payload.new as any;
+            setMessages(current => [...current, {
+              id: newMsg.id,
+              ticketId: newMsg.ticket_id,
+              userId: newMsg.user_id || '',
+              isAdmin: newMsg.is_admin,
+              message: newMsg.message,
+              attachmentUrl: newMsg.attachment_url,
+              createdAt: newMsg.created_at
+            }]);
+          }
+        )
+        .subscribe();
+        
+      const ticketChannel = supabase
+        .channel('ticket-updates')
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'support_tickets', filter: `id=eq.${ticketId}` },
+          payload => {
+            const updatedTicket = payload.new as any;
+            setTicket(current => current ? {
+              ...current,
+              status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+              updatedAt: updatedTicket.updated_at
+            } : null);
+          }
+        )
+        .subscribe();
       
-    const ticketChannel = supabase
-      .channel('ticket-updates')
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'support_tickets', filter: `id=eq.${ticketId}` },
-        payload => {
-          const updatedTicket = payload.new as any;
-          setTicket(current => current ? {
-            ...current,
-            status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
-            updatedAt: updatedTicket.updated_at
-          } : null);
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(ticketChannel);
-    };
+      return () => {
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(ticketChannel);
+      };
+    }
   }, [ticketId, user, toast, navigate]);
   
   // Scroll to bottom of messages when new ones appear
@@ -392,14 +412,14 @@ const TicketDetailContent = ({ ticketId }: TicketDetailContentProps) => {
     );
   }
   
-  if (!ticket) {
+  if (error || !ticket) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-10">
           <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
           <h2 className="text-2xl font-bold mb-2">Ticket Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            The requested ticket does not exist or you don't have access to it
+            {error || "The requested ticket does not exist or you don't have access to it"}
           </p>
           <Button onClick={() => navigate('/support')}>
             Back to Support

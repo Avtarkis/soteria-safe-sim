@@ -24,6 +24,7 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { user } = useAuth();
@@ -35,20 +36,33 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
   const hasAdminAccess = isAdmin || import.meta.env.DEV;
   
   useEffect(() => {
-    if (!ticketId || !user || !hasAdminAccess) return;
+    if (!ticketId) {
+      setLoading(false);
+      setError("No ticket ID provided");
+      return;
+    }
+    
+    if (!user || !hasAdminAccess) {
+      setLoading(false);
+      setError("You don't have permission to view this ticket");
+      return;
+    }
     
     const fetchTicketDetails = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         // Fetch ticket
         const { data: ticketData, error: ticketError } = await supabase
           .from('support_tickets')
           .select('*')
           .eq('id', ticketId)
-          .single();
+          .maybeSingle();
           
         if (ticketError) {
           console.error('Error fetching ticket:', ticketError);
+          setError("Failed to load ticket details");
           toast({
             title: "Error loading ticket",
             description: "Failed to load ticket details. Please try again later.",
@@ -59,6 +73,7 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
         }
         
         if (!ticketData) {
+          setError("The requested ticket does not exist");
           toast({
             title: "Ticket not found",
             description: "The requested ticket does not exist",
@@ -73,9 +88,10 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
         
         try {
           const userData = await getUserById(ticketData.user_id);
-          userEmail = userData.email || 'Unknown';
+          userEmail = userData?.email || 'Unknown';
         } catch (emailError) {
           console.error('Error fetching user email:', emailError);
+          // Continue with unknown email
         }
         
         setTicket({
@@ -105,8 +121,9 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
             description: "Failed to load ticket messages. Please try again later.",
             variant: "destructive"
           });
+          // Continue execution - we can still show the ticket without messages
         } else {
-          setMessages(messagesData.map(msg => ({
+          setMessages(messagesData ? messagesData.map(msg => ({
             id: msg.id,
             ticketId: msg.ticket_id,
             userId: msg.user_id || '',
@@ -114,10 +131,11 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
             message: msg.message,
             attachmentUrl: msg.attachment_url,
             createdAt: msg.created_at
-          })));
+          })) : []);
         }
       } catch (error) {
         console.error('Error fetching ticket details:', error);
+        setError("Failed to load ticket details");
         toast({
           title: "Error loading ticket",
           description: "Failed to load ticket details. Please try again later.",
@@ -131,44 +149,46 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
     fetchTicketDetails();
     
     // Set up real-time listeners for messages and ticket updates
-    const messagesChannel = supabase
-      .channel('admin-ticket-messages')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${ticketId}` },
-        payload => {
-          const newMsg = payload.new as any;
-          setMessages(current => [...current, {
-            id: newMsg.id,
-            ticketId: newMsg.ticket_id,
-            userId: newMsg.user_id || '',
-            isAdmin: newMsg.is_admin,
-            message: newMsg.message,
-            attachmentUrl: newMsg.attachment_url,
-            createdAt: newMsg.created_at
-          }]);
-        }
-      )
-      .subscribe();
+    if (user && hasAdminAccess) {
+      const messagesChannel = supabase
+        .channel('admin-ticket-messages')
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${ticketId}` },
+          payload => {
+            const newMsg = payload.new as any;
+            setMessages(current => [...current, {
+              id: newMsg.id,
+              ticketId: newMsg.ticket_id,
+              userId: newMsg.user_id || '',
+              isAdmin: newMsg.is_admin,
+              message: newMsg.message,
+              attachmentUrl: newMsg.attachment_url,
+              createdAt: newMsg.created_at
+            }]);
+          }
+        )
+        .subscribe();
+        
+      const ticketChannel = supabase
+        .channel('admin-ticket-updates')
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'support_tickets', filter: `id=eq.${ticketId}` },
+          payload => {
+            const updatedTicket = payload.new as any;
+            setTicket(current => current ? {
+              ...current,
+              status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+              updatedAt: updatedTicket.updated_at
+            } : null);
+          }
+        )
+        .subscribe();
       
-    const ticketChannel = supabase
-      .channel('admin-ticket-updates')
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'support_tickets', filter: `id=eq.${ticketId}` },
-        payload => {
-          const updatedTicket = payload.new as any;
-          setTicket(current => current ? {
-            ...current,
-            status: updatedTicket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
-            updatedAt: updatedTicket.updated_at
-          } : null);
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(ticketChannel);
-    };
+      return () => {
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(ticketChannel);
+      };
+    }
   }, [ticketId, user, hasAdminAccess, toast, navigate]);
   
   const handleSendMessage = async (message: string) => {
@@ -262,14 +282,14 @@ const AdminTicketDetailContent = ({ ticketId }: AdminTicketDetailContentProps) =
     );
   }
   
-  if (!ticket) {
+  if (error || !ticket) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-10">
           <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
           <h2 className="text-2xl font-bold mb-2">Ticket Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            The requested ticket does not exist
+            {error || "The requested ticket does not exist"}
           </p>
           <Button onClick={() => navigate('/admin/support')}>
             Back to Support Management

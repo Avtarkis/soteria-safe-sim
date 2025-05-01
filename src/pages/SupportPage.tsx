@@ -36,7 +36,12 @@ const SupportPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) return;
+    // Initialize with empty array if user is not authenticated
+    if (!user) {
+      setTickets([]);
+      setLoading(false);
+      return;
+    }
     
     const fetchTickets = async () => {
       setLoading(true);
@@ -52,13 +57,8 @@ const SupportPage = () => {
           throw error;
         }
         
-        if (!data) {
-          setTickets([]);
-          return;
-        }
-        
-        // Ensure the data is properly cast to the expected types
-        const transformedTickets: SupportTicket[] = data.map(ticket => ({
+        // Even if no data is returned, this is a valid state (no tickets yet)
+        const transformedTickets: SupportTicket[] = data ? data.map(ticket => ({
           id: ticket.id,
           userId: ticket.user_id,
           title: ticket.title,
@@ -68,7 +68,7 @@ const SupportPage = () => {
           category: ticket.category as 'technical' | 'billing' | 'account' | 'feature_request' | 'other',
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at
-        }));
+        })) : [];
         
         setTickets(transformedTickets);
       } catch (error) {
@@ -79,6 +79,7 @@ const SupportPage = () => {
           variant: "destructive" 
         });
       } finally {
+        // Always set loading to false, even on error
         setLoading(false);
       }
     };
