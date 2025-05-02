@@ -1,4 +1,5 @@
-import React from 'react';
+
+import { useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface NavigationServiceProps {
@@ -10,10 +11,11 @@ interface NavigationServiceProps {
 }
 
 // This is a custom hook, not a React component
-export const useNavigationService = ({ destination, onNavigate }: NavigationServiceProps) => {
+export const useNavigationService = (props: NavigationServiceProps) => {
+  const { destination, onNavigate } = props;
   const { toast } = useToast();
 
-  const startNavigation = () => {
+  const startNavigation = useCallback(() => {
     // Check if native navigation is available
     if ('geolocation' in navigator && 'share' in navigator) {
       // Format for map URLs
@@ -42,7 +44,7 @@ export const useNavigationService = ({ destination, onNavigate }: NavigationServ
     
     // Call the onNavigate callback
     onNavigate();
-  };
+  }, [destination, onNavigate, toast]);
 
   return { startNavigation };
 };

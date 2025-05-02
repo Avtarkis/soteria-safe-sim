@@ -22,7 +22,7 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
       return;
     }
     
-    const navigationService = useNavigationService({ 
+    const { startNavigation } = useNavigationService({ 
       destination, 
       onNavigate: () => {
         // Any additional logic after navigation starts
@@ -30,7 +30,7 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
       }
     });
     
-    navigationService.startNavigation();
+    startNavigation();
   };
   
   return (

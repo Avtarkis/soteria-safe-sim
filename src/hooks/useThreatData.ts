@@ -1,47 +1,28 @@
 
-import { useState, useCallback, useRef } from 'react';
-import { ThreatMarker } from '@/types/threats';
-import { useToast } from '@/hooks/use-toast';
+import { useCallback } from 'react';
+import { useThreatBasicData } from './threats/useThreatBasicData';
+import { useThreatRefresh } from './threats/useThreatRefresh';
+import { useThreatMarkers } from './useThreatMarkers';
 import { useDisasterAlerts } from './useDisasterAlerts';
 import { useEmergencyServices } from './useEmergencyServices';
-import { useThreatMarkers } from './useThreatMarkers';
 
 export const useThreatData = (userLocation: [number, number] | null) => {
-  const [refreshing, setRefreshing] = useState(false);
-  const { toast } = useToast();
+  // Use the basic data hook
+  const { refreshing, setRefreshing, handleRefreshCompletion } = useThreatBasicData();
   
-  // Use refs to track if data has already been loaded
-  const userLocationRef = useRef<[number, number] | null>(null);
-
-  // Use the split hooks
+  // Use the split hooks for different data types
   const { loading: markersLoading, threatMarkers, loadThreatMarkers } = useThreatMarkers(userLocation);
   const { disasterAlerts, loadDisasterAlerts, checkForNewAlerts: checkForNewDisasterAlerts } = useDisasterAlerts(userLocation);
   const { emergencyNumbers, countryCode, loadEmergencyServices } = useEmergencyServices(userLocation);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        loadThreatMarkers(true),
-        loadDisasterAlerts(true),
-        loadEmergencyServices(true)
-      ]);
-      
-      toast({
-        title: "Data Refreshed",
-        description: "Where every second counts - threat data has been updated with the latest information."
-      });
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      toast({
-        title: "Refresh Failed",
-        description: "Could not refresh threat data. Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadThreatMarkers, loadDisasterAlerts, loadEmergencyServices, toast]);
+  // Use the refresh hook
+  const { handleRefresh } = useThreatRefresh(
+    loadThreatMarkers,
+    loadDisasterAlerts,
+    loadEmergencyServices,
+    setRefreshing,
+    handleRefreshCompletion
+  );
 
   return {
     loading: markersLoading,
