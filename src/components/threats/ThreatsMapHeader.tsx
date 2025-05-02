@@ -2,12 +2,37 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Navigation } from 'lucide-react';
+import NavigationService from './NavigationService';
+import { useToast } from '@/hooks/use-toast';
 
 interface ThreatsMapHeaderProps {
   destination?: { name: string; coordinates: [number, number] } | null;
 }
 
 const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
+  const { toast } = useToast();
+  
+  const handleNavigate = () => {
+    if (!destination) {
+      toast({
+        title: "No Destination Set",
+        description: "Please set a destination before starting navigation.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const { startNavigation } = NavigationService({ 
+      destination, 
+      onNavigate: () => {
+        // Any additional logic after navigation starts
+        console.log("Navigation initiated to:", destination.name);
+      }
+    });
+    
+    startNavigation();
+  };
+  
   return (
     <div className="pt-4 pb-6 space-y-2">
       <div className="flex items-center gap-3">
@@ -34,7 +59,7 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
                 {destination.coordinates[0].toFixed(4)}, {destination.coordinates[1].toFixed(4)}
               </div>
             </div>
-            <Button variant="outline" size="sm" className="h-8">
+            <Button variant="outline" size="sm" className="h-8" onClick={handleNavigate}>
               <Navigation className="h-3.5 w-3.5 mr-1.5" />
               <span className="sm:hidden">Destination</span>
               <span className="hidden sm:inline">Navigate</span>

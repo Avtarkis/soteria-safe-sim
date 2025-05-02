@@ -75,7 +75,7 @@ export const useAlerts = () => {
       // Combine stored alerts with threat alerts
       const formattedAlerts: Alert[] = [
         ...(threatAlerts || []),
-        ...(storedAlerts?.map(alert => ({
+        ...((storedAlerts as any[]) || []).map(alert => ({
           id: alert.id,
           title: alert.title,
           description: alert.description,
@@ -87,7 +87,7 @@ export const useAlerts = () => {
           actionText: alert.action_text,
           actionLink: alert.action_link,
           icon: alert.icon
-        })) || [])
+        }))
       ];
 
       setAlerts(formattedAlerts);
