@@ -12,6 +12,16 @@ interface ThreatsMapHeaderProps {
 const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
   const { toast } = useToast();
   
+  // Initialize navigation service with the destination
+  const { startNavigation } = useNavigationService({ 
+    destination: destination || { name: 'Current Location', coordinates: [0, 0] },
+    onNavigate: () => {
+      // Log the navigation event
+      console.log("Navigation initiated to:", destination?.name || "unknown destination");
+    }
+  });
+  
+  // Handle navigation button click
   const handleNavigate = () => {
     if (!destination) {
       toast({
@@ -21,14 +31,6 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
       });
       return;
     }
-    
-    const { startNavigation } = useNavigationService({ 
-      destination, 
-      onNavigate: () => {
-        // Any additional logic after navigation starts
-        console.log("Navigation initiated to:", destination.name);
-      }
-    });
     
     startNavigation();
   };
