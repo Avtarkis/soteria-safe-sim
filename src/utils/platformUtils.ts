@@ -65,26 +65,22 @@ export const usePlatform = () => {
   return platform;
 };
 
-// Helper to conditionally render components based on platform
-export const PlatformComponent = ({ 
-  platforms,
-  children 
-}: { 
-  platforms: Platform[]; 
-  children: React.ReactNode;
-}) => {
-  const platform = usePlatform();
+// Helper function to check if the current platform is in the allowed platforms list
+export const isPlatformAllowed = (platforms: Platform[]): boolean => {
+  // Get the platform
+  const isWebPlatform = isWeb();
+  const isIOSPlatform = isIOS();
+  const isAndroidPlatform = isAndroid();
+  const isMobilePlatform = isMobile();
   
   // Check if current platform is in the allowed platforms list
-  const shouldRender = platforms.some(p => {
-    if (p === 'web') return platform.isWeb;
-    if (p === 'ios') return platform.isIOS;
-    if (p === 'android') return platform.isAndroid; 
-    if (p === 'mobile') return platform.isMobile;
+  return platforms.some(p => {
+    if (p === 'web') return isWebPlatform;
+    if (p === 'ios') return isIOSPlatform;
+    if (p === 'android') return isAndroidPlatform; 
+    if (p === 'mobile') return isMobilePlatform;
     return false;
   });
-  
-  return shouldRender ? <>{children}</> : null;
 };
 
-// Example usage: <PlatformComponent platforms={['web']}>Web-only feature</PlatformComponent>
+// Example usage: if(isPlatformAllowed(['web'])) { /* Web-only feature */ }
