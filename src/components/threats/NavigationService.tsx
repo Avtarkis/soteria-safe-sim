@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -10,7 +9,8 @@ interface NavigationServiceProps {
   onNavigate: () => void;
 }
 
-const NavigationService: React.FC<NavigationServiceProps> = ({ destination, onNavigate }) => {
+// This is a custom hook, not a React component
+export const useNavigationService = ({ destination, onNavigate }: NavigationServiceProps) => {
   const { toast } = useToast();
 
   const startNavigation = () => {
@@ -47,4 +47,5 @@ const NavigationService: React.FC<NavigationServiceProps> = ({ destination, onNa
   return { startNavigation };
 };
 
-export default NavigationService;
+// We're keeping this export for backward compatibility
+export default useNavigationService;

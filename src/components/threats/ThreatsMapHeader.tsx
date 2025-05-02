@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Navigation } from 'lucide-react';
-import NavigationService from './NavigationService';
+import { useNavigationService } from './NavigationService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ThreatsMapHeaderProps {
@@ -22,7 +22,7 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
       return;
     }
     
-    const { startNavigation } = NavigationService({ 
+    const navigationService = useNavigationService({ 
       destination, 
       onNavigate: () => {
         // Any additional logic after navigation starts
@@ -30,7 +30,7 @@ const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
       }
     });
     
-    startNavigation();
+    navigationService.startNavigation();
   };
   
   return (
