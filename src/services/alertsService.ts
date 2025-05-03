@@ -5,7 +5,7 @@ import { threatService } from '@/services/threatService';
 
 // Fetch alerts from different sources
 export const fetchUserAlerts = async (userId: string) => {
-  let storedAlerts: any[] = [];
+  let storedAlerts: any[] = []; // Initialize as an empty array instead of an empty object
   try {
     // Try to use the stored procedure first
     const { data, error } = await supabase
