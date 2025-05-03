@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { isStoreApp } from '@/utils/platformUtils';
 
 const MainNav = () => {
   const location = useLocation();
@@ -13,6 +14,9 @@ const MainNav = () => {
     }
     return location.pathname === path;
   };
+
+  // Hide subscription link on store app versions
+  const isStore = isStoreApp();
 
   return (
     <nav className="hidden md:flex items-center space-x-4 ml-6">
@@ -88,15 +92,19 @@ const MainNav = () => {
       >
         Support
       </Link>
-      <Link 
-        to="/subscription" 
-        className={cn(
-          "text-sm font-medium transition-colors hover:text-primary",
-          isActive('/subscription') ? "text-primary" : "text-muted-foreground"
-        )}
-      >
-        Subscription
-      </Link>
+      
+      {/* Hide subscription link on store app versions */}
+      {!isStore && (
+        <Link 
+          to="/subscription" 
+          className={cn(
+            "text-sm font-medium transition-colors hover:text-primary",
+            isActive('/subscription') ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          Subscription
+        </Link>
+      )}
     </nav>
   );
 };

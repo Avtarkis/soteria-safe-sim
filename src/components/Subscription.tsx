@@ -5,11 +5,23 @@ import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/c
 import { Check } from 'lucide-react';
 import { useLocationBasedCurrency } from '@/hooks/useLocationBasedCurrency';
 import { useToast } from '@/hooks/use-toast';
+import { isStoreApp } from '@/utils/platformUtils';
+import useSubscriptionStatus from '@/hooks/useSubscriptionStatus';
+import { useNavigate } from 'react-router-dom';
 
 const Subscription = () => {
   const [selectedPlan, setSelectedPlan] = useState<'individual' | 'family' | null>(null);
   const { currency, country, isLoading, attemptCurrencyChange } = useLocationBasedCurrency();
   const { toast } = useToast();
+  const { hasActiveSubscription, subscriptionTier, checkSubscription } = useSubscriptionStatus();
+  const navigate = useNavigate();
+  
+  // If this is a store app, redirect to dashboard
+  useEffect(() => {
+    if (isStoreApp()) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const individualFeatures = [
     'Real-time threat detection',
@@ -36,6 +48,17 @@ const Subscription = () => {
       description: `Your 14-day free trial for the ${plan === 'individual' ? 'Individual' : 'Family'} plan has begun! Your payment method will be securely stored for automatic billing after the trial.`,
       duration: 5000,
     });
+    setTimeout(() => {
+      // Simulate successful subscription
+      checkSubscription();
+      
+      // After subscription, show download app message
+      toast({
+        title: "Download Mobile App",
+        description: "For the full experience, download the mobile app from your app store.",
+        duration: 5000,
+      });
+    }, 1500);
     console.log(`Selected ${plan} plan with currency ${currency}`);
   };
 
@@ -51,6 +74,68 @@ const Subscription = () => {
       </div>
     );
   };
+
+  // If this is a store app, don't render the subscription component
+  if (isStoreApp()) {
+    return null;
+  }
+
+  // If user has an active subscription, show their current plan
+  if (hasActiveSubscription) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold mb-2">Your Subscription</h1>
+          <p className="text-muted-foreground">
+            Thank you for subscribing to Soteria. Your safety is our priority.
+          </p>
+        </div>
+
+        <div className="flex justify-center">
+          <Card className="w-full max-w-md border-2 border-primary">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl">
+                    {subscriptionTier === 'individual' ? 'Individual Plan' : 'Family Plan'}
+                  </CardTitle>
+                  <CardDescription>Active Subscription</CardDescription>
+                </div>
+                <div className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">
+                  Current Plan
+                </div>
+              </div>
+            </CardHeader>
+            <div className="px-6 py-4 space-y-2">
+              <p>You have access to all premium features:</p>
+              <ul className="space-y-2">
+                {(subscriptionTier === 'individual' ? individualFeatures : familyFeatures).map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="mr-2 h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <CardFooter className="border-t pt-4 flex flex-col">
+              <p className="text-sm text-center mb-4">
+                For the full experience, download our mobile app from your device's app store.
+              </p>
+              <Button variant="outline" onClick={() => checkSubscription()}>
+                Refresh Subscription Status
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <div className="mt-8 text-center max-w-2xl mx-auto">
+          <p className="text-sm text-muted-foreground">
+            To manage your subscription details including billing information, please contact customer support.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

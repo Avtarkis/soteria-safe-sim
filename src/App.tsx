@@ -13,6 +13,7 @@ import CyberSecurityPage from '@/pages/CyberSecurityPage';
 import FamilyPage from '@/pages/FamilyPage';
 import FamilyInvitePage from '@/pages/FamilyInvitePage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import SubscribeRequiredPage from '@/pages/SubscribeRequiredPage';
 import NotFoundPage from '@/pages/NotFound';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminProtectedRoute from '@/components/admin/AdminProtectedRoute';
@@ -27,6 +28,7 @@ import TicketDetailPage from '@/pages/TicketDetailPage';
 import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
 import SettingsPage from '@/pages/SettingsPage';
+import { isStoreApp } from '@/utils/platformUtils';
 
 function App() {
   return (
@@ -38,6 +40,9 @@ function App() {
         {/* Auth routes */}
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        
+        {/* Subscription required page for store apps */}
+        <Route path="subscribe-required" element={<SubscribeRequiredPage />} />
         
         {/* Protected routes */}
         <Route path="profile" element={
@@ -90,10 +95,16 @@ function App() {
             <CyberSecurityPage />
           </ProtectedRoute>
         } />
+        
+        {/* Subscription page - only available on web */}
         <Route path="subscription" element={
-          <ProtectedRoute>
-            <SubscriptionPage />
-          </ProtectedRoute>
+          !isStoreApp() ? (
+            <ProtectedRoute>
+              <SubscriptionPage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         } />
         
         {/* Support routes */}

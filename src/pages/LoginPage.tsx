@@ -1,17 +1,45 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthForm from '@/components/auth/AuthForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { isStoreApp } from '@/utils/platformUtils';
+import useSubscriptionStatus from '@/hooks/useSubscriptionStatus';
+import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
   const { user } = useAuth();
+  const { hasActiveSubscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [checkedSubscription, setCheckedSubscription] = useState(false);
 
-  // Redirect if already logged in
+  // Check for active subscription when user logs in on store app
   useEffect(() => {
-    if (user) {
+    if (user && isStoreApp() && !subscriptionLoading && !checkedSubscription) {
+      setCheckedSubscription(true);
+      
+      if (!hasActiveSubscription) {
+        toast({
+          title: "Subscription Required",
+          description: "Please subscribe on our website before using the mobile app.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        // Redirect to subscription required page
+        navigate('/subscribe-required');
+      } else {
+        // User has subscription, redirect to dashboard
+        navigate('/dashboard');
+      }
+    }
+  }, [user, hasActiveSubscription, subscriptionLoading, navigate, toast, checkedSubscription]);
+
+  // Redirect if already logged in (for web or non-store app)
+  useEffect(() => {
+    if (user && !isStoreApp()) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
@@ -37,9 +65,23 @@ const LoginPage = () => {
           
           <div className="mt-4 text-center text-sm text-gray-300">
             Don't have an account?{' '}
-            <a href="/signup" className="text-primary hover:underline">
-              Sign up
-            </a>
+            {isStoreApp() ? (
+              <a 
+                href="#" 
+                className="text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // In a real app, this would be your actual website URL
+                  window.open(window.location.origin, '_blank');
+                }}
+              >
+                Sign up on our website
+              </a>
+            ) : (
+              <a href="/signup" className="text-primary hover:underline">
+                Sign up
+              </a>
+            )}
           </div>
         </CardContent>
       </Card>

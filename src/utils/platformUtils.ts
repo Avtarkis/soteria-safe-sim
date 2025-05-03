@@ -4,7 +4,7 @@
  */
 
 // Define the platforms we support
-export type Platform = 'web' | 'android' | 'ios' | 'mobile';
+export type Platform = 'web' | 'android' | 'ios' | 'mobile' | 'store';
 
 // Check if we're running in Capacitor (mobile)
 export const isCapacitor = (): boolean => {
@@ -33,6 +33,20 @@ export const isWeb = (): boolean => {
   return !isMobile();
 };
 
+// Check if we're in a store-published app (App Store or Play Store)
+export const isStoreApp = (): boolean => {
+  // Additional check for store published apps
+  // We would normally use the app's bundle ID or other store-specific indicators
+  // For now, we'll use a simple check for a flag that would be set in the store version
+  const isStoreBuild = window?.['IS_STORE_BUILD'] === true;
+  return isMobile() && isStoreBuild;
+};
+
+// For testing, you can manually set this flag in development
+export const setStoreAppForTesting = (value: boolean): void => {
+  window['IS_STORE_BUILD'] = value;
+};
+
 // Hook to use platform detection in components
 import { useState, useEffect } from 'react';
 
@@ -43,12 +57,14 @@ export const usePlatform = () => {
     isIOS: boolean;
     isAndroid: boolean;
     isMobile: boolean;
+    isStoreApp: boolean;
   }>({
     isWeb: true,
     isCapacitor: false,
     isIOS: false,
     isAndroid: false,
-    isMobile: false
+    isMobile: false,
+    isStoreApp: false
   });
 
   useEffect(() => {
@@ -58,7 +74,8 @@ export const usePlatform = () => {
       isCapacitor: isCapacitor(),
       isIOS: isIOS(),
       isAndroid: isAndroid(),
-      isMobile: isMobile()
+      isMobile: isMobile(),
+      isStoreApp: isStoreApp()
     });
   }, []);
 
@@ -72,6 +89,7 @@ export const isPlatformAllowed = (platforms: Platform[]): boolean => {
   const isIOSPlatform = isIOS();
   const isAndroidPlatform = isAndroid();
   const isMobilePlatform = isMobile();
+  const isStoreAppPlatform = isStoreApp();
   
   // Check if current platform is in the allowed platforms list
   return platforms.some(p => {
@@ -79,6 +97,7 @@ export const isPlatformAllowed = (platforms: Platform[]): boolean => {
     if (p === 'ios') return isIOSPlatform;
     if (p === 'android') return isAndroidPlatform; 
     if (p === 'mobile') return isMobilePlatform;
+    if (p === 'store') return isStoreAppPlatform;
     return false;
   });
 };

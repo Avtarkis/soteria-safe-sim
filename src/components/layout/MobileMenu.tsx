@@ -5,10 +5,12 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
+import { isStoreApp } from '@/utils/platformUtils';
 
 const MobileMenu = () => {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const isStore = isStoreApp();
 
   const handleSignOut = async () => {
     await signOut();
@@ -101,15 +103,20 @@ const MobileMenu = () => {
                   Cyber Security
                 </Link>
               </li>
-              <li>
-                <Link 
-                  to="/subscription" 
-                  className="block py-2 px-3 hover:bg-accent rounded-md"
-                  onClick={() => setOpen(false)}
-                >
-                  Subscription
-                </Link>
-              </li>
+              
+              {/* Only show subscription on web version */}
+              {!isStore && (
+                <li>
+                  <Link 
+                    to="/subscription" 
+                    className="block py-2 px-3 hover:bg-accent rounded-md"
+                    onClick={() => setOpen(false)}
+                  >
+                    Subscription
+                  </Link>
+                </li>
+              )}
+              
               <li>
                 <Link 
                   to="/profile" 

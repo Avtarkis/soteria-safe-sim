@@ -4,17 +4,44 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthForm from '@/components/auth/AuthForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { isStoreApp, isWeb } from '@/utils/platformUtils';
 
 const SignupPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // If we're on a store app, redirect to web for signup
+  useEffect(() => {
+    if (isStoreApp()) {
+      // In a real app, this would redirect to your actual website
+      window.location.href = window.location.origin;
+    }
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      // If on web, redirect to subscription page after signup
+      if (isWeb()) {
+        navigate('/subscription');
+      } else {
+        // On non-store mobile app, go to dashboard
+        navigate('/dashboard');
+      }
     }
   }, [user, navigate]);
+
+  // If we're on a store app, we shouldn't show the signup form
+  if (isStoreApp()) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-800 to-gray-900 p-4">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Redirecting to Website</h1>
+          <p>Please sign up on our website...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-800 to-gray-900 p-4">

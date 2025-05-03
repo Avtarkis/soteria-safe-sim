@@ -42,7 +42,7 @@ export const PlatformFeature: React.FC<PlatformFeatureProps> = ({
   children,
   fallback
 }) => {
-  const { isWeb, isIOS, isAndroid, isMobile } = usePlatform();
+  const { isWeb, isIOS, isAndroid, isMobile, isStoreApp } = usePlatform();
   
   // Check if current platform is in the allowed platforms list
   const shouldRender = platforms.some(p => {
@@ -50,6 +50,7 @@ export const PlatformFeature: React.FC<PlatformFeatureProps> = ({
     if (p === 'ios') return isIOS;
     if (p === 'android') return isAndroid; 
     if (p === 'mobile') return isMobile;
+    if (p === 'store') return isStoreApp;
     return false;
   });
   
