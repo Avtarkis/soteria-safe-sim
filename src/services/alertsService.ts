@@ -9,8 +9,7 @@ export const fetchUserAlerts = async (userId: string) => {
   try {
     // Try to use the stored procedure first
     const { data, error } = await supabase
-      .rpc('get_user_alerts', { user_uuid: userId })
-      .returns();
+      .rpc('get_user_alerts', { user_uuid: userId });
       
     if (error) {
       // If the RPC doesn't exist, fall back to direct querying
