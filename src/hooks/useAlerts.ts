@@ -16,9 +16,6 @@ export const useAlerts = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Set up realtime subscription for alerts
-  useRealtimeAlerts(user?.id, fetchAlerts);
-
   // Function to fetch alerts from different sources and combine them
   const fetchAlerts = useCallback(async () => {
     if (!user?.id) {
@@ -69,6 +66,9 @@ export const useAlerts = () => {
       setLoading(false);
     }
   }, [user, toast]);
+
+  // Set up realtime subscription for alerts
+  useRealtimeAlerts(user?.id, fetchAlerts);
 
   // Function to update alert status
   const handleUpdateAlertStatus = useCallback(async (alertId: string, status: AlertStatus) => {
