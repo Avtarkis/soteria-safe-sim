@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from './ui/card';
 import { useLocationBasedCurrency } from '@/hooks/useLocationBasedCurrency';
 import { useToast } from '@/hooks/use-toast';
 import { isStoreApp } from '@/utils/platformUtils';
 import useSubscriptionStatus from '@/hooks/useSubscriptionStatus';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 // Import refactored components
 import PlanCard from './subscription/PlanCard';
@@ -160,7 +160,7 @@ const Subscription = () => {
       
       {/* Call to Action */}
       <CallToAction 
-        title="Start Your 14-Day Free Trial" 
+        title="Start Your 14-Day Free Trial Today" 
         description="Choose a premium plan that fits your security needs."
         buttonText="Get Protected" 
       />

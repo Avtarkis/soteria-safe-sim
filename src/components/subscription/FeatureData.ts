@@ -37,80 +37,82 @@ export const comparisonFeatures: Feature[] = [
   { id: 'family-location', name: 'Family Location Sharing', premium: false, family: true },
 ];
 
-export const getFeatureShowcaseItems = (): FeatureItem[] => [
-  {
-    id: 'ai-emergency',
-    icon: <Bell className="h-6 w-6 text-primary" />,
-    title: 'AI Emergency Alert',
-    description: 'Instantly notifies family, law enforcement and emergency responders when a threat is detected.'
-  },
-  {
-    id: 'disaster',
-    icon: <AlertTriangle className="h-6 w-6 text-primary" />,
-    title: 'Natural Disaster Detection',
-    description: 'Detects natural disasters and provides safe evacuation routes.'
-  },
-  {
-    id: 'incident',
-    icon: <Camera className="h-6 w-6 text-primary" />,
-    title: 'Live Incident Capturing',
-    description: 'Uses your phone to capture evidence of incidents for sharing with authorities.'
-  },
-  {
-    id: 'police',
-    icon: <Phone className="h-6 w-6 text-primary" />,
-    title: 'Instant Police Call',
-    description: 'Activates an instant police voice call to deter attackers.'
-  },
-  {
-    id: 'ai-threat',
-    icon: <Mic className="h-6 w-6 text-primary" />,
-    title: 'AI Threat Detection',
-    description: 'Recognizes gunshots, screams, and violent incidents.'
-  },
-  {
-    id: 'radius',
-    icon: <MapPin className="h-6 w-6 text-primary" />,
-    title: '200m Radius Alert',
-    description: 'Sends SOS alerts to nearby mobile users for community response.'
-  },
-  {
-    id: 'cyber',
-    icon: <Shield className="h-6 w-6 text-primary" />,
-    title: 'Cyber Threat Detection',
-    description: 'Identifies and blocks digital threats before they compromise your security.'
-  },
-  {
-    id: 'smartwatch',
-    icon: <Watch className="h-6 w-6 text-primary" />,
-    title: 'Smartwatch Integration',
-    description: 'Using DarkTrace Technology, Soteria integrates with smartwatches, causing them to vibrate to warn users of potential threats even when your phone is not accessible.'
-  },
-  {
-    id: 'emergency',
-    icon: <Bell className="h-6 w-6 text-primary" />,
-    title: 'Emergency Services',
-    description: 'Works with emergency service APIs for direct dispatch.'
-  },
-  {
-    id: 'siren',
-    icon: <Volume2 className="h-6 w-6 text-primary" />,
-    title: 'Police Siren Mode',
-    description: 'Plays convincing police siren sounds to deter attackers.'
-  },
-  {
-    id: 'health',
-    icon: <Heart className="h-6 w-6 text-primary" />,
-    title: 'Health Monitor',
-    description: 'Monitors health status and alerts contacts in emergencies.'
-  },
-  {
-    id: 'stealth',
-    icon: <EyeOff className="h-6 w-6 text-primary" />,
-    title: 'Stealth Mode',
-    description: 'Works in the background undetected by attackers.'
-  }
-];
+export const getFeatureShowcaseItems = (): FeatureItem[] => {
+  return [
+    {
+      id: 'ai-emergency',
+      icon: <Bell className="h-6 w-6 text-primary" />,
+      title: 'AI Emergency Alert',
+      description: 'Instantly notifies family, law enforcement and emergency responders when a threat is detected.'
+    },
+    {
+      id: 'disaster',
+      icon: <AlertTriangle className="h-6 w-6 text-primary" />,
+      title: 'Natural Disaster Detection',
+      description: 'Detects natural disasters and provides safe evacuation routes.'
+    },
+    {
+      id: 'incident',
+      icon: <Camera className="h-6 w-6 text-primary" />,
+      title: 'Live Incident Capturing',
+      description: 'Uses your phone to capture evidence of incidents for sharing with authorities.'
+    },
+    {
+      id: 'police',
+      icon: <Phone className="h-6 w-6 text-primary" />,
+      title: 'Instant Police Call',
+      description: 'Activates an instant police voice call to deter attackers.'
+    },
+    {
+      id: 'ai-threat',
+      icon: <Mic className="h-6 w-6 text-primary" />,
+      title: 'AI Threat Detection',
+      description: 'Recognizes gunshots, screams, and violent incidents.'
+    },
+    {
+      id: 'radius',
+      icon: <MapPin className="h-6 w-6 text-primary" />,
+      title: '200m Radius Alert',
+      description: 'Sends SOS alerts to nearby mobile users for community response.'
+    },
+    {
+      id: 'cyber',
+      icon: <Shield className="h-6 w-6 text-primary" />,
+      title: 'Cyber Threat Detection',
+      description: 'Identifies and blocks digital threats before they compromise your security.'
+    },
+    {
+      id: 'smartwatch',
+      icon: <Watch className="h-6 w-6 text-primary" />,
+      title: 'Smartwatch Integration',
+      description: 'Using DarkTrace Technology, Soteria integrates with smartwatches, causing them to vibrate to warn users of potential threats even when your phone is not accessible.'
+    },
+    {
+      id: 'emergency',
+      icon: <Bell className="h-6 w-6 text-primary" />,
+      title: 'Emergency Services',
+      description: 'Works with emergency service APIs for direct dispatch.'
+    },
+    {
+      id: 'siren',
+      icon: <Volume2 className="h-6 w-6 text-primary" />,
+      title: 'Police Siren Mode',
+      description: 'Plays convincing police siren sounds to deter attackers.'
+    },
+    {
+      id: 'health',
+      icon: <Heart className="h-6 w-6 text-primary" />,
+      title: 'Health Monitor',
+      description: 'Monitors health status and alerts contacts in emergencies.'
+    },
+    {
+      id: 'stealth',
+      icon: <EyeOff className="h-6 w-6 text-primary" />,
+      title: 'Stealth Mode',
+      description: 'Works in the background undetected by attackers.'
+    }
+  ];
+};
 
 export const faqItems: FaqItem[] = [
   {
