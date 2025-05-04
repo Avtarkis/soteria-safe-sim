@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -28,6 +27,7 @@ import TicketDetailPage from '@/pages/TicketDetailPage';
 import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
 import SettingsPage from '@/pages/SettingsPage';
+import AdminPaymentSettings from '@/pages/AdminPaymentSettings';
 import { isStoreApp } from '@/utils/platformUtils';
 
 function App() {
@@ -150,6 +150,14 @@ function App() {
             <AdminSettingsPage />
           </AdminProtectedRoute>
         } />
+        
+        {/* Add the new route for admin payment settings */}
+        {
+          path: "/admin/payment-settings",
+          element: <AdminProtectedRoute>
+            <AdminPaymentSettings />
+          </AdminProtectedRoute>
+        }
         
         {/* Not found */}
         <Route path="*" element={<NotFoundPage />} />
