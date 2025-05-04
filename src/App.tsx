@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -152,12 +153,11 @@ function App() {
         } />
         
         {/* Add the new route for admin payment settings */}
-        {
-          path: "/admin/payment-settings",
-          element: <AdminProtectedRoute>
+        <Route path="admin/payment-settings" element={
+          <AdminProtectedRoute>
             <AdminPaymentSettings />
           </AdminProtectedRoute>
-        }
+        } />
         
         {/* Not found */}
         <Route path="*" element={<NotFoundPage />} />
