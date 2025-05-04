@@ -1,7 +1,7 @@
 
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { AdminSettingsManagement } from '@/components/admin/AdminSettingsManagement';
+import AdminSettingsManagement from '@/components/admin/AdminSettingsManagement';
 
 const AdminSettingsPage = () => {
   return (
