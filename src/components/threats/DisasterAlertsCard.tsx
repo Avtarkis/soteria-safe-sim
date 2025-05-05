@@ -5,6 +5,7 @@ import { AlertTriangle, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DisasterAlert } from '@/types/disasters';
 import { useToast } from '@/hooks/use-toast';
+import useIsMobile from '@/hooks/useIsMobile';
 
 interface DisasterAlertsCardProps {
   disasterAlerts: DisasterAlert[];
@@ -13,6 +14,7 @@ interface DisasterAlertsCardProps {
 
 const DisasterAlertsCard = ({ disasterAlerts, onRefresh }: DisasterAlertsCardProps) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -40,6 +42,13 @@ const DisasterAlertsCard = ({ disasterAlerts, onRefresh }: DisasterAlertsCardPro
       default:
         return <AlertTriangle className="h-4 w-4 text-orange-500" />;
     }
+  };
+  
+  const getSourceLabel = (alert: DisasterAlert) => {
+    if (alert.id.startsWith('eonet-')) {
+      return 'NASA EONET';
+    }
+    return alert.source || 'Disaster Alert';
   };
   
   const handleOpenAlert = (alert: DisasterAlert) => {
@@ -83,6 +92,9 @@ const DisasterAlertsCard = ({ disasterAlerts, onRefresh }: DisasterAlertsCardPro
     );
   }
   
+  // Show more alerts on larger screens
+  const alertsToShow = isMobile ? 3 : 4;
+  
   return (
     <Card className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
       <CardHeader className="pb-2">
@@ -93,7 +105,7 @@ const DisasterAlertsCard = ({ disasterAlerts, onRefresh }: DisasterAlertsCardPro
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {disasterAlerts.slice(0, 3).map((alert, index) => (
+          {disasterAlerts.slice(0, alertsToShow).map((alert, index) => (
             <div 
               key={`disaster-${alert.id || index}`} 
               className="flex items-start gap-3 cursor-pointer hover:bg-orange-100/50 dark:hover:bg-orange-900/40 p-2 rounded-md transition-colors"
@@ -114,7 +126,9 @@ const DisasterAlertsCard = ({ disasterAlerts, onRefresh }: DisasterAlertsCardPro
                   <span className={`font-medium ${getSeverityColor(alert.severity)}`}>
                     {alert.severity.toUpperCase()}
                   </span>
-                  <span className="text-muted-foreground"> • {new Date(alert.date).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground ml-1">
+                    • {getSourceLabel(alert)} • {new Date(alert.date).toLocaleDateString()}
+                  </span>
                 </p>
               </div>
             </div>

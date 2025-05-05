@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 
 // Import custom hooks
@@ -112,7 +113,7 @@ const ThreatsMap = () => {
     checkForNewDisasterAlerts?.();
     toast({
       title: "Checking for Disaster Alerts",
-      description: "Fetching the latest humanitarian crisis information...",
+      description: "Fetching the latest NASA EONET and humanitarian crisis information...",
     });
   }, [checkForNewDisasterAlerts, toast]);
   

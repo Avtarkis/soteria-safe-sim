@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { DisasterAlert } from '@/types/disasters';
 import reliefWebService from '@/services/reliefWebService';
+import { fetchActiveNaturalEvents, transformEonetToDisasterAlerts } from '@/services/eonetService';
 import { useLocationMapping } from './disaster-alerts/useLocationMapping';
 import { useSampleAlerts } from './disaster-alerts/useSampleAlerts';
 import { useAlertChecker } from './disaster-alerts/useAlertChecker';
@@ -16,11 +18,25 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const loadDisasterAlerts = useCallback(async (forceRefresh = false) => {
     try {
       const userCountry = getUserCountry(userLocation);
-      const apiAlerts = await reliefWebService.fetchDisasterAlerts(userCountry);
       
-      if (apiAlerts.length > 0) {
-        setDisasterAlerts(apiAlerts);
-        return apiAlerts;
+      // Fetch disasters from multiple sources
+      const [reliefWebAlerts, eonetEvents] = await Promise.all([
+        reliefWebService.fetchDisasterAlerts(userCountry),
+        fetchActiveNaturalEvents()
+      ]);
+      
+      // Transform EONET events to our disaster alert format
+      const eonetAlerts = transformEonetToDisasterAlerts(eonetEvents);
+      
+      // Combine alerts from both sources
+      let combinedAlerts = [...reliefWebAlerts, ...eonetAlerts];
+      
+      // De-duplicate alerts by comparing titles and locations
+      combinedAlerts = deduplicateAlerts(combinedAlerts);
+      
+      if (combinedAlerts.length > 0) {
+        setDisasterAlerts(combinedAlerts);
+        return combinedAlerts;
       }
       
       const sampleDisasters = getSampleDisasters();
@@ -37,6 +53,24 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
       return [];
     }
   }, [userLocation, getUserCountry, getSampleDisasters, localizeAlerts]);
+
+  // Helper function to deduplicate alerts from multiple sources
+  const deduplicateAlerts = (alerts: DisasterAlert[]): DisasterAlert[] => {
+    const uniqueAlerts: DisasterAlert[] = [];
+    const seenKeys = new Set<string>();
+
+    alerts.forEach(alert => {
+      // Create a unique key from title and location
+      const key = `${alert.title.toLowerCase()}-${alert.location.toLowerCase()}`;
+      
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueAlerts.push(alert);
+      }
+    });
+
+    return uniqueAlerts;
+  };
   
   useEffect(() => {
     loadDisasterAlerts();
