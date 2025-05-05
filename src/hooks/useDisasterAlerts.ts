@@ -24,6 +24,7 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
       // If we have user location, convert it to a string for the weather API
       if (userLocation) {
         locationString = `${userLocation[0]},${userLocation[1]}`;
+        console.log(`Getting alerts for location: ${locationString} in country: ${userCountry || 'unknown'}`);
       }
       
       // Fetch disasters from multiple sources
@@ -32,6 +33,8 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
         fetchActiveNaturalEvents(),
         userLocation ? weatherService.transformWeatherAlertsToDisasterAlerts(locationString) : []
       ]);
+      
+      console.log(`Fetched alerts - ReliefWeb: ${reliefWebAlerts.length}, EONET: ${eonetEvents.length}, Weather: ${weatherAlerts.length}`);
       
       // Transform EONET events to our disaster alert format
       const eonetAlerts = transformEonetToDisasterAlerts(eonetEvents);
@@ -42,23 +45,37 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
       // De-duplicate alerts by comparing titles and locations
       combinedAlerts = deduplicateAlerts(combinedAlerts);
       
+      // If we have user location, localize the alerts
+      if (userLocation) {
+        combinedAlerts = localizeAlerts(combinedAlerts, userLocation);
+        console.log(`Localized ${combinedAlerts.length} alerts for coordinates: ${userLocation[0]}, ${userLocation[1]}`);
+      }
+      
       if (combinedAlerts.length > 0) {
         setDisasterAlerts(combinedAlerts);
         return combinedAlerts;
       }
       
+      // If no alerts, use sample disasters
       const sampleDisasters = getSampleDisasters();
       let alerts = sampleDisasters;
       
       if (userLocation) {
         alerts = localizeAlerts(sampleDisasters, userLocation);
+        console.log(`Using ${alerts.length} localized sample alerts for coordinates: ${userLocation[0]}, ${userLocation[1]}`);
       }
       
       setDisasterAlerts(alerts);
       return alerts;
     } catch (error) {
       console.error('Error loading disaster alerts:', error);
-      return [];
+      
+      // Even if there's an error, try to use sample disasters
+      const sampleDisasters = getSampleDisasters();
+      let alerts = userLocation ? localizeAlerts(sampleDisasters, userLocation) : sampleDisasters;
+      setDisasterAlerts(alerts);
+      
+      return alerts;
     }
   }, [userLocation, getUserCountry, getSampleDisasters, localizeAlerts]);
 

@@ -31,11 +31,7 @@ const MapContainer = ({
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // State for detection alerts
   const [activeDetectionAlert, setActiveDetectionAlert] = useState<DetectionAlert | null>(null);
-  
-  // Create a stable key to prevent unnecessary re-creation
   const mapContainerKey = useRef(`map-container-${Date.now()}`).current;
   
   // Memoize the threat markers to prevent unnecessary re-renders
@@ -52,9 +48,8 @@ const MapContainer = ({
     }
   }, [markersJSON, filteredMarkers]);
   
-  // Memoize the center location to prevent unnecessary map movements
-  // Ensure we always have valid fallback coordinates
-  const defaultCenter: [number, number] = [37.0902, -95.7129]; // USA center
+  // Get center location with fallback
+  const defaultCenter: [number, number] = [9.0820, 8.6753]; // Nigeria center coordinates
   const center = userLocation && 
                 userLocation[0] && 
                 userLocation[1] && 
@@ -66,26 +61,17 @@ const MapContainer = ({
   const zoom = userLocation ? 12 : 4;
   
   // Handle resize once after initial render
-  const hasResized = useRef(false);
   useEffect(() => {
-    if (mapRef.current && !hasResized.current) {
-      // Set flag to prevent multiple resize attempts
-      hasResized.current = true;
-      
-      // Short delay to let the component fully render
-      const timer = setTimeout(() => {
-        try {
-          if (mapRef.current) {
-            mapRef.current.invalidateSize(true);
-            console.log("Map container: invalidated size");
-          }
-        } catch (error) {
-          console.error("Error during map resize:", error);
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
+    if (mapRef.current && !containerRef.current) return;
+    
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize(true);
+        console.log("Map container: invalidated size");
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, [mapRef]);
 
   // Listen for weapon detection events
@@ -99,7 +85,6 @@ const MapContainer = ({
       }
     };
 
-    // Add event listener for weapon detection
     document.addEventListener('weaponDetected', handleDetectionEvent as EventListener);
     
     return () => {
@@ -114,43 +99,33 @@ const MapContainer = ({
 
   // Handle viewing the alert on the map
   const handleViewAlertOnMap = useCallback(() => {
-    if (activeDetectionAlert && activeDetectionAlert.location && mapRef.current) {
+    if (activeDetectionAlert?.location && mapRef.current) {
       mapRef.current.setView(activeDetectionAlert.location, 18);
       handleCloseDetectionAlert();
     }
   }, [activeDetectionAlert, mapRef, handleCloseDetectionAlert]);
 
-  // Effect to ensure the map takes up full viewport height on mobile
+  // Adjust map height for mobile
   useEffect(() => {
     const adjustHeight = () => {
-      if (containerRef.current && isMobile) {
-        const viewportHeight = window.innerHeight;
-        const position = containerRef.current.getBoundingClientRect();
-        const topOffset = position.top;
-        const availableHeight = viewportHeight - topOffset - 120; // Leave space for buttons at bottom
-        
-        containerRef.current.style.height = `${Math.max(500, availableHeight)}px`;
-        
-        // Force map resize
-        if (mapRef.current) {
-          setTimeout(() => {
-            if (mapRef.current) {
-              mapRef.current.invalidateSize(true);
-            }
-          }, 100);
-        }
+      if (!containerRef.current || !isMobile) return;
+      
+      const viewportHeight = window.innerHeight;
+      const position = containerRef.current.getBoundingClientRect();
+      const topOffset = position.top;
+      const availableHeight = viewportHeight - topOffset - 120;
+      
+      containerRef.current.style.height = `${Math.max(500, availableHeight)}px`;
+      
+      if (mapRef.current) {
+        setTimeout(() => mapRef.current?.invalidateSize(true), 100);
       }
     };
     
-    // Run once on mount and when isMobile changes
     adjustHeight();
-    
-    // Also run when window resizes
     window.addEventListener('resize', adjustHeight);
     
-    return () => {
-      window.removeEventListener('resize', adjustHeight);
-    };
+    return () => window.removeEventListener('resize', adjustHeight);
   }, [isMobile, mapRef]);
 
   return (
@@ -166,14 +141,14 @@ const MapContainer = ({
         borderRadius: '8px', 
         overflow: 'hidden',
         minHeight: '500px',
-        display: 'block' // Ensure the container is visible
+        display: 'block'
       }}
     >
       <div 
         className="h-full w-full relative" 
         style={{ 
           minHeight: isMobile ? '500px' : '600px',
-          display: 'block' // Ensure the container is visible
+          display: 'block'
         }}
       >
         <LeafletMap 
@@ -185,7 +160,6 @@ const MapContainer = ({
           ref={mapRef}
         />
         
-        {/* Add detection overlay */}
         <MapDetectionOverlay
           mapRef={containerRef}
           activeAlert={activeDetectionAlert}
