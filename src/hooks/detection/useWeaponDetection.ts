@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { DetectionMode, DetectionState, DetectionAlert } from '@/types/detection';
