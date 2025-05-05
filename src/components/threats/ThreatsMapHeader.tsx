@@ -1,81 +1,41 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Navigation } from 'lucide-react';
-import { useNavigationService } from './NavigationService';
-import { useToast } from '@/hooks/use-toast';
+import { MapIcon, Shield } from 'lucide-react';
+import WeaponDetectionSystem from '../detection/WeaponDetectionSystem';
+
+interface MapDestination {
+  name: string;
+  coordinates: [number, number];
+}
 
 interface ThreatsMapHeaderProps {
-  destination?: { name: string; coordinates: [number, number] } | null;
+  destination: MapDestination;
 }
 
 const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
-  const { toast } = useToast();
-  
-  // Initialize navigation service with the destination
-  const { startNavigation } = useNavigationService({ 
-    destination: destination || { name: 'Current Location', coordinates: [0, 0] },
-    onNavigate: () => {
-      // Log the navigation event
-      console.log("Navigation initiated to:", destination?.name || "unknown destination");
-    }
-  });
-  
-  // Handle navigation button click
-  const handleNavigate = () => {
-    if (!destination) {
-      toast({
-        title: "No Destination Set",
-        description: "Please set a destination before starting navigation.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    startNavigation();
-  };
-  
   return (
-    <div className="pt-4 pb-6 space-y-2">
-      <div className="flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0284c7" className="h-8 w-8">
-          <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-          <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
-        </svg>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Threat Map</h1>
-          <p className="text-sm text-muted-foreground">Where every second counts.</p>
+    <div className="space-y-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <MapIcon className="h-7 w-7 text-primary/70" />
+            Threat Map
+          </h1>
+          <p className="text-muted-foreground">
+            View threat alerts and stay safe in {destination?.name || 'your area'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm">Share Location</Button>
+          <Button variant="outline" size="sm">Report Threat</Button>
+          <Button variant="default" size="sm">Directions</Button>
         </div>
       </div>
-      
-      <div className="flex items-center justify-between">
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Real-time visualization of threats in your area.
-        </p>
-        
-        {destination && (
-          <div className="flex items-center">
-            <div className="hidden sm:block mr-2 text-sm text-right">
-              <span className="font-medium">{destination.name}</span>
-              <div className="text-muted-foreground text-xs">
-                {destination.coordinates[0].toFixed(4)}, {destination.coordinates[1].toFixed(4)}
-              </div>
-            </div>
-            <Button variant="outline" size="sm" className="h-8" onClick={handleNavigate}>
-              <Navigation className="h-3.5 w-3.5 mr-1.5" />
-              <span className="sm:hidden">Destination</span>
-              <span className="hidden sm:inline">Navigate</span>
-            </Button>
-          </div>
-        )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <WeaponDetectionSystem />
       </div>
-      
-      {!destination && (
-        <div className="flex items-center text-amber-500 mt-1 text-sm">
-          <AlertTriangle className="h-4 w-4 mr-1.5" />
-          <span>No destination set. Safety data will be based on your current location.</span>
-        </div>
-      )}
     </div>
   );
 };

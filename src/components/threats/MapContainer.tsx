@@ -2,7 +2,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import LeafletMap from '@/components/ui/LeafletMap';
 import ThreatDetails from './ThreatDetails';
+import MapDetectionOverlay from './MapDetectionOverlay';
 import { ThreatMarker } from '@/types/threats';
+import { DetectionAlert } from '@/types/detection';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -28,10 +30,13 @@ const MapContainer = ({
 }: MapContainerProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // State for detection alerts
+  const [activeDetectionAlert, setActiveDetectionAlert] = useState<DetectionAlert | null>(null);
   
   // Create a stable key to prevent unnecessary re-creation
   const mapContainerKey = useRef(`map-container-${Date.now()}`).current;
-  const containerRef = useRef<HTMLDivElement>(null);
   
   // Memoize the threat markers to prevent unnecessary re-renders
   const memoizedMarkers = useRef<ThreatMarker[]>([]);
@@ -82,6 +87,38 @@ const MapContainer = ({
       return () => clearTimeout(timer);
     }
   }, [mapRef]);
+
+  // Listen for weapon detection events
+  useEffect(() => {
+    const handleDetectionEvent = (e: CustomEvent) => {
+      const alert: DetectionAlert = e.detail;
+      
+      if (alert) {
+        console.log('Weapon detection alert received:', alert);
+        setActiveDetectionAlert(alert);
+      }
+    };
+
+    // Add event listener for weapon detection
+    document.addEventListener('weaponDetected', handleDetectionEvent as EventListener);
+    
+    return () => {
+      document.removeEventListener('weaponDetected', handleDetectionEvent as EventListener);
+    };
+  }, []);
+
+  // Handle closing the detection alert
+  const handleCloseDetectionAlert = useCallback(() => {
+    setActiveDetectionAlert(null);
+  }, []);
+
+  // Handle viewing the alert on the map
+  const handleViewAlertOnMap = useCallback(() => {
+    if (activeDetectionAlert && activeDetectionAlert.location && mapRef.current) {
+      mapRef.current.setView(activeDetectionAlert.location, 18);
+      handleCloseDetectionAlert();
+    }
+  }, [activeDetectionAlert, mapRef, handleCloseDetectionAlert]);
 
   // Effect to ensure the map takes up full viewport height on mobile
   useEffect(() => {
@@ -146,6 +183,14 @@ const MapContainer = ({
           zoom={zoom}
           showUserLocation={showUserLocation}
           ref={mapRef}
+        />
+        
+        {/* Add detection overlay */}
+        <MapDetectionOverlay
+          mapRef={containerRef}
+          activeAlert={activeDetectionAlert}
+          onCloseAlert={handleCloseDetectionAlert}
+          onViewOnMap={handleViewAlertOnMap}
         />
       </div>
 
