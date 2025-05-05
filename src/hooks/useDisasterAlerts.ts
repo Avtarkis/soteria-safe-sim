@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DisasterAlert } from '@/types/disasters';
 import reliefWebService from '@/services/reliefWebService';
 import { fetchActiveNaturalEvents, transformEonetToDisasterAlerts } from '@/services/eonetService';
+import { weatherService } from '@/services/weatherService'; 
 import { useLocationMapping } from './disaster-alerts/useLocationMapping';
 import { useSampleAlerts } from './disaster-alerts/useSampleAlerts';
 import { useAlertChecker } from './disaster-alerts/useAlertChecker';
@@ -18,18 +19,25 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
   const loadDisasterAlerts = useCallback(async (forceRefresh = false) => {
     try {
       const userCountry = getUserCountry(userLocation);
+      let locationString = '';
+      
+      // If we have user location, convert it to a string for the weather API
+      if (userLocation) {
+        locationString = `${userLocation[0]},${userLocation[1]}`;
+      }
       
       // Fetch disasters from multiple sources
-      const [reliefWebAlerts, eonetEvents] = await Promise.all([
+      const [reliefWebAlerts, eonetEvents, weatherAlerts] = await Promise.all([
         reliefWebService.fetchDisasterAlerts(userCountry),
-        fetchActiveNaturalEvents()
+        fetchActiveNaturalEvents(),
+        userLocation ? weatherService.transformWeatherAlertsToDisasterAlerts(locationString) : []
       ]);
       
       // Transform EONET events to our disaster alert format
       const eonetAlerts = transformEonetToDisasterAlerts(eonetEvents);
       
-      // Combine alerts from both sources
-      let combinedAlerts = [...reliefWebAlerts, ...eonetAlerts];
+      // Combine alerts from all sources
+      let combinedAlerts = [...reliefWebAlerts, ...eonetAlerts, ...weatherAlerts];
       
       // De-duplicate alerts by comparing titles and locations
       combinedAlerts = deduplicateAlerts(combinedAlerts);

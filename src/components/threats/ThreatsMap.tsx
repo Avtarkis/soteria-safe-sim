@@ -6,19 +6,13 @@ import useUserLocation from '@/hooks/useUserLocation';
 import useThreatData from '@/hooks/useThreatData';
 import useMapState from '@/hooks/useMapState';
 import useDestination from '@/hooks/useDestination';
+import useWeatherData from '@/hooks/threats/useWeatherData';
 
 // Import components
 import ThreatsMapHeader from '@/components/threats/ThreatsMapHeader';
 import MainThreatMap from '@/components/threats/MainThreatMap';
-import CurrentLocationCard from '@/components/threats/CurrentLocationCard';
-import RiskAssessmentCard from '@/components/threats/RiskAssessmentCard';
-import EmergencyNumbersCard from '@/components/threats/EmergencyNumbersCard';
-import NearbyAlertsCard from '@/components/threats/NearbyAlertsCard';
-import DisasterAlertsCard from '@/components/threats/DisasterAlertsCard';
-import TravelAdvisoryCard from '@/components/threats/TravelAdvisoryCard';
+import SidebarContent from '@/components/threats/SidebarContent';
 import { useToast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid';
-import { DetectionAlert } from '@/types/detection';
 
 const ThreatsMap = () => {
   const { toast } = useToast();
@@ -37,6 +31,9 @@ const ThreatsMap = () => {
     handleRefresh,
     checkForNewDisasterAlerts
   } = useThreatData(userLocation);
+  
+  // Get weather data
+  const { weatherThreats, weatherAlerts, fetchWeatherThreats } = useWeatherData(userLocation);
   
   // Get map state - initialize with legend showing
   const {
@@ -81,10 +78,15 @@ const ThreatsMap = () => {
     }
   }, [showUserLocation, toggleUserLocation, toast]);
   
+  // Combine threat markers from all sources
+  const combinedMarkers = useMemo(() => {
+    return [...threatMarkers, ...weatherThreats];
+  }, [threatMarkers, weatherThreats]);
+  
   // Memoize the filtered markers to prevent unnecessary recalculations
   const filteredMarkers = useMemo(() => 
-    getFilteredMarkers(threatMarkers), 
-    [threatMarkers, getFilteredMarkers, filters]
+    getFilteredMarkers(combinedMarkers), 
+    [combinedMarkers, getFilteredMarkers, filters]
   );
   
   // Only initialize map once
@@ -108,52 +110,16 @@ const ThreatsMap = () => {
     return destination;
   }, [destination]);
 
-  // Handler for refreshing disaster alerts
-  const handleRefreshDisasterAlerts = useCallback(() => {
-    checkForNewDisasterAlerts?.();
+  // Handler for refreshing data
+  const handleRefreshAll = useCallback(() => {
+    handleRefresh();
+    checkForNewDisasterAlerts();
+    fetchWeatherThreats();
     toast({
-      title: "Checking for Disaster Alerts",
-      description: "Fetching the latest NASA EONET and humanitarian crisis information...",
+      title: "Refreshing Data",
+      description: "Fetching the latest threat, weather, and disaster information...",
     });
-  }, [checkForNewDisasterAlerts, toast]);
-  
-  // Demo function to simulate weapon detection events
-  const simulateWeaponDetection = useCallback(() => {
-    if (!userLocation) return;
-    
-    // Create a simulated detection alert
-    const detectionAlert: DetectionAlert = {
-      id: uuidv4(),
-      title: 'Potential Weapon Detected',
-      description: 'A suspicious object resembling a gun has been detected nearby.',
-      level: Math.random() > 0.7 ? 3 : Math.random() > 0.5 ? 2 : 1,
-      timestamp: new Date().toISOString(),
-      location: [
-        userLocation[0] + (Math.random() * 0.002 - 0.001), 
-        userLocation[1] + (Math.random() * 0.002 - 0.001)
-      ],
-      weaponType: Math.random() > 0.7 ? 'gun' : 'knife',
-      confidence: 0.75 + Math.random() * 0.2,
-      verified: Math.random() > 0.3
-    };
-    
-    // Dispatch the detection event
-    const event = new CustomEvent('weaponDetected', { detail: detectionAlert });
-    document.dispatchEvent(event);
-  }, [userLocation]);
-  
-  // For demo purposes only - remove in production
-  useEffect(() => {
-    const demoButton = document.createElement('button');
-    demoButton.textContent = 'Simulate Detection';
-    demoButton.className = 'fixed bottom-4 right-4 z-50 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium shadow-lg';
-    demoButton.addEventListener('click', simulateWeaponDetection);
-    document.body.appendChild(demoButton);
-    
-    return () => {
-      document.body.removeChild(demoButton);
-    };
-  }, [simulateWeaponDetection]);
+  }, [handleRefresh, checkForNewDisasterAlerts, fetchWeatherThreats, toast]);
 
   return (
     <div className="container pb-10 animate-fade-in">
@@ -174,7 +140,7 @@ const ThreatsMap = () => {
               filteredMarkers={filteredMarkers}
               toggleUserLocation={toggleUserLocation}
               setShowLegend={setShowLegend}
-              handleRefresh={handleRefresh}
+              handleRefresh={handleRefreshAll}
               toggleFilter={toggleFilter}
               handleThreatClick={handleThreatClick}
               clearSelectedThreat={clearSelectedThreat}
@@ -183,37 +149,21 @@ const ThreatsMap = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="space-y-4">
-            <CurrentLocationCard
-              userLocation={userLocation}
-              locationAccuracy={locationAccuracy}
-              showUserLocation={showUserLocation}
-              toggleUserLocation={toggleUserLocation}
-            />
-            
-            <RiskAssessmentCard />
-            
-            <EmergencyNumbersCard
-              emergencyNumbers={emergencyNumbers}
-              userLocation={userLocation}
-              countryCode={countryCode}
-            />
-            
-            <NearbyAlertsCard
-              loading={loading}
-              getNearbyAlerts={() => getNearbyAlerts(threatMarkers)}
-            />
-
-            <DisasterAlertsCard
-              disasterAlerts={disasterAlerts}
-              onRefresh={handleRefreshDisasterAlerts}
-            />
-
-            <TravelAdvisoryCard 
-              userLocation={userLocation}
-              countryCode={countryCode}
-            />
-          </div>
+          <SidebarContent 
+            userLocation={userLocation}
+            locationAccuracy={locationAccuracy}
+            showUserLocation={showUserLocation}
+            toggleUserLocation={toggleUserLocation}
+            loading={loading}
+            threatMarkers={threatMarkers}
+            disasterAlerts={disasterAlerts}
+            weatherAlerts={weatherAlerts}
+            emergencyNumbers={emergencyNumbers}
+            countryCode={countryCode}
+            getNearbyAlerts={() => getNearbyAlerts(threatMarkers)}
+            checkForNewDisasterAlerts={checkForNewDisasterAlerts}
+            destination={formattedDestination.coordinates}
+          />
         </div>
       </div>
     </div>
