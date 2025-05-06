@@ -271,11 +271,10 @@ export class EmergencyResponseSystem {
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: {
-        label: "Cancel",
-        altText: "Cancel emergency countdown",
-        onClick: () => this.cancelEmergency()
-      },
+      action: React.createElement(ToastAction, {
+        onClick: () => this.cancelEmergency(),
+        children: "Cancel",
+      }),
       duration: 10000, // 10 seconds
     });
     
@@ -437,4 +436,6 @@ export class EmergencyResponseSystem {
 // Create and export singleton instance
 const instance = EmergencyResponseSystem.getInstance();
 export default instance;
-export { EmergencyEvent, EmergencyAction, EmergencySettings };
+
+// Use 'export type' for re-exporting types when isolatedModules is enabled
+export type { EmergencyEvent, EmergencyAction, EmergencySettings } from './types';

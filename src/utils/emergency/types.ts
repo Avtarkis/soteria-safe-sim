@@ -1,5 +1,6 @@
 
-import { EmergencyContact } from '@/types/emergency';
+// Import types from emergency.d.ts instead of .ts
+import { EmergencyContact } from '@/types/emergency.d';
 
 export interface EmergencyEvent {
   type: 'weapon' | 'fall' | 'audio' | 'health' | 'manual';
