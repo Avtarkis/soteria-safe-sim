@@ -1,3 +1,4 @@
+
 import { DetectionAlert } from '@/types/detection';
 import { ThreatDetection } from '../ml/PoseDetectionService';
 import { AudioThreatResult } from '../ml/AudioThreatDetection';
@@ -279,16 +280,14 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification with the correct toast action format
+    // Show countdown notification with proper TS syntax
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: <ToastAction 
-        altText="Cancel emergency countdown" 
-        onClick={() => this.cancelEmergency()}
-      >
-        Cancel
-      </ToastAction>,
+      action: React.createElement(ToastAction, {
+        altText: "Cancel emergency countdown",
+        onClick: () => this.cancelEmergency()
+      }, "Cancel"),
       duration: 10000, // 10 seconds
     });
     
@@ -336,9 +335,9 @@ export class EmergencyResponseSystem {
     
     toast({
       title: "Emergency Activated",
-      description: "Emergency response actions are being executed.",
+      description: this.lastEmergencyEvent?.details || 'Emergency actions are being taken.',
       variant: "destructive",
-      duration: 15000,
+      duration: 30000,
     });
   }
   
