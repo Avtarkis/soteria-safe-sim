@@ -1,10 +1,11 @@
-
 import { DetectionAlert } from '@/types/detection';
 import { ThreatDetection } from '../ml/PoseDetectionService';
 import { AudioThreatResult } from '../ml/AudioThreatDetection';
 import { HealthEvent } from '../ml/HealthMonitorService';
 import { emergencyService } from '@/services/emergencyService';
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import React from 'react';
 
 export interface EmergencyEvent {
   type: 'weapon' | 'fall' | 'audio' | 'health' | 'manual';
@@ -278,15 +279,14 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification with fixed action property structure
+    // Show countdown notification with correct action structure
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: {
-        children: "Cancel",
+      action: React.createElement(ToastAction, {
         altText: "Cancel emergency countdown",
         onClick: () => this.cancelEmergency(),
-      },
+      }, "Cancel"),
       duration: 10000, // 10 seconds
     });
     
