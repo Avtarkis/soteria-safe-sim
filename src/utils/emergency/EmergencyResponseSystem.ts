@@ -279,14 +279,16 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification with correct action structure
+    // Show countdown notification with the correct toast action format
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: React.createElement(ToastAction, {
-        altText: "Cancel emergency countdown",
-        onClick: () => this.cancelEmergency(),
-      }, "Cancel"),
+      action: <ToastAction 
+        altText="Cancel emergency countdown" 
+        onClick={() => this.cancelEmergency()}
+      >
+        Cancel
+      </ToastAction>,
       duration: 10000, // 10 seconds
     });
     
