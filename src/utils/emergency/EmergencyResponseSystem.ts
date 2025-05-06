@@ -278,13 +278,14 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification
+    // Show countdown notification with fixed action property structure
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
       action: {
+        children: "Cancel",
+        altText: "Cancel emergency countdown",
         onClick: () => this.cancelEmergency(),
-        children: "Cancel"
       },
       duration: 10000, // 10 seconds
     });
