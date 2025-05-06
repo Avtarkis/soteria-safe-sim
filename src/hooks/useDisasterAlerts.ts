@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { DisasterAlert } from '@/types/disasters';
 import reliefWebService from '@/services/reliefWebService';
@@ -36,11 +35,16 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
       
       console.log(`Fetched alerts - ReliefWeb: ${reliefWebAlerts.length}, EONET: ${eonetEvents.length}, Weather: ${weatherAlerts.length}`);
       
-      // Transform EONET events to our disaster alert format
+      // Transform EONET events to our disaster alert format with better coordinate parsing
       const eonetAlerts = transformEonetToDisasterAlerts(eonetEvents);
       
       // Combine alerts from all sources
       let combinedAlerts = [...reliefWebAlerts, ...eonetAlerts, ...weatherAlerts];
+      
+      // Pre-filter alerts by relevance before deduplication
+      if (userLocation) {
+        combinedAlerts = preFilterByLocation(combinedAlerts, userLocation);
+      }
       
       // De-duplicate alerts by comparing titles and locations
       combinedAlerts = deduplicateAlerts(combinedAlerts);
@@ -79,14 +83,36 @@ export const useDisasterAlerts = (userLocation: [number, number] | null) => {
     }
   }, [userLocation, getUserCountry, getSampleDisasters, localizeAlerts]);
 
+  // Pre-filter alerts by location relevance before localizing
+  const preFilterByLocation = (alerts: DisasterAlert[], userLocation: [number, number]): DisasterAlert[] => {
+    const [userLat, userLng] = userLocation;
+    
+    return alerts.filter(alert => {
+      // Keep alerts without coordinates
+      if (!alert.coordinates || !Array.isArray(alert.coordinates)) {
+        return true;
+      }
+      
+      // Calculate distance between alert and user
+      const [alertLat, alertLng] = alert.coordinates;
+      
+      // Simple distance calculation (rough approximation)
+      const latDiff = Math.abs(userLat - alertLat);
+      const lngDiff = Math.abs(userLng - alertLng);
+      
+      // If within approximately 500km (rough calculation), keep the alert
+      return (latDiff < 5 && lngDiff < 5);
+    });
+  };
+
   // Helper function to deduplicate alerts from multiple sources
   const deduplicateAlerts = (alerts: DisasterAlert[]): DisasterAlert[] => {
     const uniqueAlerts: DisasterAlert[] = [];
     const seenKeys = new Set<string>();
 
     alerts.forEach(alert => {
-      // Create a unique key from title and location
-      const key = `${alert.title.toLowerCase()}-${alert.location.toLowerCase()}`;
+      // Create a unique key from title, type and location
+      const key = `${alert.title.toLowerCase()}-${alert.type}-${alert.location.toLowerCase()}`;
       
       if (!seenKeys.has(key)) {
         seenKeys.add(key);

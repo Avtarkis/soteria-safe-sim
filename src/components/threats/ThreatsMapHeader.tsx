@@ -1,35 +1,28 @@
 
 import React from 'react';
-import WeaponDetectionSystem from '../detection/WeaponDetectionSystem';
 import MapHeaderTitle from './header/MapHeaderTitle';
-import MapLocationButton from './header/MapLocationButton';
 import ReportThreatButton from './header/ReportThreatButton';
 import DirectionsButton from './header/DirectionsButton';
-
-interface MapDestination {
-  name: string;
-  coordinates: [number, number];
-}
+import { EmergencyButtonGroup } from './header/EmergencyButtonGroup';
 
 interface ThreatsMapHeaderProps {
-  destination: MapDestination;
+  destination: {
+    name: string;
+    coordinates: [number, number];
+  };
 }
 
 const ThreatsMapHeader = ({ destination }: ThreatsMapHeaderProps) => {
   return (
-    <div className="space-y-4 mb-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="flex flex-col gap-2 pb-4 md:pb-6">
+      <div className="flex justify-between items-center">
         <MapHeaderTitle destination={destination} />
         
-        <div className="flex flex-wrap gap-2">
-          <MapLocationButton destination={destination} />
+        <div className="flex items-center gap-2">
+          <EmergencyButtonGroup />
           <ReportThreatButton destination={destination} />
           <DirectionsButton destination={destination} />
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <WeaponDetectionSystem />
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import { DisasterAlert } from '@/types/disasters';
 
 export const useAlertLocalization = () => {
@@ -6,47 +5,143 @@ export const useAlertLocalization = () => {
     if (!userLocation) return alerts;
     
     const [lat, lng] = userLocation;
-    const localizedAlerts = [...alerts];
     
     // Get region information based on latitude and longitude ranges
     const region = getRegionFromCoordinates(lat, lng);
     
-    // Apply detected region to existing alerts
-    localizedAlerts.forEach(alert => {
-      if (region) {
-        alert.country = region.country;
-        alert.region = region.region;
-        alert.location = region.location;
-      }
-    });
+    // Filter out alerts that are clearly not relevant to the user's location
+    // and localize the remaining ones
+    const localizedAlerts = alerts
+      .filter(alert => {
+        // If the alert has coordinates, check if it's within reasonable distance (roughly 300km)
+        if (alert.coordinates && Array.isArray(alert.coordinates) && alert.coordinates.length === 2) {
+          const distance = calculateDistance(
+            lat, lng, 
+            alert.coordinates[0], alert.coordinates[1]
+          );
+          return distance < 300; // Keep alerts within 300km
+        }
+        return true; // Keep alerts without coordinates (we'll filter further by location name)
+      })
+      .map(alert => {
+        // Create a new alert object to avoid modifying the original
+        const localizedAlert = { ...alert };
+        
+        // If we have region info, and the alert doesn't have specific coordinates
+        // or its title/location doesn't match the user's region, localize it
+        if (region) {
+          // Check if alert title/location already contains user's location info
+          const alertLocationText = (alert.title + ' ' + alert.location).toLowerCase();
+          const regionText = (region.location + ' ' + region.region + ' ' + region.country).toLowerCase();
+          
+          // If alert doesn't seem to be about the user's location, adapt it
+          if (!containsLocationMatch(alertLocationText, regionText)) {
+            // For NASA EONET data that has location in the title but wrong region
+            if (alert.source === 'NASA EONET') {
+              // Keep the alert type but localize the location
+              const alertType = extractAlertType(alert.title);
+              if (alertType) {
+                localizedAlert.title = `${alertType} in ${region.location}`;
+                localizedAlert.location = region.location;
+                localizedAlert.region = region.region;
+                localizedAlert.country = region.country;
+              }
+            } else {
+              // For other alerts, just update the location information
+              localizedAlert.location = region.location;
+              localizedAlert.region = region.region;
+              localizedAlert.country = region.country;
+            }
+          }
+        }
+        
+        return localizedAlert;
+      });
     
     // Add region-specific local alerts based on geographic location
     const localEvent = getLocalEvent(lat, lng);
-    if (localEvent) {
+    if (localEvent && region) {
       const localAlert: DisasterAlert = {
         id: `local-${Date.now()}`,
         title: localEvent.title,
         type: localEvent.type,
         severity: 'watch',
-        location: region?.location || 'Your area',
+        location: region.location,
         coordinates: [lat, lng],
         description: localEvent.description,
         date: new Date().toISOString(),
         source: 'Local Weather Service',
         active: true,
-        country: region?.country || 'Your Country',
-        region: region?.region || 'Your Region',
+        country: region.country,
+        region: region.region,
       };
       
-      // Replace one remote alert with this local one
-      if (localizedAlerts.length > 2) {
-        localizedAlerts[1] = localAlert;
-      } else {
-        localizedAlerts.unshift(localAlert);
-      }
+      // Add the local alert to the beginning of the array
+      localizedAlerts.unshift(localAlert);
     }
     
-    return localizedAlerts;
+    // Further filter to remove duplicate alert types for the same region
+    const uniqueLocalizedAlerts = removeDuplicateAlertTypes(localizedAlerts);
+    
+    return uniqueLocalizedAlerts;
+  };
+  
+  // Calculate distance between two coordinates using the Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const d = R * c; // Distance in km
+    return d;
+  };
+  
+  const deg2rad = (deg: number): number => {
+    return deg * (Math.PI/180);
+  };
+  
+  // Check if alert location contains parts of user's region
+  const containsLocationMatch = (alertLocation: string, userRegion: string): boolean => {
+    const userRegionParts = userRegion.split(' ');
+    // Check if any significant part of the user's region is in the alert location
+    return userRegionParts.some(part => 
+      part.length > 3 && alertLocation.includes(part.toLowerCase())
+    );
+  };
+  
+  // Extract the alert type from EONET title (e.g., "Wildfire" from "Rx Polk 2469 Wildfire, Polk, Texas")
+  const extractAlertType = (title: string): string | null => {
+    const alertTypes = [
+      'Wildfire', 'Flood', 'Earthquake', 'Hurricane', 'Tornado', 'Storm',
+      'Drought', 'Volcanic Activity', 'Landslide', 'Extreme Temperature'
+    ];
+    
+    for (const type of alertTypes) {
+      if (title.includes(type)) {
+        return type;
+      }
+    }
+    return null;
+  };
+  
+  // Remove duplicate alert types for the same region
+  const removeDuplicateAlertTypes = (alerts: DisasterAlert[]): DisasterAlert[] => {
+    const uniqueAlerts: DisasterAlert[] = [];
+    const seenTypes = new Map<string, boolean>();
+    
+    alerts.forEach(alert => {
+      const key = `${alert.type}-${alert.location}`;
+      if (!seenTypes.has(key)) {
+        seenTypes.set(key, true);
+        uniqueAlerts.push(alert);
+      }
+    });
+    
+    return uniqueAlerts;
   };
   
   // Helper function to determine region from coordinates with global awareness
@@ -141,11 +236,11 @@ export const useAlertLocalization = () => {
       }
     }
     
-    // Default global region
+    // Default global region - improved with more specific naming
     return { 
       country: 'International', 
       region: getGeneralRegionName(lat, lng), 
-      location: 'Current Location' 
+      location: getNearestCityName(lat, lng) 
     };
   };
   
@@ -163,6 +258,46 @@ export const useAlertLocalization = () => {
       if (lng > 60 && lng < 180) return "Oceania/Pacific";
       return "Southern Americas";
     }
+  };
+  
+  // Get nearest major city name based on coordinates
+  const getNearestCityName = (lat: number, lng: number): string => {
+    // Simplified world cities database with major cities
+    const cities = [
+      { name: "New York", lat: 40.7128, lng: -74.0060 },
+      { name: "London", lat: 51.5074, lng: -0.1278 },
+      { name: "Paris", lat: 48.8566, lng: 2.3522 },
+      { name: "Tokyo", lat: 35.6762, lng: 139.6503 },
+      { name: "Sydney", lat: -33.8688, lng: 151.2093 },
+      { name: "Lagos", lat: 6.5244, lng: 3.3792 },
+      { name: "Cairo", lat: 30.0444, lng: 31.2357 },
+      { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
+      { name: "Beijing", lat: 39.9042, lng: 116.4074 },
+      { name: "Rio de Janeiro", lat: -22.9068, lng: -43.1729 },
+      { name: "Mexico City", lat: 19.4326, lng: -99.1332 },
+      { name: "Los Angeles", lat: 34.0522, lng: -118.2437 },
+      { name: "Chicago", lat: 41.8781, lng: -87.6298 },
+      { name: "Houston", lat: 29.7604, lng: -95.3698 },
+      { name: "Berlin", lat: 52.5200, lng: 13.4050 },
+      { name: "Madrid", lat: 40.4168, lng: -3.7038 },
+      { name: "Kano", lat: 12.0022, lng: 8.5920 },
+      { name: "Abuja", lat: 9.0765, lng: 7.3986 },
+      { name: "Port Harcourt", lat: 4.8156, lng: 7.0498 }
+    ];
+    
+    // Find nearest city
+    let nearestCity = "Current Location";
+    let minDistance = Number.MAX_VALUE;
+    
+    for (const city of cities) {
+      const distance = calculateDistance(lat, lng, city.lat, city.lng);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestCity = city.name;
+      }
+    }
+    
+    return nearestCity + " Area";
   };
   
   // Helper function to generate local weather events based on coordinates
