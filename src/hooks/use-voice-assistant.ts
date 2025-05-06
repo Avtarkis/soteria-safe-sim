@@ -1,10 +1,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { useSpeechRecognition } from './use-speech-recognition';
+import { useSpeechRecognition } from './voice/useSpeechRecognition';
 import { useTextToSpeech } from './use-text-to-speech';
 import { processVoiceCommand, generateCommandResponse } from '@/utils/voice-command-processor';
 import { ProcessedCommand } from '@/utils/voice/types';
 import { toast } from './use-toast';
+import SafetyAIMonitoringService from '@/services/SafetyAIMonitoringService';
 
 interface UseVoiceAssistantOptions {
   onCommand?: (command: ProcessedCommand) => void;
@@ -22,6 +23,9 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
   
   const { speak, isSpeaking } = useTextToSpeech();
   const { isListening, transcript, startListening, stopListening, error } = useSpeechRecognition();
+  
+  // Get safety AI monitoring instance
+  const safetyAI = SafetyAIMonitoringService.getInstance();
 
   // Reset error count when starting listening
   useEffect(() => {
@@ -43,6 +47,9 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
       }
       
       try {
+        // Forward to safety AI for emergency detection
+        safetyAI.handleVoiceCommand(transcript, 0.8);
+        
         const command = await processVoiceCommand(transcript);
         
         if (command && command.type !== 'unknown') {
@@ -101,7 +108,7 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
     };
     
     processTranscript();
-  }, [transcript, lastTranscript, options, speak, errorCount]);
+  }, [transcript, lastTranscript, options, speak, errorCount, safetyAI]);
 
   return {
     isListening,
@@ -116,3 +123,5 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
     errorCount
   };
 }
+
+export default useVoiceAssistant;

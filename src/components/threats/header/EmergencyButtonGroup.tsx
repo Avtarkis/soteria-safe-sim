@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PhoneCall, MessageSquare, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
 
 export const EmergencyButtonGroup = () => {
   const { toast } = useToast();
+  const emergencySystem = EmergencyResponseSystem.getInstance();
 
   const handleEmergencyCall = () => {
-    // Existing emergency call function
     try {
-      // This will utilize the existing sendSms() function
-      document.dispatchEvent(new CustomEvent('emergencyCallTriggered'));
+      // Use the emergency response system to handle the call
+      emergencySystem.handleManualTrigger('call');
       
       toast({
         title: "Emergency Call",
@@ -28,10 +30,9 @@ export const EmergencyButtonGroup = () => {
   };
   
   const handleEmergencySMS = () => {
-    // Existing emergency SMS function
     try {
-      // This will utilize the existing makeCall() function
-      document.dispatchEvent(new CustomEvent('emergencySMSTriggered'));
+      // Use the emergency response system to handle the SMS
+      emergencySystem.handleManualTrigger('sms');
       
       toast({
         title: "Emergency SMS",
@@ -50,7 +51,8 @@ export const EmergencyButtonGroup = () => {
 
   const handleSOSAlert = () => {
     try {
-      document.dispatchEvent(new CustomEvent('SOSAlertTriggered'));
+      // Use the emergency response system to handle the SOS
+      emergencySystem.handleManualTrigger('sos');
       
       toast({
         title: "SOS Alert Activated",
