@@ -1,3 +1,4 @@
+
 import { DisasterAlert } from '@/types/disasters';
 
 export const useAlertLocalization = () => {
@@ -9,9 +10,6 @@ export const useAlertLocalization = () => {
     
     // Get region information based on latitude and longitude ranges
     const region = getRegionFromCoordinates(lat, lng);
-    
-    // Create new localized alerts based on user's region
-    const localizedEvents = [];
     
     // Apply detected region to existing alerts
     localizedAlerts.forEach(alert => {
@@ -51,7 +49,7 @@ export const useAlertLocalization = () => {
     return localizedAlerts;
   };
   
-  // Helper function to determine region from coordinates with expanded Africa regions
+  // Helper function to determine region from coordinates with global awareness
   const getRegionFromCoordinates = (lat: number, lng: number): { country: string; region: string; location: string } | null => {
     // North America
     if (lat > 24 && lat < 50 && lng > -125 && lng < -66) {
@@ -144,15 +142,36 @@ export const useAlertLocalization = () => {
     }
     
     // Default global region
-    return { country: 'Global', region: 'Global', location: 'Current Location' };
+    return { 
+      country: 'International', 
+      region: getGeneralRegionName(lat, lng), 
+      location: 'Current Location' 
+    };
   };
   
-  // Helper function to generate local weather events based on coordinates with enhanced Nigeria focus
+  // Get a general region name when no specific region is detected
+  const getGeneralRegionName = (lat: number, lng: number): string => {
+    // Northern Hemisphere regions
+    if (lat > 0) {
+      if (lng > -20 && lng < 60) return "Northern Africa/Middle East";
+      if (lng > 60 && lng < 180) return "Northern Asia/Pacific";
+      return "Northern Americas";
+    }
+    // Southern Hemisphere regions
+    else {
+      if (lng > -20 && lng < 60) return "Southern Africa";
+      if (lng > 60 && lng < 180) return "Oceania/Pacific";
+      return "Southern Americas";
+    }
+  };
+  
+  // Helper function to generate local weather events based on coordinates
   const getLocalEvent = (lat: number, lng: number): { title: string; type: 'earthquake' | 'wildfire' | 'flood' | 'storm' | 'extreme_heat'; description: string } | null => {
+    const currentMonth = new Date().getMonth(); // 0-indexed (0 = January)
+    const currentSeason = getSeason(lat, currentMonth);
+    
     // Nigeria specific events
     if (lat > 4 && lat < 14 && lng > 2 && lng < 15) {
-      const currentMonth = new Date().getMonth(); // 0-indexed (0 = January)
-      
       // Rainy season in southern Nigeria (April to October)
       if (currentMonth >= 3 && currentMonth <= 9 && lat < 9) {
         return {
@@ -179,81 +198,119 @@ export const useAlertLocalization = () => {
           description: 'Very high temperatures expected across Northern Nigeria. Stay hydrated and avoid prolonged sun exposure.'
         };
       }
-      
-      // Early rainy season storms in Middle Belt (March-April)
-      else if (currentMonth >= 2 && currentMonth <= 3 && lat > 7 && lat < 10) {
+    }
+    // Northern Hemisphere
+    else if (lat > 0) {
+      if (currentSeason === 'summer') {
+        // Summer events in northern hemisphere
+        if (lat > 30 && lat < 50) { // Temperate zones
+          return {
+            title: 'Heat Advisory',
+            type: 'extreme_heat',
+            description: 'High temperatures expected over the next 48 hours. Stay hydrated and avoid prolonged sun exposure.'
+          };
+        } else if (lat > 10 && lat < 30) { // Subtropical zones
+          return {
+            title: 'Monsoon Alert',
+            type: 'flood',
+            description: 'Heavy seasonal rains may affect the region. Be prepared for possible flash flooding.'
+          };
+        }
+      } else if (currentSeason === 'winter') {
+        // Winter events in northern hemisphere
+        if (lat > 40) { // Higher latitudes
+          return {
+            title: 'Winter Storm Warning',
+            type: 'storm',
+            description: 'Heavy snowfall and strong winds expected. Travel may be difficult or impossible.'
+          };
+        }
+      } else if (currentSeason === 'spring') {
+        // Spring events
+        if (lat > 30 && lat < 45 && lng > -110 && lng < -80) { // US tornado alley
+          return {
+            title: 'Severe Weather Alert',
+            type: 'storm',
+            description: 'Conditions are favorable for thunderstorm development. Be alert for possible tornado warnings.'
+          };
+        }
+      }
+    }
+    // Southern Hemisphere
+    else {
+      if (currentSeason === 'summer') {
+        // Summer events in southern hemisphere
+        if (lat < -30) { // Australia, South Africa, etc.
+          return {
+            title: 'Bushfire Danger',
+            type: 'wildfire',
+            description: 'High temperatures and dry conditions increase fire risk. Follow local authorities\' instructions.'
+          };
+        }
+      } else if (currentSeason === 'winter') {
+        // Winter events in southern hemisphere
+        if (lat < -20 && lat > -35 && lng > 135 && lng < 155) { // Eastern Australia
+          return {
+            title: 'Coastal Flood Warning',
+            type: 'flood',
+            description: 'High tides and coastal flooding possible along eastern shorelines.'
+          };
+        }
+      }
+    }
+    
+    // General season-based alert when no specific condition matches
+    return getGeneralSeasonalAlert(lat, currentSeason);
+  };
+  
+  // Get season based on hemisphere and month
+  const getSeason = (latitude: number, month: number): 'winter' | 'spring' | 'summer' | 'autumn' => {
+    // Northern hemisphere
+    if (latitude >= 0) {
+      if (month >= 2 && month <= 4) return 'spring';
+      if (month >= 5 && month <= 7) return 'summer';
+      if (month >= 8 && month <= 10) return 'autumn';
+      return 'winter';
+    } 
+    // Southern hemisphere (seasons reversed)
+    else {
+      if (month >= 2 && month <= 4) return 'autumn';
+      if (month >= 5 && month <= 7) return 'winter';
+      if (month >= 8 && month <= 10) return 'spring';
+      return 'summer';
+    }
+  };
+  
+  // Get general seasonal alert when no specific region condition matches
+  const getGeneralSeasonalAlert = (latitude: number, season: string): { title: string; type: 'earthquake' | 'wildfire' | 'flood' | 'storm' | 'extreme_heat'; description: string } | null => {
+    switch (season) {
+      case 'summer':
         return {
-          title: 'Thunderstorm Warning',
+          title: latitude > 0 ? 'Summer Heat Advisory' : 'Summer Weather Alert',
+          type: 'extreme_heat',
+          description: 'Stay hydrated and limit outdoor exposure during peak heat hours.'
+        };
+      case 'winter':
+        return {
+          title: latitude > 0 ? 'Winter Weather Advisory' : 'Winter Storm Watch',
           type: 'storm',
-          description: 'Severe thunderstorms with lightning expected across Nigeria\'s Middle Belt region.'
+          description: 'Be prepared for changing weather conditions and possible precipitation.'
         };
-      }
-      
-      // Coastal flooding concerns (Lagos and coastal areas)
-      else if (lat < 7 && lng < 5) {
+      case 'spring':
         return {
-          title: 'Coastal Flooding Alert',
-          type: 'flood',
-          description: 'Elevated risk of coastal flooding in Lagos and surrounding areas due to high tides.'
+          title: 'Seasonal Storm Alert',
+          type: 'storm',
+          description: 'Spring weather patterns may bring rapidly changing conditions and thunderstorms.'
         };
-      }
+      case 'autumn':
+        return {
+          title: 'Seasonal Weather Change',
+          type: 'storm',
+          description: 'Autumn weather changes may cause strong winds and increased rainfall.'
+        };
+      default:
+        return null;
     }
-    
-    // Other African regions
-    else if (lat > -35 && lat < 38 && lng > -20 && lng < 55) {
-      // East Africa
-      if (lat > -5 && lat < 5 && lng > 30 && lng < 45) {
-        return {
-          title: 'Seasonal Rain Warning',
-          type: 'flood',
-          description: 'Heavy seasonal rains may cause flooding in parts of East Africa.'
-        };
-      }
-      // Southern Africa
-      else if (lat > -35 && lat < -25 && lng > 15 && lng < 35) {
-        return {
-          title: 'Drought Conditions',
-          type: 'extreme_heat',
-          description: 'Ongoing drought conditions affecting water supplies in Southern Africa.'
-        };
-      }
-    }
-    
-    // Default to standard regional events for other areas
-    // North America - more likely to get storms and extreme heat
-    if (lat > 24 && lat < 50 && lng > -125 && lng < -66) {
-      if (lat > 30 && lat < 40 && lng > -100 && lng < -90) { // Southern US
-        return {
-          title: 'Heat Advisory',
-          type: 'extreme_heat',
-          description: 'High temperatures expected over the next 48 hours. Stay hydrated and avoid prolonged sun exposure.'
-        };
-      }
-    }
-    
-    // Europe - more likely to get floods
-    if (lat > 35 && lat < 60 && lng > -10 && lng < 30) {
-      if (lat > 48 && lat < 55 && lng > -5 && lng < 10) { // UK
-        return {
-          title: 'Heavy Rain Warning',
-          type: 'flood',
-          description: 'Persistent rain may lead to localized flooding. Exercise caution when traveling.'
-        };
-      }
-    }
-    
-    // Asia - earthquakes more common in certain regions
-    if (lat > 0 && lat < 60 && lng > 60 && lng < 180) {
-      if (lat > 30 && lat < 40 && lng > 125 && lng < 145) { // Japan
-        return {
-          title: 'Earthquake Advisory',
-          type: 'earthquake',
-          description: 'Seismic activity detected offshore. No immediate danger but stay alert.'
-        };
-      }
-    }
-    
-    return null;
   };
 
   return { localizeAlerts };

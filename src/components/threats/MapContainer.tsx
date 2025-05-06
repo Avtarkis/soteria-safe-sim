@@ -1,13 +1,13 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import LeafletMap from '@/components/ui/LeafletMap';
-import ThreatDetails from './ThreatDetails';
-import MapDetectionOverlay from './MapDetectionOverlay';
 import { ThreatMarker } from '@/types/threats';
 import { DetectionAlert } from '@/types/detection';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import MapContent from './map/MapContent';
+import DetectionOverlayWrapper from './map/DetectionOverlayWrapper';
+import ThreatDetailsWrapper from './map/ThreatDetailsWrapper';
 
 interface MapContainerProps {
   mapRef: React.RefObject<L.Map>;
@@ -47,18 +47,6 @@ const MapContainer = ({
       memoizedMarkers.current = filteredMarkers;
     }
   }, [markersJSON, filteredMarkers]);
-  
-  // Get center location with fallback
-  const defaultCenter: [number, number] = [9.0820, 8.6753]; // Nigeria center coordinates
-  const center = userLocation && 
-                userLocation[0] && 
-                userLocation[1] && 
-                !isNaN(userLocation[0]) && 
-                !isNaN(userLocation[1]) 
-                  ? userLocation 
-                  : defaultCenter;
-  
-  const zoom = userLocation ? 12 : 4;
   
   // Handle resize once after initial render
   useEffect(() => {
@@ -144,37 +132,26 @@ const MapContainer = ({
         display: 'block'
       }}
     >
-      <div 
-        className="h-full w-full relative" 
-        style={{ 
-          minHeight: isMobile ? '500px' : '600px',
-          display: 'block'
-        }}
-      >
-        <LeafletMap 
-          markers={memoizedMarkers.current}
-          onMarkerClick={handleThreatClick}
-          center={center}
-          zoom={zoom}
-          showUserLocation={showUserLocation}
-          ref={mapRef}
-        />
-        
-        <MapDetectionOverlay
-          mapRef={containerRef}
-          activeAlert={activeDetectionAlert}
-          onCloseAlert={handleCloseDetectionAlert}
-          onViewOnMap={handleViewAlertOnMap}
-        />
-      </div>
+      <MapContent
+        mapRef={mapRef}
+        filteredMarkers={memoizedMarkers.current}
+        handleThreatClick={handleThreatClick}
+        userLocation={userLocation}
+        showUserLocation={showUserLocation}
+      />
+      
+      <DetectionOverlayWrapper
+        containerRef={containerRef}
+        activeAlert={activeDetectionAlert}
+        onCloseAlert={handleCloseDetectionAlert}
+        onViewOnMap={handleViewAlertOnMap}
+      />
 
-      {selectedThreat && (
-        <ThreatDetails 
-          selectedThreat={selectedThreat}
-          clearSelectedThreat={clearSelectedThreat}
-          className={isMobile ? "absolute bottom-16 left-0 right-0 max-h-64 overflow-auto z-20" : ""}
-        />
-      )}
+      <ThreatDetailsWrapper 
+        selectedThreat={selectedThreat}
+        clearSelectedThreat={clearSelectedThreat}
+        isMobile={isMobile}
+      />
     </div>
   );
 };
