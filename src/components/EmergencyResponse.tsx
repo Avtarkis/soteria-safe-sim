@@ -8,7 +8,6 @@ import EmergencyContacts from './emergency/EmergencyContacts';
 import SafetyPlan from './emergency/SafetyPlan';
 import AIMonitoringStatus from './ai/AIMonitoringStatus';
 import AIDetections from './ai/AIDetections';
-import { ArrowRight } from 'lucide-react';
 
 // Define emergency contacts
 const EmergencyContactsList = [

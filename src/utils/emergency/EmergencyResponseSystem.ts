@@ -7,37 +7,24 @@ import { emergencyService } from '@/services/emergencyService';
 import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import React from 'react';
-
-export interface EmergencyEvent {
-  type: 'weapon' | 'fall' | 'audio' | 'health' | 'manual';
-  subtype?: string;
-  confidence: number;
-  timestamp: number;
-  location?: [number, number];
-  details?: string;
-  source: 'pose' | 'audio' | 'sensor' | 'voice' | 'manual';
-}
-
-export interface EmergencyAction {
-  type: 'sms' | 'call' | 'record' | 'notify' | 'siren' | 'broadcast';
-  target?: string;
-  data?: any;
-}
-
-export interface EmergencyContact {
-  name: string;
-  relationship: string;
-  phone: string;
-  priority: number;
-}
-
-export interface EmergencySettings {
-  autoNotifyContacts: boolean;
-  autoCallEmergencyServices: boolean;
-  autoRecord: boolean;
-  confidenceThreshold: number;
-  emergencyContacts: EmergencyContact[];
-}
+import { 
+  EmergencyEvent, 
+  EmergencyAction,
+  EmergencySettings 
+} from './types';
+import {
+  sendEmergencySMS,
+  makeEmergencyCall,
+  startRecording,
+  notifyUser,
+  activateSiren,
+  broadcastAlert
+} from './actions/emergencyActions';
+import {
+  createDetectionAlert,
+  dispatchDetectionAlert,
+  getEmergencyTitle
+} from './handlers/eventProcessors';
 
 export class EmergencyResponseSystem {
   private static instance: EmergencyResponseSystem;
@@ -280,14 +267,15 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification with proper TS syntax
+    // Show countdown notification with proper TS syntax for toast action
     toast({
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: React.createElement(ToastAction, {
+      action: {
+        label: "Cancel",
         altText: "Cancel emergency countdown",
         onClick: () => this.cancelEmergency()
-      }, "Cancel"),
+      },
       duration: 10000, // 10 seconds
     });
     
@@ -331,14 +319,15 @@ export class EmergencyResponseSystem {
     this.executeEmergencyActions();
     
     // Create a detection alert
-    this.createDetectionAlert();
+    const alert = createDetectionAlert(this.lastEmergencyEvent);
+    if (alert) {
+      dispatchDetectionAlert(alert);
+    }
     
-    toast({
-      title: "Emergency Activated",
-      description: this.lastEmergencyEvent?.details || 'Emergency actions are being taken.',
-      variant: "destructive",
-      duration: 30000,
-    });
+    notifyUser(
+      getEmergencyTitle(this.lastEmergencyEvent!), 
+      this.lastEmergencyEvent?.details || 'Emergency actions are being taken.'
+    );
   }
   
   private determineEmergencyActions(): void {
@@ -406,22 +395,22 @@ export class EmergencyResponseSystem {
       try {
         switch (action.type) {
           case 'sms':
-            this.sendEmergencySMS();
+            sendEmergencySMS();
             break;
           case 'call':
-            this.makeEmergencyCall();
+            makeEmergencyCall();
             break;
           case 'record':
-            this.startRecording();
+            startRecording();
             break;
           case 'notify':
-            this.notifyUser();
+            // This is handled separately in triggerEmergency
             break;
           case 'siren':
-            this.activateSiren();
+            activateSiren();
             break;
           case 'broadcast':
-            this.broadcastAlert();
+            broadcastAlert();
             break;
         }
       } catch (error) {
@@ -430,117 +419,6 @@ export class EmergencyResponseSystem {
         this.actionsInProgress.delete(actionKey);
       }
     });
-  }
-  
-  private createDetectionAlert(): void {
-    if (!this.lastEmergencyEvent) return;
-    
-    // Create a detection alert to display on the map
-    const alert: DetectionAlert = {
-      id: `emergency-${Date.now()}`,
-      title: this.getEmergencyTitle(),
-      description: this.lastEmergencyEvent.details || 'Emergency situation detected',
-      level: 3, // High level alert
-      timestamp: new Date().toISOString(),
-      location: this.lastEmergencyEvent.location,
-      weaponType: this.lastEmergencyEvent.type === 'weapon' ? this.lastEmergencyEvent.subtype : undefined,
-      confidence: this.lastEmergencyEvent.confidence,
-      verified: this.lastEmergencyEvent.source === 'manual'
-    };
-    
-    // Dispatch event to be picked up by the map
-    try {
-      const event = new CustomEvent('weaponDetected', { detail: alert });
-      document.dispatchEvent(event);
-    } catch (error) {
-      console.error('Error dispatching weapon detection event:', error);
-    }
-  }
-  
-  private getEmergencyTitle(): string {
-    if (!this.lastEmergencyEvent) return 'Emergency Alert';
-    
-    switch (this.lastEmergencyEvent.type) {
-      case 'weapon':
-        return 'Weapon Threat Detected';
-      case 'fall':
-        return 'Fall Detected';
-      case 'health':
-        return 'Health Emergency';
-      case 'audio':
-        if (this.lastEmergencyEvent.subtype === 'gunshot') return 'Gunshot Detected';
-        if (this.lastEmergencyEvent.subtype === 'scream') return 'Scream Detected';
-        if (this.lastEmergencyEvent.subtype === 'explosion') return 'Explosion Detected';
-        return `Audio Threat: ${this.lastEmergencyEvent.subtype}`;
-      case 'manual':
-        return 'SOS Emergency Alert';
-      default:
-        return 'Emergency Alert';
-    }
-  }
-  
-  private sendEmergencySMS(): void {
-    try {
-      // Using the existing sendSms function
-      document.dispatchEvent(new CustomEvent('sendSms'));
-      
-      console.log('Emergency SMS sent');
-    } catch (error) {
-      console.error('Error sending emergency SMS:', error);
-    }
-  }
-  
-  private makeEmergencyCall(): void {
-    try {
-      // Using the existing makeCall function
-      document.dispatchEvent(new CustomEvent('makeCall'));
-      
-      console.log('Emergency call initiated');
-    } catch (error) {
-      console.error('Error making emergency call:', error);
-    }
-  }
-  
-  private startRecording(): void {
-    try {
-      // Trigger recording system
-      document.dispatchEvent(new CustomEvent('startEmergencyRecording'));
-      
-      console.log('Emergency recording started');
-    } catch (error) {
-      console.error('Error starting emergency recording:', error);
-    }
-  }
-  
-  private notifyUser(): void {
-    toast({
-      title: this.getEmergencyTitle(),
-      description: this.lastEmergencyEvent?.details || 'Emergency actions are being taken.',
-      variant: "destructive",
-      duration: 30000,
-    });
-  }
-  
-  private activateSiren(): void {
-    try {
-      // Trigger siren
-      document.dispatchEvent(new CustomEvent('activateEmergencySiren'));
-      
-      console.log('Emergency siren activated');
-    } catch (error) {
-      console.error('Error activating emergency siren:', error);
-    }
-  }
-  
-  private broadcastAlert(): void {
-    try {
-      // Broadcast alert to nearby devices
-      document.dispatchEvent(new CustomEvent('broadcastEmergencyAlert'));
-      
-      console.log('Emergency alert broadcasted');
-    } catch (error) {
-      console.error('Error broadcasting emergency alert:', error);
-    }
   }
   
   public updateSettings(newSettings: Partial<EmergencySettings>): void {
@@ -559,3 +437,4 @@ export class EmergencyResponseSystem {
 // Create and export singleton instance
 const instance = EmergencyResponseSystem.getInstance();
 export default instance;
+export { EmergencyEvent, EmergencyAction, EmergencySettings };
