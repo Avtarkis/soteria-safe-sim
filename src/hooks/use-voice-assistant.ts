@@ -25,7 +25,7 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
   const { isListening, transcript, startListening, stopListening, error } = useSpeechRecognition();
   
   // Get safety AI monitoring instance
-  const safetyAI = SafetyAIMonitoringService.getInstance();
+  const safetyAI = SafetyAIMonitoringService;
 
   // Reset error count when starting listening
   useEffect(() => {

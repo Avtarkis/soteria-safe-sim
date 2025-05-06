@@ -283,8 +283,8 @@ export class EmergencyResponseSystem {
       title: "Emergency Countdown Started",
       description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
       action: {
-        label: "Cancel",
-        onClick: () => this.cancelEmergency()
+        onClick: () => this.cancelEmergency(),
+        children: "Cancel"
       },
       duration: 10000, // 10 seconds
     });
@@ -554,4 +554,6 @@ export class EmergencyResponseSystem {
   }
 }
 
-export default EmergencyResponseSystem.getInstance();
+// Create and export singleton instance
+const instance = EmergencyResponseSystem.getInstance();
+export default instance;

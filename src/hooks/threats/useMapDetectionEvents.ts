@@ -5,7 +5,7 @@ import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
 
 export const useMapDetectionEvents = (mapRef: React.RefObject<L.Map>) => {
   const [activeDetectionAlert, setActiveDetectionAlert] = useState<DetectionAlert | null>(null);
-  const emergencySystem = EmergencyResponseSystem.getInstance();
+  const emergencySystem = EmergencyResponseSystem;
 
   // Listen for weapon detection events and emergency alerts
   useEffect(() => {

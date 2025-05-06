@@ -7,7 +7,7 @@ import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
 
 export const EmergencyButtonGroup = () => {
   const { toast } = useToast();
-  const emergencySystem = EmergencyResponseSystem.getInstance();
+  const emergencySystem = EmergencyResponseSystem;
 
   const handleEmergencyCall = () => {
     try {

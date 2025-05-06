@@ -67,7 +67,7 @@ class SafetyAIMonitoringService {
       );
       
       // Initialize emergency response system
-      EmergencyResponseSystem.getInstance().activate();
+      EmergencyResponseSystem.activate();
       
       this.initialized = true;
       return true;
@@ -102,17 +102,17 @@ class SafetyAIMonitoringService {
       this.active = true;
       
       // Start sensor collection
-      SensorManager.getInstance().startSensors();
+      SensorManager.startSensors();
       
       // Set up sensor data handler
       this.sensorDataHandler = (data) => {
         if (healthMonitoring && this.active) {
-          HealthMonitorService.getInstance().processSensorData(data);
+          HealthMonitorService.processSensorData(data);
         }
       };
       
       // Subscribe to sensor data
-      SensorManager.getInstance().subscribe(this.sensorDataHandler);
+      SensorManager.subscribe(this.sensorDataHandler);
       
       // Start health monitoring if requested
       if (healthMonitoring) {
@@ -150,18 +150,18 @@ class SafetyAIMonitoringService {
     if (!this.active) return;
     
     // Stop all monitoring services
-    PoseDetectionService.getInstance().stopDetection();
-    AudioThreatDetectionService.getInstance().stopDetection();
-    HealthMonitorService.getInstance().stopMonitoring();
+    PoseDetectionService.stopDetection();
+    AudioThreatDetectionService.stopDetection();
+    HealthMonitorService.stopMonitoring();
     
     // Unsubscribe from sensor data
     if (this.sensorDataHandler) {
-      SensorManager.getInstance().unsubscribe(this.sensorDataHandler);
+      SensorManager.unsubscribe(this.sensorDataHandler);
       this.sensorDataHandler = null;
     }
     
     // Stop sensors
-    SensorManager.getInstance().stopSensors();
+    SensorManager.stopSensors();
     
     this.active = false;
     this.updateStatus({
@@ -177,10 +177,10 @@ class SafetyAIMonitoringService {
   private async setupPoseDetection(videoElement: HTMLVideoElement): Promise<boolean> {
     try {
       // Initialize pose detection service
-      await PoseDetectionService.getInstance().initialize();
+      await PoseDetectionService.initialize();
       
       // Start detection
-      return await PoseDetectionService.getInstance().startDetection(
+      return await PoseDetectionService.startDetection(
         videoElement,
         (result) => {
           // Handle pose detection results
@@ -198,7 +198,7 @@ class SafetyAIMonitoringService {
             
             // Forward threats to emergency response system
             result.threats.forEach(threat => {
-              EmergencyResponseSystem.getInstance().handleThreatDetection(threat);
+              EmergencyResponseSystem.handleThreatDetection(threat);
             });
           }
         }
@@ -212,10 +212,10 @@ class SafetyAIMonitoringService {
   private async setupAudioDetection(): Promise<boolean> {
     try {
       // Initialize audio threat detection
-      await AudioThreatDetectionService.getInstance().initialize();
+      await AudioThreatDetectionService.initialize();
       
       // Start detection
-      return await AudioThreatDetectionService.getInstance().startDetection(
+      return await AudioThreatDetectionService.startDetection(
         (result) => {
           // Handle audio threat detection
           if (result.detected) {
@@ -231,7 +231,7 @@ class SafetyAIMonitoringService {
             });
             
             // Forward to emergency response system
-            EmergencyResponseSystem.getInstance().handleAudioThreat(result);
+            EmergencyResponseSystem.handleAudioThreat(result);
           }
         }
       );
@@ -244,10 +244,10 @@ class SafetyAIMonitoringService {
   private async setupHealthMonitoring(): Promise<boolean> {
     try {
       // Initialize health monitoring
-      await HealthMonitorService.getInstance().initialize();
+      await HealthMonitorService.initialize();
       
       // Start monitoring
-      return HealthMonitorService.getInstance().startMonitoring(
+      return HealthMonitorService.startMonitoring(
         (event) => {
           // Handle health events
           if (event.type !== 'normal') {
@@ -263,7 +263,7 @@ class SafetyAIMonitoringService {
             });
             
             // Forward to emergency response system
-            EmergencyResponseSystem.getInstance().handleHealthEvent(event);
+            EmergencyResponseSystem.handleHealthEvent(event);
           }
         }
       );
@@ -326,7 +326,7 @@ class SafetyAIMonitoringService {
     );
     
     if (isEmergency) {
-      EmergencyResponseSystem.getInstance().handleVoiceTrigger(command, confidence);
+      EmergencyResponseSystem.handleVoiceTrigger(command, confidence);
     }
   }
   
@@ -334,9 +334,12 @@ class SafetyAIMonitoringService {
     if (!this.active) return;
     
     // Process data from external sources
-    SensorManager.getInstance().processEnvironmentReading(reading);
+    SensorManager.processEnvironmentReading(reading);
   }
 }
+
+// Create singleton instance
+const instance = SafetyAIMonitoringService.getInstance();
 
 // Hook for using the SafetyAI monitoring service
 export function useSafetyAIMonitoring() {
@@ -356,7 +359,7 @@ export function useSafetyAIMonitoring() {
   
   const [emergencyActive, setEmergencyActive] = useState<boolean>(false);
   
-  const safetyAI = SafetyAIMonitoringService.getInstance();
+  const safetyAI = instance;
   
   // Initialize the service
   useEffect(() => {
@@ -364,7 +367,7 @@ export function useSafetyAIMonitoring() {
     
     // Check emergency status
     const checkEmergency = () => {
-      const isActive = EmergencyResponseSystem.getInstance().isEmergencyActive();
+      const isActive = EmergencyResponseSystem.isEmergencyActive();
       setEmergencyActive(isActive);
     };
     
@@ -409,4 +412,4 @@ export function useSafetyAIMonitoring() {
   };
 }
 
-export default SafetyAIMonitoringService.getInstance();
+export default instance;

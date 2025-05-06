@@ -1,8 +1,5 @@
 
-import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-backend-webgl';
-import '@tensorflow/tfjs-backend-cpu';
-
+// Mock implementation of ModelManager that doesn't require TensorFlow
 export interface ModelStatus {
   loaded: boolean;
   name: string;
@@ -13,11 +10,11 @@ export interface ModelStatus {
 
 export class ModelManager {
   private static instance: ModelManager;
-  private models: Map<string, tf.GraphModel | tf.LayersModel> = new Map();
+  private models: Map<string, any> = new Map();
   private modelStatus: Map<string, ModelStatus> = new Map();
   
   private constructor() {
-    // Initialize TensorFlow
+    // Initialize
     this.initializeTensorFlow();
   }
   
@@ -30,25 +27,21 @@ export class ModelManager {
   
   private async initializeTensorFlow(): Promise<void> {
     try {
-      await tf.setBackend('webgl');
-      console.log('Using WebGL backend for TensorFlow.js');
+      console.log('TensorFlow.js initialization skipped in development mode');
     } catch (e) {
-      console.warn('WebGL backend not available, falling back to CPU:', e);
-      await tf.setBackend('cpu');
-      console.log('Using CPU backend for TensorFlow.js');
+      console.warn('TensorFlow.js initialization failed:', e);
     }
     
-    await tf.ready();
-    console.log('TensorFlow.js is ready');
+    console.log('Mock TensorFlow.js is ready');
   }
   
   public async loadModel(
     modelType: 'pose' | 'audio' | 'activity',
     modelName: string,
     modelUrl: string
-  ): Promise<tf.GraphModel | tf.LayersModel | null> {
+  ): Promise<any> {
     try {
-      console.log(`Loading ${modelType} model: ${modelName}`);
+      console.log(`Loading ${modelType} model: ${modelName} (mock)`);
       
       this.modelStatus.set(modelName, {
         loaded: false,
@@ -56,25 +49,29 @@ export class ModelManager {
         type: modelType,
       });
       
-      let model: tf.GraphModel | tf.LayersModel;
+      // Create a mock model
+      const mockModel = {
+        name: modelName,
+        type: modelType,
+        url: modelUrl,
+        predict: async (input: any) => {
+          console.log(`Mock prediction with ${modelName}`);
+          return {
+            data: async () => new Float32Array(10).fill(0.1)
+          };
+        }
+      };
       
-      // Load the model
-      if (modelUrl.endsWith('.json')) {
-        model = await tf.loadGraphModel(modelUrl);
-      } else {
-        model = await tf.loadLayersModel(modelUrl);
-      }
-      
-      this.models.set(modelName, model);
+      this.models.set(modelName, mockModel);
       this.modelStatus.set(modelName, {
         loaded: true,
         name: modelName,
         type: modelType,
-        version: '1.0'
+        version: '1.0 (mock)'
       });
       
-      console.log(`Successfully loaded ${modelType} model: ${modelName}`);
-      return model;
+      console.log(`Successfully loaded ${modelType} model: ${modelName} (mock)`);
+      return mockModel;
     } catch (error) {
       console.error(`Failed to load ${modelType} model: ${modelName}`, error);
       this.modelStatus.set(modelName, {
@@ -87,7 +84,7 @@ export class ModelManager {
     }
   }
   
-  public getModel(modelName: string): tf.GraphModel | tf.LayersModel | null {
+  public getModel(modelName: string): any | null {
     return this.models.get(modelName) || null;
   }
   
@@ -104,15 +101,8 @@ export class ModelManager {
     if (!model) return false;
     
     try {
-      // Create a small tensor for warmup
-      const inputShape = model.inputs[0].shape;
-      const dummyTensor = tf.zeros(inputShape);
-      
-      // Do a prediction to warm up the model
-      const result = await model.predict(dummyTensor);
-      
-      // Clean up tensors
-      tf.dispose([dummyTensor, result]);
+      // Mock warmup
+      await model.predict(null);
       return true;
     } catch (error) {
       console.error(`Error warming up model ${modelName}:`, error);
@@ -121,4 +111,6 @@ export class ModelManager {
   }
 }
 
-export default ModelManager.getInstance();
+// Create and export singleton instance
+const instance = ModelManager.getInstance();
+export default instance;

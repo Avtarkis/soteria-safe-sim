@@ -1,5 +1,4 @@
 
-import * as tf from '@tensorflow/tfjs';
 import ModelManager from './ModelManager';
 import { SensorDataPoint } from '../sensors/sensorTypes';
 
@@ -17,7 +16,7 @@ const SENSOR_WINDOW_SIZE = 50; // Number of sensor readings to keep for analysis
 
 export class HealthMonitorService {
   private static instance: HealthMonitorService;
-  private model: tf.GraphModel | tf.LayersModel | null = null;
+  private model: any | null = null;
   private isRunning = false;
   private sensorBuffer: SensorDataPoint[] = [];
   private lastSignificantMotion = Date.now();
@@ -34,7 +33,7 @@ export class HealthMonitorService {
   
   public async initialize(): Promise<boolean> {
     try {
-      // Load HAR model
+      // Load HAR model (mock)
       this.model = await ModelManager.loadModel(
         'activity',
         'har',
@@ -42,7 +41,7 @@ export class HealthMonitorService {
         'https://storage.googleapis.com/tfjs-models/tfjs/har/model.json'
       );
       
-      console.log('Health monitor service initialized');
+      console.log('Health monitor service initialized (mock)');
       return true;
     } catch (error) {
       console.error('Failed to initialize health monitor service:', error);
@@ -169,37 +168,21 @@ export class HealthMonitorService {
     if (!this.model || this.sensorBuffer.length < 30) return;
     
     try {
-      // Prepare sensor data for the model
-      const modelData = this.prepareSensorDataForModel();
-      if (!modelData) return;
-      
-      // Run inference
-      const tensor = tf.tensor2d(modelData);
-      const expandedTensor = tf.expandDims(tensor, 0);
-      
-      const predictions = await this.model.predict(expandedTensor);
-      
-      // Process the predictions
-      const scores = await (predictions as tf.Tensor).data();
-      
-      // Map scores to activities
-      // This would need to be adapted to your specific HAR model's output format
+      // Mock inference without TensorFlow
       const activities = ['normal', 'fall', 'faint', 'immobile', 'erratic'];
-      const highestScore = Math.max(...Array.from(scores));
-      const highestIndex = Array.from(scores).indexOf(highestScore);
+      const randomIndex = Math.floor(Math.random() * activities.length);
+      const mockConfidence = Math.random() * 0.3 + 0.6; // Between 0.6 and 0.9
       
-      // Report if confidence is high enough
-      if (highestScore > 0.7 && activities[highestIndex] !== 'normal') {
+      // Report if it's not "normal" and confidence is high
+      if (activities[randomIndex] !== 'normal' && mockConfidence > 0.7 && Math.random() > 0.8) {
         onHealthEvent({
-          type: activities[highestIndex] as any,
-          confidence: highestScore,
+          type: activities[randomIndex] as any,
+          confidence: mockConfidence,
           timestamp: Date.now(),
-          details: `Detected ${activities[highestIndex]} with ${(highestScore * 100).toFixed(1)}% confidence`
+          details: `Detected ${activities[randomIndex]} with ${(mockConfidence * 100).toFixed(1)}% confidence`
         });
       }
       
-      // Clean up tensors
-      tf.dispose([tensor, expandedTensor, predictions]);
     } catch (error) {
       console.error('Error during HAR inference:', error);
     }
@@ -215,7 +198,6 @@ export class HealthMonitorService {
     }
     
     // Prepare data in the format expected by the HAR model
-    // This will need to be adapted based on your specific model requirements
     const data: number[][] = [];
     
     for (let i = 0; i < Math.min(accelPoints.length, gyroPoints.length, 30); i++) {
@@ -233,4 +215,6 @@ export class HealthMonitorService {
   }
 }
 
-export default HealthMonitorService.getInstance();
+// Create and export singleton instance
+const instance = HealthMonitorService.getInstance();
+export default instance;

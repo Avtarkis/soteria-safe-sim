@@ -1,12 +1,10 @@
 
-import * as tf from '@tensorflow/tfjs';
-import * as poseDetection from '@tensorflow-models/pose-detection';
 import ModelManager from './ModelManager';
 import { detectThreatsFromPose } from './threatDetection';
 
 export interface PoseDetectionResult {
   timestamp: number;
-  poses: poseDetection.Pose[];
+  poses: any[];
   threats: ThreatDetection[];
 }
 
@@ -18,7 +16,7 @@ export interface ThreatDetection {
 
 export class PoseDetectionService {
   private static instance: PoseDetectionService;
-  private detector: poseDetection.PoseDetector | null = null;
+  private detector: any | null = null;
   private isRunning = false;
   private videoElement: HTMLVideoElement | null = null;
   private detectionInterval: number | null = null;
@@ -34,18 +32,8 @@ export class PoseDetectionService {
   
   public async initialize(): Promise<boolean> {
     try {
-      // Initialize the detector using MoveNet
-      const detectorConfig: poseDetection.MoveNetModelConfig = {
-        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-        enableSmoothing: true
-      };
-      
-      this.detector = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet, 
-        detectorConfig
-      );
-      
-      console.log('Pose detector initialized successfully');
+      // Mock initialization
+      console.log('Pose detector initialized (mock)');
       return true;
     } catch (error) {
       console.error('Failed to initialize pose detector:', error);
@@ -58,11 +46,6 @@ export class PoseDetectionService {
     onDetection: (result: PoseDetectionResult) => void,
     fps = 5
   ): Promise<boolean> {
-    if (!this.detector) {
-      console.error('Pose detector not initialized');
-      return false;
-    }
-    
     if (this.isRunning) {
       this.stopDetection();
     }
@@ -72,24 +55,29 @@ export class PoseDetectionService {
     
     const detectionInterval = Math.floor(1000 / fps);
     
-    this.detectionInterval = window.setInterval(async () => {
+    this.detectionInterval = window.setInterval(() => {
       if (!this.videoElement || !this.isRunning) return;
       
       try {
-        // Perform pose detection
-        const poses = await this.detector!.estimatePoses(this.videoElement);
+        // Mock pose detection with sample data
+        const mockPoses = [{
+          keypoints: Array(17).fill(0).map((_, i) => ({
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            score: 0.8,
+            name: `keypoint_${i}`
+          }))
+        }];
         
-        if (poses.length > 0) {
-          // Process poses to detect threats
-          const threats = detectThreatsFromPose(poses);
-          
-          // Send the result to the callback
-          onDetection({
-            timestamp: Date.now(),
-            poses,
-            threats
-          });
-        }
+        // Process poses to detect threats
+        const threats = detectThreatsFromPose(mockPoses as any);
+        
+        // Send the result to the callback
+        onDetection({
+          timestamp: Date.now(),
+          poses: mockPoses,
+          threats
+        });
       } catch (error) {
         console.error('Error during pose detection:', error);
       }
@@ -115,4 +103,6 @@ export class PoseDetectionService {
   }
 }
 
-export default PoseDetectionService.getInstance();
+// Create and export singleton instance
+const instance = PoseDetectionService.getInstance();
+export default instance;

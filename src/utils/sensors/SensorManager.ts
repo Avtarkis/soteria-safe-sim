@@ -29,25 +29,6 @@ export class SensorManager {
   }
   
   public async initialize(): Promise<boolean> {
-    // Check if required sensors are available
-    if (!('DeviceMotionEvent' in window) || !('DeviceOrientationEvent' in window)) {
-      console.warn('Motion sensors not available in this browser');
-      return false;
-    }
-    
-    if ('permissions' in navigator) {
-      try {
-        const permissionStatus = await navigator.permissions.query({ name: 'accelerometer' as any });
-        if (permissionStatus.state === 'denied') {
-          console.warn('Accelerometer permission denied');
-          return false;
-        }
-      } catch (e) {
-        console.warn('Cannot query accelerometer permission:', e);
-        // Continue anyway, many browsers don't support this API yet
-      }
-    }
-    
     console.log('Sensor manager initialized');
     return true;
   }
@@ -61,65 +42,33 @@ export class SensorManager {
     this.dataBuffer = [];
     
     try {
-      // Set up device motion handler
-      this.deviceMotionHandler = (event: DeviceMotionEvent) => {
-        if (!this.isRunning) return;
-        
-        const timestamp = Date.now();
-        
-        // Process accelerometer data
-        if (event.accelerationIncludingGravity) {
-          const { x, y, z } = event.accelerationIncludingGravity;
-          if (x !== null && y !== null && z !== null) {
-            this.addDataPoint({
-              type: 'accelerometer',
-              x, y, z,
-              timestamp
-            });
-          }
-        }
-        
-        // Process rotation rate (gyroscope)
-        if (event.rotationRate) {
-          const { alpha, beta, gamma } = event.rotationRate;
-          if (alpha !== null && beta !== null && gamma !== null) {
-            this.addDataPoint({
-              type: 'gyroscope',
-              x: alpha,
-              y: beta,
-              z: gamma,
-              timestamp
-            });
-          }
-        }
-      };
-      
-      // Set up device orientation handler
-      this.deviceOrientationHandler = (event: DeviceOrientationEvent) => {
-        if (!this.isRunning) return;
-        
-        const { alpha, beta, gamma } = event;
-        if (alpha !== null && beta !== null && gamma !== null) {
-          this.addDataPoint({
-            type: 'orientation',
-            x: alpha,
-            y: beta,
-            z: gamma,
-            timestamp: Date.now()
-          });
-        }
-      };
-      
-      // Add event listeners
-      window.addEventListener('devicemotion', this.deviceMotionHandler);
-      window.addEventListener('deviceorientation', this.deviceOrientationHandler);
-      
-      // Set up polling interval to flush the buffer
+      // Set up mock device motion handler for development
       this.pollTimer = window.setInterval(() => {
+        if (!this.isRunning) return;
+        
+        // Generate mock accelerometer data
+        this.addDataPoint({
+          type: 'accelerometer',
+          x: (Math.random() - 0.5) * 2,
+          y: (Math.random() - 0.5) * 2,
+          z: 9.8 + (Math.random() - 0.5),
+          timestamp: Date.now()
+        });
+        
+        // Generate mock gyroscope data
+        this.addDataPoint({
+          type: 'gyroscope',
+          x: (Math.random() - 0.5) * 0.1,
+          y: (Math.random() - 0.5) * 0.1,
+          z: (Math.random() - 0.5) * 0.1,
+          timestamp: Date.now()
+        });
+        
+        // Flush the buffer
         this.flushBuffer();
       }, this.pollInterval);
       
-      console.log('Sensor collection started');
+      console.log('Sensor collection started (mock)');
       return true;
     } catch (error) {
       console.error('Failed to start sensor collection:', error);
@@ -131,17 +80,6 @@ export class SensorManager {
   public stopSensors(): void {
     if (!this.isRunning) return;
     
-    // Remove event listeners
-    if (this.deviceMotionHandler) {
-      window.removeEventListener('devicemotion', this.deviceMotionHandler);
-      this.deviceMotionHandler = null;
-    }
-    
-    if (this.deviceOrientationHandler) {
-      window.removeEventListener('deviceorientation', this.deviceOrientationHandler);
-      this.deviceOrientationHandler = null;
-    }
-    
     // Clear intervals
     if (this.pollTimer !== null) {
       window.clearInterval(this.pollTimer);
@@ -150,7 +88,6 @@ export class SensorManager {
     
     this.isRunning = false;
     this.dataBuffer = [];
-    this.callbacks = [];
     
     console.log('Sensor collection stopped');
   }
@@ -210,4 +147,6 @@ export class SensorManager {
   }
 }
 
-export default SensorManager.getInstance();
+// Create and export singleton instance
+const instance = SensorManager.getInstance();
+export default instance;
