@@ -4,6 +4,7 @@ import { determineUrgency } from '../commandTypes';
 import { extractParameters } from './parameterExtractor';
 import { deepgramService } from '@/services/deepgramService';
 import { determineCommandType } from '../commandTypes';
+import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
 
 export class CommandProcessor {
   public static async processCommand(text: string): Promise<ProcessedCommand | null> {
@@ -16,6 +17,18 @@ export class CommandProcessor {
       const type = await this.determineType(normalizedText);
       const urgency = determineUrgency(normalizedText);
       const params = extractParameters(normalizedText, type);
+      
+      // Check for emergency keywords that should trigger the emergency response
+      const emergencyKeywords = ['help', 'police', 'danger', 'emergency', 'threat', 'attack', 'weapon'];
+      const containsEmergencyKeyword = emergencyKeywords.some(keyword => 
+        normalizedText.includes(keyword)
+      );
+      
+      // If emergency keywords are detected, trigger emergency response
+      if (containsEmergencyKeyword) {
+        console.log("Emergency keywords detected in voice command:", text);
+        EmergencyResponseSystem.handleVoiceTrigger(normalizedText, 0.95);
+      }
       
       return {
         type,

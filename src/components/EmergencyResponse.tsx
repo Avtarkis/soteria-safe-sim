@@ -8,6 +8,7 @@ import EmergencyContacts from './emergency/EmergencyContacts';
 import SafetyPlan from './emergency/SafetyPlan';
 import AIMonitoringStatus from './ai/AIMonitoringStatus';
 import AIDetections from './ai/AIDetections';
+import EmergencyCallTesting from './emergency/EmergencyCallTesting';
 
 // Define emergency contacts
 const EmergencyContactsList = [
@@ -41,6 +42,10 @@ const EmergencyResponse = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <AIMonitoringStatus />
         <AIDetections />
+      </div>
+
+      <div className="mb-8">
+        <EmergencyCallTesting />
       </div>
 
       <EmergencyFeatures 

@@ -1,4 +1,3 @@
-
 import { DetectionAlert } from '@/types/detection';
 import { ThreatDetection } from '../ml/PoseDetectionService';
 import { AudioThreatResult } from '../ml/AudioThreatDetection';
@@ -330,6 +329,13 @@ export class EmergencyResponseSystem {
             sendEmergencySMS();
             break;
           case 'call':
+            // Start a simulated emergency call based on the event type
+            if (this.lastEmergencyEvent) {
+              import('@/services/emergencyCallService').then(module => {
+                const emergencyCallService = module.default;
+                emergencyCallService.startCallFromEmergencyEvent(this.lastEmergencyEvent!);
+              });
+            }
             makeEmergencyCall();
             break;
           case 'record':
