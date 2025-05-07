@@ -3,10 +3,6 @@ import { DetectionAlert } from '@/types/detection';
 import { ThreatDetection } from '../ml/PoseDetectionService';
 import { AudioThreatResult } from '../ml/AudioThreatDetection';
 import { HealthEvent } from '../ml/HealthMonitorService';
-import { emergencyService } from '@/services/emergencyService';
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
-import React from 'react';
 import { 
   EmergencyEvent, 
   EmergencyAction,
@@ -20,18 +16,14 @@ import {
   activateSiren,
   broadcastAlert
 } from './actions/emergencyActions';
-import {
-  createDetectionAlert,
-  dispatchDetectionAlert,
-  getEmergencyTitle
-} from './handlers/eventProcessors';
+import { NotificationManager } from './managers/NotificationManager';
+import { EmergencyEventManager } from './managers/EmergencyEventManager';
 
 export class EmergencyResponseSystem {
   private static instance: EmergencyResponseSystem;
   private isActive = false;
   private emergencyActive = false;
   private lastEmergencyEvent: EmergencyEvent | null = null;
-  private emergencyActions: EmergencyAction[] = [];
   private settings: EmergencySettings;
   private actionsInProgress: Set<string> = new Set();
   private pendingActions: EmergencyAction[] = [];
@@ -158,29 +150,8 @@ export class EmergencyResponseSystem {
       return;
     }
     
-    // Map intents to emergency types
-    let type: EmergencyEvent['type'] = 'manual';
-    let subtype = intent;
-    
-    if (intent.includes('help') || intent.includes('emergency')) {
-      type = 'manual';
-      subtype = 'sos';
-    } else if (intent.includes('fall') || intent.includes('fell')) {
-      type = 'fall';
-    } else if (intent.includes('sick') || intent.includes('dizzy') || intent.includes('faint')) {
-      type = 'health';
-    } else if (intent.includes('weapon') || intent.includes('gun') || intent.includes('knife')) {
-      type = 'weapon';
-    }
-    
-    const emergencyEvent: EmergencyEvent = {
-      type,
-      subtype,
-      confidence,
-      timestamp: Date.now(),
-      details: `Voice command detected: "${intent}"`,
-      source: 'voice'
-    };
+    // Create voice emergency event
+    const emergencyEvent = EmergencyEventManager.createVoiceEvent(intent, confidence);
     
     this.processEmergencyEvent(emergencyEvent);
   }
@@ -190,14 +161,8 @@ export class EmergencyResponseSystem {
     
     console.log('Handling manual trigger:', type);
     
-    const emergencyEvent: EmergencyEvent = {
-      type: 'manual',
-      subtype: type,
-      confidence: 1.0, // Manual trigger is always 100% confidence
-      timestamp: Date.now(),
-      details: `Manual emergency activation: ${type}`,
-      source: 'manual'
-    };
+    // Create manual emergency event
+    const emergencyEvent = EmergencyEventManager.createManualEvent(type);
     
     this.processEmergencyEvent(emergencyEvent, true); // Skip countdown for manual triggers
   }
@@ -205,11 +170,7 @@ export class EmergencyResponseSystem {
   private handleEmergencyCall(): void {
     try {
       this.handleManualTrigger('call');
-      
-      toast({
-        title: "Emergency Call",
-        description: "Initiating emergency call to your contacts...",
-      });
+      NotificationManager.showEmergencyCallNotification();
     } catch (error) {
       console.error('Error handling emergency call:', error);
     }
@@ -218,11 +179,7 @@ export class EmergencyResponseSystem {
   private handleEmergencySMS(): void {
     try {
       this.handleManualTrigger('sms');
-      
-      toast({
-        title: "Emergency SMS",
-        description: "Sending emergency SMS to your contacts...",
-      });
+      NotificationManager.showEmergencySMSNotification();
     } catch (error) {
       console.error('Error handling emergency SMS:', error);
     }
@@ -231,11 +188,7 @@ export class EmergencyResponseSystem {
   private handleSOSAlert(): void {
     try {
       this.handleManualTrigger('sos');
-      
-      toast({
-        title: "SOS Alert Activated",
-        description: "Emergency services have been notified of your situation.",
-      });
+      NotificationManager.showSOSNotification();
     } catch (error) {
       console.error('Error handling SOS alert:', error);
     }
@@ -267,16 +220,11 @@ export class EmergencyResponseSystem {
     
     this.emergencyCountdown = 10;
     
-    // Show countdown notification with proper TS syntax for toast action
-    toast({
-      title: "Emergency Countdown Started",
-      description: `Emergency actions will be triggered in ${this.emergencyCountdown} seconds. Tap to cancel.`,
-      action: React.createElement(ToastAction, {
-        onClick: () => this.cancelEmergency(),
-        children: "Cancel",
-      }),
-      duration: 10000, // 10 seconds
-    });
+    // Use the notification manager to show countdown
+    NotificationManager.showCountdownNotification(
+      this.emergencyCountdown,
+      () => this.cancelEmergency()
+    );
     
     this.emergencyTimer = window.setInterval(() => {
       this.emergencyCountdown--;
@@ -302,10 +250,7 @@ export class EmergencyResponseSystem {
     this.pendingActions = [];
     this.actionsInProgress.clear();
     
-    toast({
-      title: "Emergency Cancelled",
-      description: "Emergency response actions have been cancelled.",
-    });
+    NotificationManager.showCancellationNotification();
   }
   
   private triggerEmergency(): void {
@@ -317,16 +262,10 @@ export class EmergencyResponseSystem {
     // Execute actions
     this.executeEmergencyActions();
     
-    // Create a detection alert
-    const alert = createDetectionAlert(this.lastEmergencyEvent);
-    if (alert) {
-      dispatchDetectionAlert(alert);
+    // Process the event
+    if (this.lastEmergencyEvent) {
+      EmergencyEventManager.processDetection(this.lastEmergencyEvent);
     }
-    
-    notifyUser(
-      getEmergencyTitle(this.lastEmergencyEvent!), 
-      this.lastEmergencyEvent?.details || 'Emergency actions are being taken.'
-    );
   }
   
   private determineEmergencyActions(): void {
@@ -358,12 +297,6 @@ export class EmergencyResponseSystem {
         // For weapon detection, prioritize calling emergency services
         actions.push({ type: 'siren' });
         actions.push({ type: 'broadcast' });
-        break;
-      case 'fall':
-        // For falls, focus on medical assistance
-        break;
-      case 'health':
-        // For health issues, similar to falls
         break;
       case 'audio':
         // For audio threats, similar to weapon detection
@@ -403,7 +336,7 @@ export class EmergencyResponseSystem {
             startRecording();
             break;
           case 'notify':
-            // This is handled separately in triggerEmergency
+            // This is handled separately in EmergencyEventManager
             break;
           case 'siren':
             activateSiren();
