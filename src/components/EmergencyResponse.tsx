@@ -9,6 +9,7 @@ import SafetyPlan from './emergency/SafetyPlan';
 import AIMonitoringStatus from './ai/AIMonitoringStatus';
 import AIDetections from './ai/AIDetections';
 import EmergencyCallTesting from './emergency/EmergencyCallTesting';
+import SecuritySystemControls from './security/SecuritySystemControls';
 
 // Define emergency contacts
 const EmergencyContactsList = [
@@ -37,6 +38,10 @@ const EmergencyResponse = () => {
         <div>
           <VoiceAssistant />
         </div>
+      </div>
+
+      <div className="mb-8">
+        <SecuritySystemControls />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
