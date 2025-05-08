@@ -1,4 +1,3 @@
-
 import { HealthReading, AIThreatDetection, AIMonitoringSettings, HealthReadingType } from '@/types/ai-monitoring';
 
 class AIMonitoringService {
@@ -532,7 +531,7 @@ class AIMonitoringService {
       description,
       recommendedAction,
       automaticResponseTaken,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now(), // Changed to number
       rawData: reading
     };
     
@@ -581,7 +580,7 @@ class AIMonitoringService {
         description: `Steadily increasing heart rate detected over time (now ${Math.round(avgRate)} bpm)`,
         recommendedAction: 'Rest and monitor heart rate pattern',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     } else if (decreasing && avgRate < 60) {
@@ -593,7 +592,7 @@ class AIMonitoringService {
         description: `Steadily decreasing heart rate detected over time (now ${Math.round(avgRate)} bpm)`,
         recommendedAction: 'Monitor heart rate and consult a healthcare provider',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     }
@@ -624,7 +623,7 @@ class AIMonitoringService {
         description: `Body temperature steadily rising over time (now ${avgTemp.toFixed(1)}°F)`,
         recommendedAction: 'Monitor temperature, rest, and stay hydrated',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     } else if (decreasing && avgTemp < 97) {
@@ -636,7 +635,7 @@ class AIMonitoringService {
         description: `Body temperature steadily decreasing over time (now ${avgTemp.toFixed(1)}°F)`,
         recommendedAction: 'Move to warmer environment and monitor temperature',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     }
@@ -662,7 +661,7 @@ class AIMonitoringService {
         description: `Unusually regular, slow breathing pattern detected (${avg.toFixed(1)} breaths/min)`,
         recommendedAction: 'Monitor breathing pattern and oxygen levels',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     } else if (stdDev > 4) {
@@ -674,7 +673,7 @@ class AIMonitoringService {
         description: 'Erratic breathing pattern detected',
         recommendedAction: 'Practice controlled breathing exercises and monitor pattern',
         automaticResponseTaken: null,
-        timestamp: new Date().toISOString()
+        timestamp: Date.now() // Changed to number
       };
       this.notifyListeners(detection);
     }
@@ -700,7 +699,7 @@ class AIMonitoringService {
           description: 'Air quality deteriorating rapidly in your area',
           recommendedAction: 'Consider indoor activities and close windows',
           automaticResponseTaken: null,
-          timestamp: new Date().toISOString()
+          timestamp: Date.now() // Changed to number
         };
         this.notifyListeners(detection);
       }
@@ -725,7 +724,7 @@ class AIMonitoringService {
           description: 'CO2 levels steadily increasing in your environment',
           recommendedAction: 'Improve ventilation by opening windows or doors',
           automaticResponseTaken: null,
-          timestamp: new Date().toISOString()
+          timestamp: Date.now() // Changed to number
         };
         this.notifyListeners(detection);
       }

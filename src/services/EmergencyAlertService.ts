@@ -1,359 +1,191 @@
-import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { twilioClient } from '@/lib/twilio';
+import { getDeviceLocation } from '@/utils/location';
 
-// Types for alert options
-export interface EmergencyAlertOptions {
+interface EmergencyAlertOptions {
   emergency_type: string;
   location: [number, number];
   timestamp: string;
   send_media: boolean;
-  recipients: 'all' | 'medical' | 'police' | 'contacts';
-  alert_method: 'all' | 'sms' | 'mms' | 'twilio';
-  custom_message?: string;
+  recipients: 'all' | 'contacts' | 'medical';
+  alert_method: 'sms' | 'mms' | 'phone' | 'all';
 }
 
-interface EmergencyContact {
-  name: string;
-  relationship: string;
-  phoneNumber: string;
-  notify_in_emergency: boolean;
-}
+class EmergencyAlertService {
+  private contacts: any[] = []; // Replace 'any' with your contact type
+  private user: any = null; // Replace 'any' with your user type
 
-export class EmergencyAlertService {
-  private twilioAccountSid = 'AC0064fa770de1097832f2ac3157663409';
-  private twilioAuthToken = '37c2d36982a8f36e280dff970f0112a5';
-  private twilioPhoneNumber = '+15084634409';
-  private devicePhoneNumber: string | null = null;
-  private emergencyContacts: EmergencyContact[] = [];
-  private lastAlertTimestamp = 0;
-  private minTimeBetweenAlerts = 60000; // 1 minute
-  private currentLocation: [number, number] | null = null;
-  
   constructor() {
-    // Load emergency contacts
-    this.loadEmergencyContacts();
-    
-    // Check Twilio configuration
-    if (!this.twilioAccountSid || !this.twilioAuthToken || !this.twilioPhoneNumber) {
-      console.warn('EmergencyAlertService: Twilio credentials not fully configured');
-    }
-    
-    // Try to get device location
-    this.getCurrentLocation();
-    
-    console.log('EmergencyAlertService: Initialized');
+    this.loadContacts();
+    this.loadUser();
   }
-  
-  /**
-   * Load emergency contacts from storage
-   */
-  private loadEmergencyContacts(): void {
+
+  private async loadContacts() {
+    // Fetch emergency contacts from Supabase
     try {
-      // In a real app, this would load from secure storage or API
-      // For demo, we'll use hardcoded contacts
-      this.emergencyContacts = [
-        {
-          name: 'John Smith',
-          relationship: 'Brother',
-          phoneNumber: '+1234567890',
-          notify_in_emergency: true
-        },
-        {
-          name: 'Emergency Services',
-          relationship: 'Public Service',
-          phoneNumber: '911',
-          notify_in_emergency: true
-        }
-      ];
+      const { data, error } = await supabase
+        .from('emergency_contacts')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching emergency contacts:', error);
+        return;
+      }
+
+      this.contacts = data || [];
     } catch (error) {
-      console.error('EmergencyAlertService: Error loading contacts:', error);
-      this.emergencyContacts = [];
+      console.error('Error loading emergency contacts:', error);
     }
   }
-  
-  /**
-   * Get current device location
-   */
-  private getCurrentLocation(): void {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.currentLocation = [position.coords.latitude, position.coords.longitude];
-          console.log('EmergencyAlertService: Got location:', this.currentLocation);
-        },
-        (error) => {
-          console.error('EmergencyAlertService: Error getting location:', error);
+
+  private async loadUser() {
+    // Fetch user data from Supabase
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return;
+      }
+
+      this.user = data || null;
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  }
+
+  public async sendEmergencyAlerts(options: EmergencyAlertOptions): Promise<void> {
+    console.log('Sending emergency alerts with options:', options);
+
+    // Get user's current location
+    const location = await getDeviceLocation();
+    const latitude = location?.coords.latitude || 0;
+    const longitude = location?.coords.longitude || 0;
+
+    // Construct message content
+    let messageContent = `EMERGENCY ALERT: ${options.emergency_type}\n`;
+    messageContent += `Location: Latitude ${latitude}, Longitude ${longitude}\n`;
+    messageContent += `Timestamp: ${options.timestamp}`;
+
+    // Determine recipients based on options
+    let recipients: any[] = []; // Replace 'any' with your contact type
+    if (options.recipients === 'all' || options.recipients === 'contacts') {
+      recipients = this.contacts;
+    } else if (options.recipients === 'medical') {
+      // Add logic to fetch medical contacts if needed
+      recipients = []; // Replace with actual medical contacts
+    }
+
+    // Determine alert method
+    const method = options.alert_method;
+
+    // Send messages to each recipient
+    for (const recipient of recipients) {
+      try {
+        let sent = false;
+
+        // Try native SMS
+        if (method === 'sms' || method === 'mms' || method === 'all') {
+          sent = await this.sendMessageViaNativeSMS(recipient, messageContent);
         }
-      );
-    }
-  }
-  
-  /**
-   * Send emergency alerts to configured contacts
-   */
-  public async sendEmergencyAlerts(options: EmergencyAlertOptions): Promise<boolean> {
-    // Prevent sending multiple alerts too quickly
-    const now = Date.now();
-    if (now - this.lastAlertTimestamp < this.minTimeBetweenAlerts) {
-      console.log('EmergencyAlertService: Alert throttled, too soon since last alert');
-      return false;
-    }
-    
-    this.lastAlertTimestamp = now;
-    console.log('EmergencyAlertService: Sending emergency alerts with options:', options);
-    
-    // Use provided location or current location
-    const location = this.currentLocation || options.location;
-    const locationUrl = `https://www.google.com/maps?q=${location[0]},${location[1]}`;
-    
-    // Build the alert message
-    let message = this.buildAlertMessage(options.emergency_type, locationUrl, options.custom_message);
-    
-    // Determine recipients based on emergency type
-    const recipients = this.getRecipientsForEmergency(options.recipients);
-    
-    if (recipients.length === 0) {
-      console.warn('EmergencyAlertService: No recipients found for alert');
-      return false;
-    }
-    
-    let successCount = 0;
-    
-    // First try native SMS/MMS
-    if (options.alert_method === 'all' || options.alert_method === 'sms' || options.alert_method === 'mms') {
-      const nativeSuccess = await this.sendNativeSMS(recipients, message, options.send_media);
-      
-      if (nativeSuccess) {
-        successCount += recipients.length;
-        console.log('EmergencyAlertService: Successfully sent native SMS/MMS');
-      } else {
-        console.log('EmergencyAlertService: Native SMS/MMS failed, trying Twilio');
         
-        // Fallback to Twilio if native SMS fails
-        if (options.alert_method === 'all' || options.alert_method === 'twilio') {
-          const twilioSuccess = await this.sendTwilioMessages(recipients, message, options.send_media);
-          if (twilioSuccess) {
-            successCount += recipients.length;
-            console.log('EmergencyAlertService: Successfully sent Twilio messages');
-          }
+        // Try Twilio if native SMS fails or isn't available
+        if (!sent && (method === 'sms' || method === 'mms')) {
+          sent = await this.sendMessageViaTwilio(recipient, messageContent, {
+            includeMedia: method === 'mms',
+            emergencyType: options.emergency_type
+          });
         }
+
+        // Try phone call
+        if (!sent && (method === 'phone' || method === 'all')) {
+          // Implement phone call logic here
+          console.log(`Making phone call to ${recipient.phone}`);
+          // sent = await this.makeEmergencyCall(recipient, options.emergency_type);
+        }
+
+        if (sent) {
+          console.log(`Emergency alert sent to ${recipient.name} via ${method}`);
+        } else {
+          console.warn(`Failed to send emergency alert to ${recipient.name}`);
+        }
+      } catch (error) {
+        console.error(`Error sending emergency alert to ${recipient.name}:`, error);
       }
-    } else if (options.alert_method === 'twilio') {
-      // Directly use Twilio
-      const twilioSuccess = await this.sendTwilioMessages(recipients, message, options.send_media);
-      if (twilioSuccess) {
-        successCount += recipients.length;
-        console.log('EmergencyAlertService: Successfully sent Twilio messages');
-      }
-    }
-    
-    // Show result toast
-    if (successCount > 0) {
-      toast({
-        title: "Emergency Alerts Sent",
-        description: `Successfully sent alerts to ${successCount} contacts.`,
-        duration: 5000,
-      });
-      return true;
-    } else {
-      toast({
-        title: "Alert Sending Failed",
-        description: "Could not send emergency alerts. Please try manually.",
-        variant: "destructive",
-        duration: 10000,
-      });
-      return false;
     }
   }
-  
-  /**
-   * Send an all-clear alert to contacts
-   */
-  public async sendAllClearAlert(): Promise<boolean> {
-    console.log('EmergencyAlertService: Sending all-clear alert');
-    
-    const message = "I'm safe now. The emergency situation has been resolved.";
-    const recipients = this.emergencyContacts.filter(contact => contact.notify_in_emergency);
-    
-    if (recipients.length === 0) {
-      return false;
-    }
-    
-    // Try both native and Twilio methods
-    const nativeSuccess = await this.sendNativeSMS(recipients, message, false);
-    
-    if (nativeSuccess) {
-      toast({
-        title: "All-Clear Alert Sent",
-        description: "Your contacts have been notified that you're safe.",
-        duration: 5000,
-      });
-      return true;
-    }
-    
-    // Fallback to Twilio
-    const twilioSuccess = await this.sendTwilioMessages(recipients, message, false);
-    
-    if (twilioSuccess) {
-      toast({
-        title: "All-Clear Alert Sent",
-        description: "Your contacts have been notified that you're safe.",
-        duration: 5000,
-      });
-      return true;
-    }
-    
-    toast({
-      title: "All-Clear Alert Failed",
-      description: "Could not send all-clear messages. Please contact your emergency contacts manually.",
-      variant: "destructive",
-      duration: 10000,
-    });
-    return false;
+
+  private async sendMessageViaNativeSMS(recipient: any, message: string): Promise<boolean> {
+    // Implement native SMS sending logic here
+    // This is highly platform-dependent and may not be possible in a web environment
+    console.log(`Sending native SMS to ${recipient.phone}: ${message}`);
+    return false; // Indicate failure as it's not implemented
   }
-  
-  /**
-   * Send SMS/MMS using native device capabilities
-   */
-  private async sendNativeSMS(
-    recipients: EmergencyContact[], 
-    message: string,
-    includeMedia: boolean
-  ): Promise<boolean> {
-    console.log('EmergencyAlertService: [MOCK] Sending native SMS to', 
-      recipients.map(r => r.name).join(', '));
-    
-    // In a real implementation, this would use Capacitor or other native bridge
-    // For demo purposes, we'll simulate it
-    
+
+  private async sendMessageViaTwilio(recipient: any, message: string, options: { includeMedia: boolean; emergencyType: string }): Promise<boolean> {
     try {
-      // Simulate sending
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (Math.random() > 0.3) { // 70% success rate for demo
-        return true;
-      } else {
-        throw new Error('Simulated native SMS failure');
-      }
+      // Send SMS via Twilio
+      const twilioMessage = await twilioClient.messages.create({
+        body: message,
+        to: recipient.phone,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        // mediaUrl: options.includeMedia ? [this.getMediaUrl(options.emergencyType)] : [], // Implement media URL logic
+      });
+
+      console.log(`SMS sent via Twilio to ${recipient.phone}: ${twilioMessage.sid}`);
+      return true;
     } catch (error) {
-      console.error('EmergencyAlertService: Error sending native SMS:', error);
+      console.error(`Error sending SMS via Twilio to ${recipient.phone}:`, error);
       return false;
     }
   }
-  
-  /**
-   * Send messages using Twilio API
-   */
-  private async sendTwilioMessages(
-    recipients: EmergencyContact[], 
-    message: string,
-    includeMedia: boolean
-  ): Promise<boolean> {
-    console.log('EmergencyAlertService: [MOCK] Sending Twilio messages to', 
-      recipients.map(r => r.name).join(', '));
-    
-    if (!this.twilioAccountSid || !this.twilioAuthToken || !this.twilioPhoneNumber) {
-      console.error('EmergencyAlertService: Twilio credentials not configured');
-      return false;
+
+  public async sendAllClearAlert(): Promise<void> {
+    // Send "all clear" notification to contacts
+    const message = 'ALL CLEAR: The emergency situation has been resolved.';
+
+    for (const contact of this.contacts) {
+      try {
+        // Send SMS via Twilio
+        const twilioMessage = await twilioClient.messages.create({
+          body: message,
+          to: contact.phone,
+          from: process.env.TWILIO_PHONE_NUMBER,
+        });
+
+        console.log(`"All clear" SMS sent via Twilio to ${contact.phone}: ${twilioMessage.sid}`);
+      } catch (error) {
+        console.error(`Error sending "all clear" SMS via Twilio to ${contact.phone}:`, error);
+      }
     }
-    
+  }
+
+  private getMediaUrl(emergencyType: string): string {
+    // Implement logic to determine media URL based on emergency type
+    // This could be a static image or a dynamically generated video
+    return 'https://example.com/emergency_media.jpg'; // Replace with actual URL
+  }
+
+  private async makeEmergencyCall(recipient: any, emergencyType: string): Promise<boolean> {
     try {
-      // In a real implementation, this would make API calls to Twilio
-      // For demo purposes, we'll simulate it
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (Math.random() > 0.2) { // 80% success rate for demo
-        return true;
-      } else {
-        throw new Error('Simulated Twilio API failure');
-      }
+      // Make phone call via Twilio
+      const call = await twilioClient.calls.create({
+        twiml: `<Response><Say>Emergency! ${emergencyType}. Help is on the way.</Say></Response>`,
+        to: recipient.phone,
+        from: process.env.TWILIO_PHONE_NUMBER,
+      });
+
+      console.log(`Emergency call initiated to ${recipient.phone}: ${call.sid}`);
+      return true;
     } catch (error) {
-      console.error('EmergencyAlertService: Error sending Twilio messages:', error);
+      console.error(`Error initiating emergency call to ${recipient.phone}:`, error);
       return false;
     }
-  }
-  
-  /**
-   * Get appropriate recipients based on emergency type
-   */
-  private getRecipientsForEmergency(recipientType: string): EmergencyContact[] {
-    switch (recipientType) {
-      case 'all':
-        return this.emergencyContacts.filter(contact => contact.notify_in_emergency);
-      
-      case 'medical':
-        return this.emergencyContacts.filter(contact => 
-          contact.relationship === 'Medical' || 
-          contact.relationship === 'Public Service' ||
-          contact.notify_in_emergency
-        );
-      
-      case 'police':
-        return this.emergencyContacts.filter(contact => 
-          contact.relationship === 'Public Service' || 
-          contact.notify_in_emergency
-        );
-      
-      case 'contacts':
-      default:
-        return this.emergencyContacts.filter(contact => 
-          contact.relationship !== 'Public Service' && 
-          contact.notify_in_emergency
-        );
-    }
-  }
-  
-  /**
-   * Build the alert message based on emergency type
-   */
-  private buildAlertMessage(
-    emergencyType: string, 
-    locationUrl: string,
-    customMessage?: string
-  ): string {
-    if (customMessage) {
-      return `${customMessage} My location: ${locationUrl}`;
-    }
-    
-    switch (emergencyType) {
-      case 'violent_attack':
-        return `SOS! I'm in danger and need immediate help! My location: ${locationUrl}. Please call police - this is a violent emergency!`;
-      
-      case 'kidnapping':
-        return `EMERGENCY! I may be getting kidnapped. My location: ${locationUrl}. Please call police immediately!`;
-      
-      case 'weapon':
-        return `SOS! Weapon threat detected! My location: ${locationUrl}. Please call police immediately!`;
-      
-      case 'medical':
-        return `MEDICAL EMERGENCY! I need medical assistance. My location: ${locationUrl}. Please help!`;
-      
-      default:
-        return `SOS! Emergency situation! I need help. My location: ${locationUrl}`;
-    }
-  }
-  
-  /**
-   * Add a new emergency contact
-   */
-  public addEmergencyContact(contact: EmergencyContact): void {
-    this.emergencyContacts.push(contact);
-    // In a real app, you would save this to storage or API
-    console.log('EmergencyAlertService: Added new emergency contact:', contact.name);
-  }
-  
-  /**
-   * Get all emergency contacts
-   */
-  public getEmergencyContacts(): EmergencyContact[] {
-    return [...this.emergencyContacts];
-  }
-  
-  /**
-   * Set device phone number
-   */
-  public setDevicePhoneNumber(phoneNumber: string): void {
-    this.devicePhoneNumber = phoneNumber;
   }
 }
+
+export const emergencyAlertService = new EmergencyAlertService();
+export default emergencyAlertService;

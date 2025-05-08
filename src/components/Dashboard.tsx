@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -69,7 +68,7 @@ const Dashboard = () => {
         
         <TabsContent value="overview" className="space-y-6">
           <SecurityMetricsSection />
-          <AlertsAndFamilySection detections={detections} />
+          <AlertsAndFamilySection detections={detections as Detection[]} />
           <QuickActionsSection handleRouteClick={handleRouteClick} />
         </TabsContent>
         

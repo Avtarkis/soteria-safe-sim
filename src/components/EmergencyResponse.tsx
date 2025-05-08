@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useEmergencyFeatures } from '@/hooks/use-emergency-features';
 import EmergencySOSButton from './emergency/EmergencySOSButton';
 import VoiceAssistant from './emergency/VoiceAssistant';
@@ -20,6 +20,31 @@ const EmergencyContactsList = [
 
 const EmergencyResponse: React.FC = () => {
   const { features, updateFeatures } = useEmergencyFeatures();
+
+  // Use useCallback to memoize the features update functions
+  const onToggleSiren = useCallback(() => {
+    updateFeatures({ sirenActive: !features.sirenActive });
+  }, [features.sirenActive, updateFeatures]);
+
+  const onChangeRecordingMode = useCallback((mode: 'off' | 'video' | 'audio' | 'photo') => {
+    updateFeatures({ recordingMode: mode });
+  }, [updateFeatures]);
+
+  const onSendNeighborAlert = useCallback(() => {
+    updateFeatures({ neighborAlertSent: true });
+  }, [updateFeatures]);
+
+  const onCallPolice = useCallback(() => {
+    updateFeatures({ policeNotified: true });
+  }, [updateFeatures]);
+  
+  // Create an object with the memoized handlers
+  const featureHandlers = {
+    onToggleSiren,
+    onChangeRecordingMode,
+    onSendNeighborAlert,
+    onCallPolice
+  };
   
   return (
     <div className="container pb-10 animate-fade-in">
@@ -60,7 +85,7 @@ const EmergencyResponse: React.FC = () => {
           neighborAlertSent: features.neighborAlertSent,
           policeNotified: features.policeNotified
         }}
-        onUpdateFeatures={updateFeatures}
+        onUpdateFeatures={featureHandlers}
       />
 
       <EmergencyContacts contacts={EmergencyContactsList} />

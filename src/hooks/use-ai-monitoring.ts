@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { aiMonitoringService } from '@/services/aiMonitoringService';
-import { AIThreatDetection, AIMonitoringSettings } from '@/types/ai-monitoring';
+import { AIThreatDetection, AIMonitoringSettings, Detection } from '@/types/ai-monitoring';
 import { useToast } from '@/hooks/use-toast';
 
 export function useAIMonitoring() {
@@ -30,15 +30,15 @@ export function useAIMonitoring() {
       // Show a toast for critical/high severity detections
       if (detection.severity === 'critical' || detection.severity === 'high') {
         toast({
-          title: `${detection.severity === 'critical' ? '⚠️ CRITICAL' : '⚠️ HIGH'} ${detection.type.toUpperCase()} ALERT`,
-          description: detection.description,
+          title: `${detection.severity === 'critical' ? '⚠️ CRITICAL' : '⚠️ HIGH'} ${detection.type?.toUpperCase()} ALERT`,
+          description: detection.description || detection.details || 'Potential threat detected',
           variant: "destructive",
           duration: 10000, // Show longer for critical alerts
         });
       } else if (detection.severity === 'medium') {
         toast({
-          title: `${detection.type.toUpperCase()} Warning`,
-          description: detection.description,
+          title: `${detection.type?.toUpperCase()} Warning`,
+          description: detection.description || detection.details || 'Warning detected',
           variant: "default",
           duration: 5000,
         });
