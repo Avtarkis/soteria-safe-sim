@@ -235,15 +235,12 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
       medical: ['medical', 'hurt', 'injured', 'fall'],
     };
     
-    let detectedType = 'security';
+    // Default to security type
+    let detectedType: 'health' | 'security' | 'environment' = 'security';
     
     // Check for medical emergency keywords
     if (keywords.medical.some(keyword => text.includes(keyword))) {
       detectedType = 'health';
-    }
-    // Check for weapon keywords
-    else if (keywords.weapon.some(keyword => text.includes(keyword))) {
-      detectedType = 'weapon';
     }
     
     // Trigger emergency with the detected type

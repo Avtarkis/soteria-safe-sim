@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { EmergencyEvent, EmergencyResponseOptions } from './types';
 import { createDetectionAlert } from './handlers/eventProcessors';
 import { AI_DETECTION_THRESHOLD, VOICE_DETECTION_THRESHOLD } from './constants';
-import secureDefenseSystem from '@/services/SecureDefenseSystem';
+import { triggerEmergencyMode } from '@/services/SecureDefenseSystem';
 
 class EmergencyResponseSystem {
   // Handle a threat detection from AI models
@@ -44,8 +44,25 @@ class EmergencyResponseSystem {
       
       // Trigger emergency actions on the secure defense system
       if (type === 'weapon' || type === 'fall' || confidence > 0.85) {
-        secureDefenseSystem.triggerEmergencyMode();
+        triggerEmergencyMode({
+          type: this.mapTypeToAIThreatType(type),
+          subtype: type,
+          description: details || `AI detected a ${type} threat`,
+          confidence: confidence,
+          severity: confidence > 0.9 ? 'critical' : 'high',
+        });
       }
+    }
+  }
+  
+  // Map generic type to AIThreatDetection type
+  private mapTypeToAIThreatType(type: string): 'health' | 'security' | 'environment' {
+    if (type === 'weapon' || type === 'threat' || type === 'danger') {
+      return 'security';
+    } else if (type === 'fall' || type === 'medical' || type === 'health') {
+      return 'health';
+    } else {
+      return 'environment';
     }
   }
   
@@ -72,7 +89,29 @@ class EmergencyResponseSystem {
     };
     
     // Forward to the secure defense system
-    secureDefenseSystem.processVoiceCommand(transcript, confidence);
+    triggerEmergencyMode({
+      type: this.detectEmergencyTypeFromText(transcript),
+      subtype: 'voice',
+      description: `Voice command: "${transcript}"`,
+      confidence: confidence,
+      source: 'voice',
+    });
+  }
+  
+  // Detect type of emergency from text
+  private detectEmergencyTypeFromText(text: string): 'health' | 'security' | 'environment' {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('weapon') || lowerText.includes('gun') || 
+        lowerText.includes('threat') || lowerText.includes('attack')) {
+      return 'security';
+    } else if (lowerText.includes('medical') || lowerText.includes('hurt') || 
+               lowerText.includes('fall') || lowerText.includes('health')) {
+      return 'health';
+    } else {
+      // Default to security for general emergency calls
+      return 'security';
+    }
   }
   
   // Handle a manual emergency button press
@@ -93,7 +132,14 @@ class EmergencyResponseSystem {
     };
     
     // Forward to the secure defense system
-    secureDefenseSystem.triggerEmergencyMode();
+    triggerEmergencyMode({
+      type: this.mapTypeToAIThreatType(eventType),
+      subtype: eventType,
+      description: options.details || `Manual ${eventType} emergency trigger`,
+      confidence: 1.0,
+      severity: 'high',
+      source: 'manual',
+    });
   }
 }
 

@@ -56,18 +56,8 @@ const EmergencyResponse: React.FC = () => {
         </div>
 
         <EmergencyFeatures 
-          features={{
-            sirenActive: features.sirenActive,
-            recordingMode: features.recordingMode,
-            neighborAlertSent: features.neighborAlertSent,
-            policeNotified: features.policeNotified
-          }}
-          onUpdateFeatures={{
-            onToggleSiren: updateFeatures.onToggleSiren,
-            onChangeRecordingMode: updateFeatures.onChangeRecordingMode,
-            onSendNeighborAlert: updateFeatures.onSendNeighborAlert,
-            onCallPolice: updateFeatures.onCallPolice
-          }}
+          features={features}
+          onUpdateFeatures={updateFeatures}
         />
 
         <EmergencyContacts contacts={EmergencyContactsList} />
