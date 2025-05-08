@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
 import { Button } from '@/components/ui/button';
 import { ListChecks, ChevronRight, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AIThreatDetection } from '@/types/ai-monitoring';
 
 const threatLevelStyles = {
   high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
@@ -12,14 +12,8 @@ const threatLevelStyles = {
   low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
 };
 
-interface Detection {
-  id?: string;
-  type: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  description: string;
-}
-
-const AlertsAndFamilySection = ({ detections }: { detections: Detection[] }) => {
+// Accept AIThreatDetection[] instead of Detection[]
+const AlertsAndFamilySection = ({ detections }: { detections: AIThreatDetection[] }) => {
   return (
     <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <Card>
@@ -41,7 +35,7 @@ const AlertsAndFamilySection = ({ detections }: { detections: Detection[] }) => 
               <div key={detection.id || index} className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">{detection.type} {detection.severity}</p>
-                  <p className="text-xs text-muted-foreground">{detection.description}</p>
+                  <p className="text-xs text-muted-foreground">{detection.description || detection.details || 'No description available'}</p>
                 </div>
                 <span className={cn(
                   "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",

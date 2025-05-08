@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { twilioClient } from '@/lib/twilio';
 import { getDeviceLocation } from '@/utils/location';
@@ -131,7 +132,7 @@ class EmergencyAlertService {
       const twilioMessage = await twilioClient.messages.create({
         body: message,
         to: recipient.phone,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: process.env.TWILIO_PHONE_NUMBER || '+15084634409',
         // mediaUrl: options.includeMedia ? [this.getMediaUrl(options.emergencyType)] : [], // Implement media URL logic
       });
 
@@ -153,7 +154,7 @@ class EmergencyAlertService {
         const twilioMessage = await twilioClient.messages.create({
           body: message,
           to: contact.phone,
-          from: process.env.TWILIO_PHONE_NUMBER,
+          from: process.env.TWILIO_PHONE_NUMBER || '+15084634409',
         });
 
         console.log(`"All clear" SMS sent via Twilio to ${contact.phone}: ${twilioMessage.sid}`);
@@ -175,7 +176,7 @@ class EmergencyAlertService {
       const call = await twilioClient.calls.create({
         twiml: `<Response><Say>Emergency! ${emergencyType}. Help is on the way.</Say></Response>`,
         to: recipient.phone,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: process.env.TWILIO_PHONE_NUMBER || '+15084634409',
       });
 
       console.log(`Emergency call initiated to ${recipient.phone}: ${call.sid}`);

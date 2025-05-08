@@ -15,13 +15,13 @@ export interface AIThreatDetection {
   subtype?: string;
   severity?: 'low' | 'medium' | 'high' | 'critical';
   confidence?: number;
-  description?: string; // Added back description field
+  description?: string; 
   recommendedAction?: string;
   automaticResponseTaken?: string | null;
   timestamp?: string | number;
   rawData?: any;
-  details?: string; // For compatibility with existing uses
-  source?: string; // For compatibility with existing uses
+  details?: string;
+  source?: string;
 }
 
 export interface AIMonitoringSettings {
@@ -33,7 +33,7 @@ export interface AIMonitoringSettings {
   emergencyContactsToNotify: string[];
 }
 
-// For Dashboard compatibility
+// For Dashboard compatibility - now we can adapt the Dashboard to use AIThreatDetection directly
 export interface Detection extends AIThreatDetection {
   description: string; // Required field for Detection type
 }

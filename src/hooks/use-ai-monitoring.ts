@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { aiMonitoringService } from '@/services/aiMonitoringService';
-import { AIThreatDetection, AIMonitoringSettings, Detection } from '@/types/ai-monitoring';
+import { AIThreatDetection, AIMonitoringSettings } from '@/types/ai-monitoring';
 import { useToast } from '@/hooks/use-toast';
 
 export function useAIMonitoring() {

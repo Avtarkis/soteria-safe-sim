@@ -68,7 +68,7 @@ const Dashboard = () => {
         
         <TabsContent value="overview" className="space-y-6">
           <SecurityMetricsSection />
-          <AlertsAndFamilySection detections={detections as Detection[]} />
+          <AlertsAndFamilySection detections={detections} />
           <QuickActionsSection handleRouteClick={handleRouteClick} />
         </TabsContent>
         
