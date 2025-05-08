@@ -5,7 +5,6 @@ import { extractParameters } from './parameterExtractor';
 import { deepgramService } from '@/services/deepgramService';
 import { determineCommandType } from '../commandTypes';
 import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
-import secureDefenseSystem from '@/services/SecureDefenseSystem';
 
 export class CommandProcessor {
   public static async processCommand(text: string): Promise<ProcessedCommand | null> {
@@ -33,11 +32,8 @@ export class CommandProcessor {
       if (containsEmergencyKeyword) {
         console.log("Emergency keywords detected in voice command:", text);
         
-        // First trigger the existing emergency response system
+        // Trigger the emergency response system
         EmergencyResponseSystem.handleVoiceTrigger(normalizedText, 0.95);
-        
-        // Then also trigger our new secure defense system
-        await secureDefenseSystem.processVoiceCommand(normalizedText, 0.95);
       }
       
       return {

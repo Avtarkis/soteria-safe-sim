@@ -224,6 +224,37 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  // Process voice command for emergency
+  const processVoiceCommand = (text: string, confidence: number) => {
+    console.log(`Processing emergency voice command: ${text}`);
+    
+    // Simple keyword detection for demo
+    const keywords = {
+      help: ['help', 'emergency', 'danger', 'sos'],
+      weapon: ['weapon', 'gun', 'knife', 'armed'],
+      medical: ['medical', 'hurt', 'injured', 'fall'],
+    };
+    
+    let detectedType = 'security';
+    
+    // Check for medical emergency keywords
+    if (keywords.medical.some(keyword => text.includes(keyword))) {
+      detectedType = 'health';
+    }
+    // Check for weapon keywords
+    else if (keywords.weapon.some(keyword => text.includes(keyword))) {
+      detectedType = 'weapon';
+    }
+    
+    // Trigger emergency with the detected type
+    triggerEmergency({
+      type: detectedType,
+      subtype: 'voice_command',
+      description: `Voice command triggered: "${text}"`,
+      confidence: confidence,
+    });
+  };
+
   // The value provided to consumers
   const value = {
     status,
@@ -247,6 +278,17 @@ export const useSecureDefense = () => {
     throw new Error('useSecureDefense must be used within a SecureDefenseProvider');
   }
   return context;
+};
+
+// Function to process voice commands without needing the hook
+export const triggerEmergencyMode = (threatDetails?: Partial<AIThreatDetection>) => {
+  console.warn('triggerEmergencyMode called outside of provider context. This is just a fallback.');
+  
+  // Fallback behavior when not in provider context
+  emergencyCallService.startEmergencyCall('default', {
+    callerName: 'Emergency Fallback',
+    autoAnswerDelay: 3000,
+  });
 };
 
 // Default export for the provider
