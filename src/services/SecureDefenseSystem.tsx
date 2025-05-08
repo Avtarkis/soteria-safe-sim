@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { SensorManager } from '@/utils/sensors/SensorManager';
@@ -157,7 +156,7 @@ class SecureDefenseSystem {
     console.log('SecureDefenseSystem: Threat detection event:', detection);
     
     // Standard threat detection
-    const isHighConfidence = detection.confidence > AUDIO_SENSITIVITY;
+    const isHighConfidence = ('confidence' in detection) ? detection.confidence > AUDIO_SENSITIVITY : false;
     const now = Date.now();
     const timeSinceLastCheck = now - this.lastThreatCheckTime;
     
@@ -178,7 +177,7 @@ class SecureDefenseSystem {
       // Weapon detection is critical - trigger immediately
       shouldTriggerEmergency = true;
       this.emergencyContext.type = 'violent_attack';
-      this.emergencyContext.confidence = detection.confidence;
+      this.emergencyContext.confidence = 'confidence' in detection ? detection.confidence : 0.9;
       this.emergencyContext.evidence.vision = true;
     } else if ('type' in detection && detection.type === 'struggle' && isHighConfidence) {
       // Physical struggle detected
@@ -187,13 +186,13 @@ class SecureDefenseSystem {
       if (this.possibleThreatCount >= THREAT_CONFIRMATION_THRESHOLD) {
         shouldTriggerEmergency = true;
         this.emergencyContext.type = 'violent_attack';
-        this.emergencyContext.confidence = detection.confidence;
+        this.emergencyContext.confidence = 'confidence' in detection ? detection.confidence : 0.85;
       }
     } else if (isCriticalAIThreat) {
       // Critical threat from AI monitoring
       shouldTriggerEmergency = true;
       this.emergencyContext.type = 'subtype' in detection ? detection.subtype : 'unknown';
-      this.emergencyContext.confidence = detection.confidence || 0.9;
+      this.emergencyContext.confidence = 'confidence' in detection ? detection.confidence : 0.9;
     }
     
     if (shouldTriggerEmergency && !this.inEmergencyMode) {

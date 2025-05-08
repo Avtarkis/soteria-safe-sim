@@ -58,7 +58,7 @@ const SecuritySystemControls = () => {
               <span>Security System</span>
             </CardTitle>
             
-            <Badge variant={status.emergencyMode ? "destructive" : status.isActive ? "success" : "outline"}>
+            <Badge variant={status.emergencyMode ? "destructive" : status.isActive ? "default" : "outline"}>
               {status.emergencyMode ? "EMERGENCY" : status.isActive ? "ACTIVE" : "INACTIVE"}
             </Badge>
           </div>

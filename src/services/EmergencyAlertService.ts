@@ -1,4 +1,3 @@
-
 import { toast } from '@/hooks/use-toast';
 
 // Types for alert options

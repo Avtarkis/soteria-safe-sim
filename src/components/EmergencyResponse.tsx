@@ -18,7 +18,7 @@ const EmergencyContactsList = [
   { name: 'Emergency Services', relationship: 'Public Service', phone: '911' },
 ];
 
-const EmergencyResponse = () => {
+const EmergencyResponse: React.FC = () => {
   const { features, updateFeatures } = useEmergencyFeatures();
   
   return (
