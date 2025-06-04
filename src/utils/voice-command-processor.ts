@@ -1,62 +1,79 @@
 
-import { ProcessedCommand, VoiceCommandType } from './voice/types';
-import { determineCommandType, determineUrgency } from './voice/commandTypes';
-import { extractParameters } from './voice/commands/parameterExtractor';
-import { generateResponse } from './voice/responseGenerator';
-import { openaiService } from '../services/openaiService';
+import { ProcessedCommand } from './voice/types';
+import { processCommand } from './voice/commandProcessor';
 
+// Main voice command processing function
 export const processVoiceCommand = async (transcript: string): Promise<ProcessedCommand | null> => {
-  if (!transcript?.trim()) return null;
-  
-  const normalizedText = transcript.toLowerCase().trim();
-  if (!normalizedText.includes('soteria')) return null;
-
-  try {
-    // Determine if this is a command or a conversational query
-    const type = determineCommandType(normalizedText);
-    const urgency = determineUrgency(normalizedText);
-    const params = extractParameters(normalizedText, type);
-    
-    // Create the processed command
-    return {
-      type,
-      confidence: type === 'conversation' ? 0.6 : 0.8, // Lower confidence for conversation type
-      originalText: transcript,
-      normalizedText,
-      urgency,
-      params
-    };
-  } catch (error) {
-    console.error('Error processing command:', error);
-    return null;
-  }
+  return await processCommand(transcript);
 };
 
+// Generate appropriate response based on command
 export const generateCommandResponse = async (command: ProcessedCommand): Promise<string> => {
-  // For conversational queries, use OpenAI instead of predefined responses
-  if (command.type === 'conversation') {
-    try {
-      const response = await openaiService.generateResponse([
-        { 
-          role: 'system', 
-          content: 'You are Soteria, an AI safety assistant in a personal safety app. You help users with safety concerns, family monitoring, emergency situations, travel advice, and personal security. Your responses should be helpful, concise, and empathetic. Focus only on topics related to personal safety, security, and the app\'s features. If asked about something unrelated, gently redirect to how you can help with safety concerns.'
-        },
-        {
-          role: 'user',
-          content: command.originalText
-        }
-      ]);
-      
-      return response || "I'm sorry, I couldn't generate a response right now.";
-    } catch (error) {
-      console.error('Error generating OpenAI response:', error);
-      return "I'm having trouble understanding that right now. Is there something specific about your safety I can help you with?";
-    }
-  }
+  const { type, urgency, originalText } = command;
   
-  // Use predefined responses for recognized commands
-  return generateResponse(command);
+  switch (type) {
+    case 'emergency':
+      if (urgency === 'critical') {
+        return "Critical emergency detected. Activating all emergency protocols immediately. Help is on the way.";
+      } else if (urgency === 'high') {
+        return "Emergency situation recognized. Initiating emergency response. Stay calm.";
+      }
+      return "Emergency command received. Taking appropriate action.";
+      
+    case 'help':
+      return "I'm here to help with emergency situations. You can say commands like 'Soteria help', 'Soteria danger', or 'Soteria call police'.";
+      
+    case 'status':
+      return "Security system is active and monitoring. All systems are operational.";
+      
+    case 'call':
+      return "Initiating emergency call. Please stay on the line.";
+      
+    case 'alert':
+      return "Sending emergency alerts to your contacts now.";
+      
+    case 'record':
+      return "Starting emergency recording. Evidence is being captured.";
+      
+    case 'location':
+      return "Sharing your current location with emergency contacts.";
+      
+    case 'unknown':
+      return "I didn't understand that command. Try saying 'Soteria help' for assistance, or speak more clearly.";
+      
+    default:
+      return "Command processed. Let me know if you need any help.";
+  }
 };
 
-// Use 'export type' instead of 'export' for type re-exports
-export type { ProcessedCommand };
+// Check if text contains emergency keywords
+export const containsEmergencyKeywords = (text: string): boolean => {
+  const emergencyKeywords = [
+    'help', 'emergency', 'danger', 'threat', 'attack',
+    'weapon', 'gun', 'knife', 'hurt', 'injured', 'pain',
+    'scared', 'afraid', 'call police', 'call 911',
+    'medical', 'ambulance', 'fire', 'break in'
+  ];
+  
+  const lowerText = text.toLowerCase();
+  return emergencyKeywords.some(keyword => lowerText.includes(keyword));
+};
+
+// Extract urgency level from text
+export const extractUrgency = (text: string): 'low' | 'medium' | 'high' | 'critical' => {
+  const criticalKeywords = ['gun', 'weapon', 'attack', 'breaking in', 'help me'];
+  const highKeywords = ['emergency', 'danger', 'threat', 'scared', 'hurt'];
+  const mediumKeywords = ['help', 'problem', 'issue'];
+  
+  const lowerText = text.toLowerCase();
+  
+  if (criticalKeywords.some(keyword => lowerText.includes(keyword))) {
+    return 'critical';
+  } else if (highKeywords.some(keyword => lowerText.includes(keyword))) {
+    return 'high';
+  } else if (mediumKeywords.some(keyword => lowerText.includes(keyword))) {
+    return 'medium';
+  }
+  
+  return 'low';
+};
