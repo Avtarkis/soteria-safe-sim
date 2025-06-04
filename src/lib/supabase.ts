@@ -1,136 +1,76 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Use hardcoded values directly defined in vite.config.ts
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = "https://xdljzbkczhyykhzyillj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGp6Ymtjemh5eWtoenlpbGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NTY5MzEsImV4cCI6MjA2MTAzMjkzMX0.urlh_YAUvhu64I8ynJRGtdAUTtFURGcTn_vVAgbREAc";
 
-// Check if we're missing environment variables
-const isUsingHardcodedValues = !supabaseUrl || !supabaseAnonKey;
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
 
-if (isUsingHardcodedValues) {
-  console.warn('Using hardcoded Supabase credentials.');
-} else {
-  console.log('Using environment variable Supabase credentials.');
+// Types for our database tables
+export interface SecurityLog {
+  id: string;
+  user_id: string;
+  event_type: string;
+  details: Record<string, unknown>;
+  created_at: string;
 }
 
-// Define types for our database
-export type Database = {
-  public: {
-    Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          created_at: string;
-          full_name: string | null;
-          email: string;
-          avatar_url: string | null;
-          preferences: {
-            threatTypes: string[];
-            notifications: boolean;
-          } | null;
-        };
-        Insert: {
-          id: string;
-          created_at?: string;
-          full_name?: string | null;
-          email: string;
-          avatar_url?: string | null;
-          preferences?: {
-            threatTypes: string[];
-            notifications: boolean;
-          } | null;
-        };
-        Update: {
-          id?: string;
-          created_at?: string;
-          full_name?: string | null;
-          email?: string;
-          avatar_url?: string | null;
-          preferences?: {
-            threatTypes: string[];
-            notifications: boolean;
-          } | null;
-        };
-      };
-      threat_alerts: {
-        Row: {
-          id: string;
-          created_at: string;
-          title: string;
-          description: string;
-          level: 'low' | 'medium' | 'high';
-          user_id: string;
-          action: string | null;
-          resolved: boolean;
-          latitude?: number;
-          longitude?: number;
-        };
-        Insert: {
-          id?: string;
-          created_at?: string;
-          title: string;
-          description: string;
-          level: 'low' | 'medium' | 'high';
-          user_id: string;
-          action?: string | null;
-          resolved?: boolean;
-          latitude?: number;
-          longitude?: number;
-        };
-        Update: {
-          id?: string;
-          created_at?: string;
-          title?: string;
-          description?: string;
-          level?: 'low' | 'medium' | 'high';
-          user_id?: string;
-          action?: string | null;
-          resolved?: boolean;
-          latitude?: number;
-          longitude?: number;
-        };
-      };
-      security_logs: {
-        Row: {
-          id: string;
-          created_at: string;
-          event_type: string;
-          details: Record<string, unknown>;
-          user_id: string;
-        };
-        Insert: {
-          id?: string;
-          created_at?: string;
-          event_type: string;
-          details: Record<string, unknown>;
-          user_id: string;
-        };
-        Update: {
-          id?: string;
-          created_at?: string;
-          event_type?: string;
-          details?: Record<string, unknown>;
-          user_id?: string;
-        };
-      };
-    };
-  };
-};
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type ThreatAlert = Database['public']['Tables']['threat_alerts']['Row'];
-export type SecurityLog = Database['public']['Tables']['security_logs']['Row'];
-
-// Helper function to check if we're using fallback values
-export const isUsingFallbackValues = () => {
-  return isUsingHardcodedValues;
-};
-
-// Expose the function to the window object for use in HTML scripts
-if (typeof window !== 'undefined') {
-  (window as any).isUsingFallbackValues = isUsingFallbackValues;
+export interface UserAlert {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  category: string;
+  status: string;
+  icon?: string;
+  action_text?: string;
+  action_link?: string;
+  created_at: string;
 }
+
+export interface SupportTicket {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category: 'technical' | 'billing' | 'feature_request' | 'bug_report' | 'other';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketMessage {
+  id: string;
+  ticket_id: string;
+  user_id?: string;
+  message: string;
+  is_admin: boolean;
+  attachment_url?: string;
+  created_at: string;
+}
+
+// Helper functions for error handling
+export const handleSupabaseError = (error: any) => {
+  console.error('Supabase error:', error);
+  
+  if (error?.message) {
+    return error.message;
+  }
+  
+  return 'An unexpected error occurred. Please try again.';
+};
+
+export const requireAuth = (user: any) => {
+  if (!user) {
+    throw new Error('Authentication required. Please sign in to continue.');
+  }
+  return user;
+};
