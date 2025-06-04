@@ -30,7 +30,7 @@ class EmergencyCallService {
   private isCallActive = false;
 
   /**
-   * Start a simulated emergency call
+   * Start a real emergency call using device capabilities
    */
   public startEmergencyCall(
     callType: EmergencyCallType = 'default', 
@@ -41,6 +41,28 @@ class EmergencyCallService {
       return;
     }
     
+    // For production: Use real emergency calling
+    const emergencyNumber = this.getEmergencyNumber();
+    
+    try {
+      // Use device's native phone app
+      window.open(`tel:${emergencyNumber}`, '_self');
+      
+      // Also show the call UI for additional context
+      this.showCallUI(callType, options);
+      
+      console.log(`Emergency call initiated to ${emergencyNumber} for ${callType}`);
+    } catch (error) {
+      console.error('Error initiating emergency call:', error);
+      // Fallback to showing UI only
+      this.showCallUI(callType, options);
+    }
+  }
+
+  /**
+   * Show the call UI simulator
+   */
+  private showCallUI(callType: EmergencyCallType, options: SimulatedCallOptions): void {
     this.isCallActive = true;
     
     // Create container for the call UI
@@ -74,25 +96,24 @@ class EmergencyCallService {
 
     // Trigger device vibration pattern to simulate incoming call
     if ('vibrate' in navigator) {
-      // Pattern: vibrate 1s, pause 0.5s, vibrate 1s, etc.
       navigator.vibrate([1000, 500, 1000, 500, 1000]);
     }
     
     // Render the phone call simulator
     this.activeCallRoot.render(
-      <PhoneCallSimulator
-        callerName={callerName}
-        message={message}
-        autoAnswerDelay={options.autoAnswerDelay || 5000}
-        onComplete={() => {
+      React.createElement(PhoneCallSimulator, {
+        callerName: callerName,
+        message: message,
+        autoAnswerDelay: options.autoAnswerDelay || 5000,
+        onComplete: () => {
           this.endEmergencyCall();
           if (options.onComplete) options.onComplete();
-        }}
-        onCancel={() => {
+        },
+        onCancel: () => {
           this.endEmergencyCall();
           if (options.onCancel) options.onCancel();
-        }}
-      />
+        }
+      })
     );
     
     // Play ringtone through standard audio API
@@ -101,7 +122,6 @@ class EmergencyCallService {
       audio.loop = true;
       audio.play().catch(err => console.error('Error playing ringtone:', err));
       
-      // Stop the ringtone after 10 seconds if not already stopped
       setTimeout(() => {
         audio.pause();
         audio.currentTime = 0;
@@ -109,6 +129,15 @@ class EmergencyCallService {
     } catch (error) {
       console.error('Error playing ringtone:', error);
     }
+  }
+
+  /**
+   * Get appropriate emergency number based on location
+   */
+  private getEmergencyNumber(): string {
+    // In production, this could be determined by geolocation
+    // For now, default to 911 (US/Canada)
+    return '911';
   }
   
   /**
@@ -131,7 +160,7 @@ class EmergencyCallService {
     
     // Stop any vibrations
     if ('vibrate' in navigator) {
-      navigator.vibrate(0); // Stop vibration
+      navigator.vibrate(0);
     }
   }
   
