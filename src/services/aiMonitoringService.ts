@@ -1,4 +1,3 @@
-
 import { AIThreatDetection, AIMonitoringSettings } from '@/types/ai-monitoring';
 import { ThreatDetectionService } from './ThreatDetectionService';
 import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
@@ -177,8 +176,7 @@ class AIMonitoringService {
       EmergencyResponseSystem.handleThreatDetection({
         type: mappedSubtype,
         confidence: detection.confidence,
-        details: detection.description || detection.details || 'AI threat detected',
-        timestamp: detection.timestamp
+        details: detection.description || detection.details || 'AI threat detected'
       });
     }
 
