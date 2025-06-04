@@ -168,8 +168,14 @@ class AIMonitoringService {
 
     // Notify emergency response system with the detection object
     if (detection.type && detection.confidence) {
+      // Map the detection subtype to a valid threat detection type
+      const validSubtypes: ('fall' | 'weapon' | 'struggle' | 'unknown')[] = ['fall', 'weapon', 'struggle', 'unknown'];
+      const mappedSubtype = validSubtypes.includes(detection.subtype as any) 
+        ? detection.subtype as 'fall' | 'weapon' | 'struggle' | 'unknown'
+        : 'unknown';
+
       EmergencyResponseSystem.handleThreatDetection({
-        type: detection.subtype || detection.type,
+        type: mappedSubtype,
         confidence: detection.confidence,
         details: detection.description || detection.details || 'AI threat detected',
         timestamp: detection.timestamp

@@ -8,7 +8,21 @@ export type VoiceCommandType =
   | 'alert'
   | 'record'
   | 'location'
-  | 'unknown';
+  | 'unknown'
+  | 'emergency_call'
+  | 'location_share'
+  | 'start_recording'
+  | 'silent_alarm'
+  | 'travel_advice'
+  | 'cybersecurity_info'
+  | 'family_location'
+  | 'safe_route'
+  | 'conversation'
+  | 'stop'
+  | 'cancel'
+  | 'weather_alert'
+  | 'medical_advice'
+  | 'personal_safety';
 
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
 
