@@ -54,7 +54,6 @@ export class CommandProcessor {
     try {
       const sentiment = await deepgramService.analyzeSentiment(text);
       if (sentiment && sentiment.confidence > 0.8) {
-        // Assuming the deepgramService now returns a type field instead of commandType
         if ('type' in sentiment) {
           return sentiment.type as VoiceCommandType;
         }

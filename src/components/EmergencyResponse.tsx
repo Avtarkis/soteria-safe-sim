@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useEmergencyFeatures } from '@/hooks/use-emergency-features';
 import EmergencySOSButton from './emergency/EmergencySOSButton';
 import VoiceAssistant from './emergency/VoiceAssistant';

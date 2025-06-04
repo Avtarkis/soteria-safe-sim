@@ -42,38 +42,25 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initialize and cleanup
   useEffect(() => {
-    // Any initialization code here
     return () => {
-      // Cleanup
       if (status.recordingActive) {
-        stopRecording();
+        setStatus(prev => ({
+          ...prev,
+          recordingActive: false,
+          recordingType: null,
+        }));
       }
     };
-  }, []);
-
-  // Helper function to stop recording
-  const stopRecording = () => {
-    // Implement recording stopping logic
-    console.log('Stopping recording...');
-    setStatus(prev => ({
-      ...prev,
-      recordingActive: false,
-      recordingType: null,
-    }));
-  };
+  }, [status.recordingActive]);
 
   // Activate the security system
   const activateSecurity = async () => {
     console.log('Activating security system...');
     
-    // Request necessary permissions
     try {
-      // Request camera and microphone permissions if needed
-      // This is just an example, actual implementation depends on browser APIs
       const cameraPermission = await navigator.mediaDevices.getUserMedia({ video: true });
       const micPermission = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Stop the streams immediately after getting permissions
       cameraPermission.getTracks().forEach(track => track.stop());
       micPermission.getTracks().forEach(track => track.stop());
       
@@ -128,7 +115,6 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
   const triggerEmergency = (threatDetails?: Partial<AIThreatDetection>) => {
     console.log('TRIGGERING EMERGENCY MODE');
     
-    // Default threat if none provided
     const threat: AIThreatDetection = {
       id: `threat-${Date.now()}`,
       type: threatDetails?.type || 'security',
@@ -143,13 +129,9 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
       source: 'manual',
     };
     
-    // Activate stealth mode for high severity threats
     const activateStealthMode = threat.severity === 'critical' || threat.severity === 'high';
-    
-    // Start recording
     const recordingType = threat.type === 'security' ? 'video' : 'audio';
     
-    // Update status
     setStatus(prev => ({
       ...prev,
       emergencyMode: true,
@@ -160,7 +142,6 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
       threatLevel: threat.severity || 'high',
     }));
     
-    // Start emergency call simulation for testing
     if (!emergencyCallService.isCallInProgress()) {
       const callType = threat.type === 'security' ? 'weapon' : 
                      threat.type === 'health' ? 'health' : 'default';
@@ -171,17 +152,15 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     }
     
-    // Send emergency alerts
     emergencyAlertService.sendEmergencyAlerts({
       emergency_type: threat.type || 'security',
-      location: [0, 0], // Replace with actual coordinates
+      location: [0, 0],
       timestamp: new Date().toISOString(),
       send_media: true,
       recipients: 'all',
       alert_method: 'all',
     });
     
-    // Show emergency toast notification
     toast({
       title: "🚨 EMERGENCY MODE ACTIVATED",
       description: "Emergency contacts are being notified. Stay safe.",
@@ -194,20 +173,12 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
   const endEmergency = () => {
     console.log('Ending emergency mode...');
     
-    // Stop recording if active
-    if (status.recordingActive) {
-      stopRecording();
-    }
-    
-    // End emergency call if in progress
     if (emergencyCallService.isCallInProgress()) {
       emergencyCallService.endEmergencyCall();
     }
     
-    // Send all clear alert
     emergencyAlertService.sendAllClearAlert();
     
-    // Update status
     setStatus(prev => ({
       ...prev,
       emergencyMode: false,
@@ -217,42 +188,12 @@ export const SecureDefenseProvider: React.FC<{ children: React.ReactNode }> = ({
       threatLevel: 'none',
     }));
     
-    // Show toast notification
     toast({
       title: "Emergency Mode Deactivated",
       description: "All clear signal sent to your emergency contacts.",
     });
   };
 
-  // Process voice command for emergency
-  const processVoiceCommand = (text: string, confidence: number) => {
-    console.log(`Processing emergency voice command: ${text}`);
-    
-    // Simple keyword detection for demo
-    const keywords = {
-      help: ['help', 'emergency', 'danger', 'sos'],
-      weapon: ['weapon', 'gun', 'knife', 'armed'],
-      medical: ['medical', 'hurt', 'injured', 'fall'],
-    };
-    
-    // Default to security type
-    let detectedType: 'health' | 'security' | 'environment' = 'security';
-    
-    // Check for medical emergency keywords
-    if (keywords.medical.some(keyword => text.includes(keyword))) {
-      detectedType = 'health';
-    }
-    
-    // Trigger emergency with the detected type
-    triggerEmergency({
-      type: detectedType,
-      subtype: 'voice_command',
-      description: `Voice command triggered: "${text}"`,
-      confidence: confidence,
-    });
-  };
-
-  // The value provided to consumers
   const value = {
     status,
     activateSecurity,
@@ -281,12 +222,10 @@ export const useSecureDefense = () => {
 export const triggerEmergencyMode = (threatDetails?: Partial<AIThreatDetection>) => {
   console.warn('triggerEmergencyMode called outside of provider context. This is just a fallback.');
   
-  // Fallback behavior when not in provider context
   emergencyCallService.startEmergencyCall('default', {
     callerName: 'Emergency Fallback',
     autoAnswerDelay: 3000,
   });
 };
 
-// Default export for the provider
 export default SecureDefenseProvider;
