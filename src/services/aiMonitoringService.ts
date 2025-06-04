@@ -166,13 +166,14 @@ class AIMonitoringService {
     
     if (autoResponseLevel === 'none') return;
 
-    // Notify emergency response system
+    // Notify emergency response system with the detection object
     if (detection.type && detection.confidence) {
-      EmergencyResponseSystem.handleThreatDetection(
-        detection.subtype || detection.type,
-        detection.confidence,
-        detection.description || detection.details || 'AI threat detected'
-      );
+      EmergencyResponseSystem.handleThreatDetection({
+        type: detection.subtype || detection.type,
+        confidence: detection.confidence,
+        details: detection.description || detection.details || 'AI threat detected',
+        timestamp: detection.timestamp
+      });
     }
 
     // Set automatic response taken

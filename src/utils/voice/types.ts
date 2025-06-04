@@ -1,45 +1,29 @@
 
+// Voice command types and interfaces
 export type VoiceCommandType = 
-  | 'emergency_call'
-  | 'location_share'
-  | 'start_recording'
-  | 'silent_alarm'
-  | 'travel_advice'
-  | 'cybersecurity_info'
-  | 'family_location'
-  | 'safe_route'
-  | 'help'
-  | 'stop'
-  | 'cancel'
-  | 'weather_alert'
-  | 'medical_advice'
-  | 'personal_safety'
-  | 'conversation'
+  | 'emergency'
+  | 'help' 
+  | 'status'
+  | 'call'
+  | 'alert'
+  | 'record'
+  | 'location'
   | 'unknown';
+
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface ProcessedCommand {
   type: VoiceCommandType;
   confidence: number;
   originalText: string;
   normalizedText: string;
-  urgency: 'low' | 'medium' | 'high';
-  params?: Record<string, string>;
+  urgency: UrgencyLevel;
+  params?: Record<string, any>;
 }
 
-export interface CommandResponse {
-  text: string;
-  action?: () => void;
-}
-
-// New types for Web Audio API recorder
-export interface AudioRecorderState {
-  isRecording: boolean;
-  audioUrl: string | null;
-  error: string | null;
-}
-
-export interface RecordedAudioData {
-  blob: Blob;
-  duration: number;
-  url: string;
+export interface VoiceCommandParams {
+  target?: string;
+  location?: string;
+  message?: string;
+  duration?: number;
 }

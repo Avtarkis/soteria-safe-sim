@@ -1,126 +1,176 @@
 
-import { toast } from '@/hooks/use-toast';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import PhoneCallSimulator from '@/components/emergency/PhoneCallSimulator';
+import { EmergencyEvent } from '@/utils/emergency/types';
 
-interface CallOptions {
+// Emergency call messages for different scenarios
+const EMERGENCY_MESSAGES = {
+  default: "Your location has been recorded. The attackers' faces are now in our system. Police are on their way. Stay calm and stay safe.",
+  weapon: "This is an emergency alert. We have detected a potential weapon threat near you. Police units have been dispatched to your location. Please remain calm and seek shelter immediately.",
+  fall: "Emergency services have been notified of your fall. Medical assistance is on the way to your current location. Please remain still if possible.",
+  health: "Medical emergency detected. A response team has been notified and is en route to your location. Help is on the way.",
+  audio: "We detected a distress sound at your location. Emergency services have been dispatched. If safe to do so, please seek shelter and wait for responders.",
+  sos: "SOS received. Police have been dispatched to your location. Your location is being tracked in real-time. Help is on the way.",
+};
+
+export type EmergencyCallType = keyof typeof EMERGENCY_MESSAGES;
+
+export interface SimulatedCallOptions {
   callerName?: string;
+  message?: string;
   autoAnswerDelay?: number;
+  onComplete?: () => void;
+  onCancel?: () => void;
 }
 
 class EmergencyCallService {
-  private activeCall: boolean = false;
-  private callStartTime: number | null = null;
-  
+  private activeCallContainer: HTMLDivElement | null = null;
+  private activeCallRoot: ReturnType<typeof createRoot> | null = null;
+  private isCallActive = false;
+
+  /**
+   * Start a simulated emergency call
+   */
   public startEmergencyCall(
-    callType: 'weapon' | 'health' | 'default' = 'default',
-    options: CallOptions = {}
+    callType: EmergencyCallType = 'default', 
+    options: SimulatedCallOptions = {}
   ): void {
-    if (this.activeCall) {
-      console.log('Emergency call already in progress');
+    if (this.isCallActive) {
+      console.warn('Emergency call is already active');
       return;
     }
     
-    this.activeCall = true;
-    this.callStartTime = Date.now();
+    this.isCallActive = true;
     
-    // Use real browser APIs to initiate emergency call
-    const emergencyNumber = this.getEmergencyNumber();
+    // Create container for the call UI
+    const callContainer = document.createElement('div');
+    callContainer.id = 'emergency-call-container';
+    document.body.appendChild(callContainer);
     
+    this.activeCallContainer = callContainer;
+    this.activeCallRoot = createRoot(callContainer);
+    
+    // Get message based on call type
+    const message = options.message || EMERGENCY_MESSAGES[callType] || EMERGENCY_MESSAGES.default;
+    
+    // Determine appropriate caller name based on call type
+    let callerName = options.callerName || 'Emergency Services';
+    
+    switch (callType) {
+      case 'weapon':
+        callerName = 'Police Emergency';
+        break;
+      case 'fall':
+      case 'health':
+        callerName = 'Medical Response';
+        break;
+      case 'sos':
+        callerName = 'Emergency Response Unit';
+        break;
+      default:
+        callerName = 'Emergency Services';
+    }
+
+    // Trigger device vibration pattern to simulate incoming call
+    if ('vibrate' in navigator) {
+      // Pattern: vibrate 1s, pause 0.5s, vibrate 1s, etc.
+      navigator.vibrate([1000, 500, 1000, 500, 1000]);
+    }
+    
+    // Render the phone call simulator
+    this.activeCallRoot.render(
+      <PhoneCallSimulator
+        callerName={callerName}
+        message={message}
+        autoAnswerDelay={options.autoAnswerDelay || 5000}
+        onComplete={() => {
+          this.endEmergencyCall();
+          if (options.onComplete) options.onComplete();
+        }}
+        onCancel={() => {
+          this.endEmergencyCall();
+          if (options.onCancel) options.onCancel();
+        }}
+      />
+    );
+    
+    // Play ringtone through standard audio API
     try {
-      // Create a real phone call using tel: protocol
-      const callUrl = `tel:${emergencyNumber}`;
-      window.open(callUrl, '_self');
+      const audio = new Audio('/sounds/emergency-ring.mp3');
+      audio.loop = true;
+      audio.play().catch(err => console.error('Error playing ringtone:', err));
       
-      console.log(`Emergency call initiated to ${emergencyNumber}`);
-      
-      toast({
-        title: "Emergency Call Initiated",
-        description: `Calling ${emergencyNumber}. Stay on the line.`,
-        variant: "destructive",
-        duration: 10000,
-      });
-      
-      // Auto-end the call tracking after reasonable time
+      // Stop the ringtone after 10 seconds if not already stopped
       setTimeout(() => {
-        this.endEmergencyCall();
-      }, 300000); // 5 minutes
-      
+        audio.pause();
+        audio.currentTime = 0;
+      }, 10000);
     } catch (error) {
-      console.error('Failed to initiate emergency call:', error);
-      this.activeCall = false;
-      this.callStartTime = null;
-      
-      toast({
-        title: "Call Failed",
-        description: "Unable to place emergency call. Please dial manually.",
-        variant: "destructive",
-      });
+      console.error('Error playing ringtone:', error);
     }
   }
   
+  /**
+   * End the currently active emergency call
+   */
   public endEmergencyCall(): void {
-    if (!this.activeCall) return;
+    if (!this.isCallActive) return;
     
-    this.activeCall = false;
-    const duration = this.callStartTime ? Date.now() - this.callStartTime : 0;
-    this.callStartTime = null;
+    // Clean up
+    if (this.activeCallRoot && this.activeCallContainer) {
+      this.activeCallRoot.unmount();
+      if (this.activeCallContainer.parentNode) {
+        this.activeCallContainer.parentNode.removeChild(this.activeCallContainer);
+      }
+      this.activeCallContainer = null;
+      this.activeCallRoot = null;
+    }
     
-    console.log(`Emergency call ended after ${Math.round(duration / 1000)} seconds`);
+    this.isCallActive = false;
     
-    toast({
-      title: "Emergency Call Ended",
-      description: "Call has been disconnected.",
-    });
+    // Stop any vibrations
+    if ('vibrate' in navigator) {
+      navigator.vibrate(0); // Stop vibration
+    }
   }
   
+  /**
+   * Check if there's an active emergency call
+   */
   public isCallInProgress(): boolean {
-    return this.activeCall;
+    return this.isCallActive;
   }
   
-  public getCallDuration(): number {
-    if (!this.activeCall || !this.callStartTime) return 0;
-    return Date.now() - this.callStartTime;
-  }
-  
-  private getEmergencyNumber(): string {
-    // Get user's location to determine appropriate emergency number
-    const userCountry = this.detectUserCountry();
+  /**
+   * Start a simulated emergency call based on an emergency event
+   */
+  public startCallFromEmergencyEvent(event: EmergencyEvent, options: SimulatedCallOptions = {}): void {
+    let callType: EmergencyCallType = 'default';
     
-    const emergencyNumbers: { [key: string]: string } = {
-      'US': '911',
-      'CA': '911',
-      'GB': '999',
-      'AU': '000',
-      'DE': '112',
-      'FR': '112',
-      'IT': '112',
-      'ES': '112',
-      'NL': '112',
-      'BE': '112',
-      'default': '911'
-    };
+    // Map emergency event type to call type
+    switch (event.type) {
+      case 'weapon':
+        callType = 'weapon';
+        break;
+      case 'fall':
+        callType = 'fall';
+        break;
+      case 'health':
+        callType = 'health';
+        break;
+      case 'audio':
+        callType = 'audio';
+        break;
+      case 'manual':
+        callType = event.subtype === 'sos' ? 'sos' : 'default';
+        break;
+    }
     
-    return emergencyNumbers[userCountry] || emergencyNumbers['default'];
-  }
-  
-  private detectUserCountry(): string {
-    // Use browser's timezone and language to detect likely country
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const language = navigator.language;
-    
-    if (timezone.includes('America/') && language.startsWith('en-US')) return 'US';
-    if (timezone.includes('America/') && language.startsWith('en-CA')) return 'CA';
-    if (timezone.includes('Europe/London')) return 'GB';
-    if (timezone.includes('Australia/')) return 'AU';
-    if (timezone.includes('Europe/Berlin')) return 'DE';
-    if (timezone.includes('Europe/Paris')) return 'FR';
-    if (timezone.includes('Europe/Rome')) return 'IT';
-    if (timezone.includes('Europe/Madrid')) return 'ES';
-    if (timezone.includes('Europe/Amsterdam')) return 'NL';
-    if (timezone.includes('Europe/Brussels')) return 'BE';
-    
-    return 'US'; // Default fallback
+    this.startEmergencyCall(callType, options);
   }
 }
 
+// Export singleton instance
 const emergencyCallService = new EmergencyCallService();
 export default emergencyCallService;
