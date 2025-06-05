@@ -60,7 +60,7 @@ export const mockAIServices = {
 };
 
 // Test data generators
-export const generateMockThreat = (overrides = {}) => ({
+export const generateMockThreat = (overrides: Record<string, any> = {}) => ({
   id: `threat-${Date.now()}`,
   type: 'security',
   severity: 'medium',
@@ -70,7 +70,7 @@ export const generateMockThreat = (overrides = {}) => ({
   ...overrides
 });
 
-export const generateMockAlert = (overrides = {}) => ({
+export const generateMockAlert = (overrides: Record<string, any> = {}) => ({
   id: `alert-${Date.now()}`,
   title: 'Test Alert',
   description: 'This is a test alert',
@@ -100,10 +100,10 @@ export const fillInput = (labelText: string, value: string) => {
 
 // Mock localStorage for testing
 export const mockLocalStorage = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn()
+  getItem: jest.fn() as jest.Mock,
+  setItem: jest.fn() as jest.Mock,
+  removeItem: jest.fn() as jest.Mock,
+  clear: jest.fn() as jest.Mock
 };
 
 // Setup function for tests
@@ -112,28 +112,39 @@ export const setupTest = () => {
   jest.clearAllMocks();
   
   // Mock console methods
-  global.console = {
+  const consoleMock = {
     ...console,
     error: jest.fn(),
     warn: jest.fn(),
     log: jest.fn()
   };
   
+  Object.defineProperty(global, 'console', {
+    value: consoleMock,
+    writable: true
+  });
+  
   // Mock localStorage
   Object.defineProperty(window, 'localStorage', {
-    value: mockLocalStorage
+    value: mockLocalStorage,
+    writable: true
   });
   
   // Mock geolocation
   const mockGeolocation = {
-    getCurrentPosition: jest.fn().mockImplementation((success) =>
+    getCurrentPosition: jest.fn().mockImplementation((success: PositionCallback) =>
       success({
         coords: {
           latitude: 40.7128,
           longitude: -74.0060,
-          accuracy: 100
-        }
-      })
+          accuracy: 100,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
+      } as GeolocationPosition)
     ),
     watchPosition: jest.fn(),
     clearWatch: jest.fn()
