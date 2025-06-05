@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { nativeAPIManager, APICapabilities } from '@/services/NativeAPIManager';
 import { emergencyRecordingService, RecordingOptions } from '@/services/EmergencyRecordingService';
@@ -11,6 +10,8 @@ export function useNativeAPIs() {
   const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({});
   const [isRecording, setIsRecording] = useState(false);
   const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [connectedBLEDevice, setConnectedBLEDevice] = useState<BluetoothDevice | null>(null);
+  const [nfcReading, setNfcReading] = useState(false);
 
   useEffect(() => {
     // Update capabilities on mount
@@ -207,6 +208,166 @@ export function useNativeAPIs() {
     return null;
   }, [toast]);
 
+  // Enhanced Bluetooth functionality with Soteria specs
+  const connectSoteriaDevice = useCallback(async () => {
+    try {
+      const device = await nativeAPIManager.requestBluetoothDevice();
+      
+      if (device) {
+        const server = await nativeAPIManager.connectBluetoothDevice(device);
+        
+        if (server) {
+          // Subscribe to panic button notifications
+          const success = await nativeAPIManager.subscribeToPanicButton(device);
+          
+          if (success) {
+            setConnectedBLEDevice(device);
+            toast({
+              title: "Soteria Device Connected",
+              description: `Connected to ${device.name}. Panic button is now active.`,
+            });
+          }
+        }
+        
+        return server;
+      }
+    } catch (error) {
+      console.error('Soteria BLE connection error:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to Soteria safety device.",
+        variant: "destructive"
+      });
+    }
+    return null;
+  }, [toast]);
+
+  const sendBLEFeedback = useCallback(async (feedbackType: 'vibrate' | 'led') => {
+    if (!connectedBLEDevice) {
+      toast({
+        title: "No Device Connected",
+        description: "Please connect a Soteria device first.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const success = await nativeAPIManager.sendFeedbackToBLEDevice(connectedBLEDevice, feedbackType);
+    
+    if (success) {
+      toast({
+        title: "Feedback Sent",
+        description: `${feedbackType === 'vibrate' ? 'Vibration' : 'LED'} signal sent to device.`,
+      });
+    }
+    
+    return success;
+  }, [connectedBLEDevice, toast]);
+
+  // NFC functionality with Soteria specs
+  const startNFCReading = useCallback(async () => {
+    if (!nativeAPIManager.isFeatureSupported('nfc')) {
+      toast({
+        title: "NFC Not Supported",
+        description: "Your device doesn't support NFC reading.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setNfcReading(true);
+      
+      toast({
+        title: "NFC Reader Active",
+        description: "Hold a Soteria NFC tag near your device...",
+      });
+
+      const payload = await nativeAPIManager.readNFCTag();
+      
+      if (payload) {
+        await nativeAPIManager.handleNFCAction(payload);
+        
+        toast({
+          title: "NFC Tag Detected",
+          description: `Action: ${payload.soteria_action} from device ${payload.device_id}`,
+        });
+      }
+    } catch (error) {
+      console.error('NFC reading error:', error);
+      toast({
+        title: "NFC Error",
+        description: "Unable to read NFC tag.",
+        variant: "destructive"
+      });
+    } finally {
+      setNfcReading(false);
+    }
+  }, [toast]);
+
+  // Event listeners for BLE/NFC triggers
+  useEffect(() => {
+    const handleBLEEmergency = (event: CustomEvent) => {
+      console.log('BLE emergency triggered:', event.detail);
+      toast({
+        title: "EMERGENCY ACTIVATED",
+        description: "Panic button pressed! Starting emergency protocol...",
+        variant: "destructive"
+      });
+      
+      // Trigger emergency protocol
+      document.dispatchEvent(new CustomEvent('emergencyActivated', {
+        detail: { source: 'ble', ...event.detail }
+      }));
+    };
+
+    const handleNFCEmergency = (event: CustomEvent) => {
+      console.log('NFC emergency triggered:', event.detail);
+      toast({
+        title: "EMERGENCY ACTIVATED",
+        description: "NFC tag scanned! Starting emergency protocol...",
+        variant: "destructive"
+      });
+      
+      // Trigger emergency protocol
+      document.dispatchEvent(new CustomEvent('emergencyActivated', {
+        detail: { source: 'nfc', ...event.detail }
+      }));
+    };
+
+    const handleNFCCancel = (event: CustomEvent) => {
+      console.log('NFC cancel triggered:', event.detail);
+      toast({
+        title: "Emergency Cancelled",
+        description: "Emergency protocol cancelled via NFC tag.",
+      });
+      
+      document.dispatchEvent(new CustomEvent('emergencyCancelled', {
+        detail: { source: 'nfc', ...event.detail }
+      }));
+    };
+
+    const handleNFCStatus = (event: CustomEvent) => {
+      console.log('NFC status check:', event.detail);
+      toast({
+        title: "System Status",
+        description: "Emergency system ready and operational.",
+      });
+    };
+
+    document.addEventListener('bleEmergencyTrigger', handleBLEEmergency as EventListener);
+    document.addEventListener('nfcEmergencyActivate', handleNFCEmergency as EventListener);
+    document.addEventListener('nfcEmergencyCancel', handleNFCCancel as EventListener);
+    document.addEventListener('nfcStatusCheck', handleNFCStatus as EventListener);
+
+    return () => {
+      document.removeEventListener('bleEmergencyTrigger', handleBLEEmergency as EventListener);
+      document.removeEventListener('nfcEmergencyActivate', handleNFCEmergency as EventListener);
+      document.removeEventListener('nfcEmergencyCancel', handleNFCCancel as EventListener);
+      document.removeEventListener('nfcStatusCheck', handleNFCStatus as EventListener);
+    };
+  }, [toast]);
+
   return {
     // State
     capabilities,
@@ -226,6 +387,13 @@ export function useNativeAPIs() {
     sendEmergencyNotification,
     syncEmergencyData,
     connectEmergencyDevice,
+    
+    // Enhanced Bluetooth/NFC actions
+    connectSoteriaDevice,
+    sendBLEFeedback,
+    startNFCReading,
+    connectedBLEDevice,
+    nfcReading,
     
     // Utilities
     isFeatureSupported: nativeAPIManager.isFeatureSupported.bind(nativeAPIManager),

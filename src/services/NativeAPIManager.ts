@@ -1,4 +1,3 @@
-
 import { isStoreApp, isMobile } from '@/utils/platformUtils';
 
 export interface APICapabilities {
@@ -30,6 +29,24 @@ export interface CameraOptions {
 export interface VibrationOptions {
   pattern?: number[];
   intensity?: 'light' | 'medium' | 'heavy';
+}
+
+export const SOTERIA_BLE_CONFIG = {
+  deviceName: 'Soteria Safety Device',
+  serviceUUID: 'f7ac1f10-01ab-42e9-bf3c-010203040506',
+  panicTriggerCharacteristicUUID: 'f7ac1f11-01ab-42e9-bf3c-010203040506',
+  feedbackCharacteristicUUID: 'f7ac1f12-01ab-42e9-bf3c-010203040506'
+};
+
+export const SOTERIA_NFC_ACTIONS = {
+  ACTIVATE: 'activate',
+  CANCEL: 'cancel',
+  STATUS_CHECK: 'status_check'
+} as const;
+
+export interface SoteriaNFCPayload {
+  soteria_action: typeof SOTERIA_NFC_ACTIONS[keyof typeof SOTERIA_NFC_ACTIONS];
+  device_id: string;
 }
 
 class NativeAPIManager {
@@ -292,7 +309,10 @@ class NativeAPIManager {
 
     try {
       return await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters: [{
+          name: SOTERIA_BLE_CONFIG.deviceName,
+          services: [SOTERIA_BLE_CONFIG.serviceUUID]
+        }],
         ...options
       });
     } catch (error) {
@@ -311,16 +331,130 @@ class NativeAPIManager {
     }
   }
 
-  // NFC API (placeholder for when you provide schema)
-  async readNFCTag(): Promise<any> {
+  async subscribeToPanicButton(device: BluetoothDevice): Promise<boolean> {
+    try {
+      if (!device.gatt?.connected) {
+        console.error('Device not connected');
+        return false;
+      }
+
+      const service = await device.gatt.getPrimaryService(SOTERIA_BLE_CONFIG.serviceUUID);
+      const characteristic = await service.getCharacteristic(SOTERIA_BLE_CONFIG.panicTriggerCharacteristicUUID);
+      
+      await characteristic.startNotifications();
+      
+      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+        const value = event.target.value;
+        const trigger = new Uint8Array(value.buffer)[0];
+        
+        if (trigger === 0x01) {
+          console.log('Panic button triggered via BLE!');
+          // Dispatch emergency event
+          document.dispatchEvent(new CustomEvent('bleEmergencyTrigger', {
+            detail: { deviceId: device.id, timestamp: Date.now() }
+          }));
+        }
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error subscribing to panic button:', error);
+      return false;
+    }
+  }
+
+  async sendFeedbackToBLEDevice(device: BluetoothDevice, feedbackType: 'vibrate' | 'led'): Promise<boolean> {
+    try {
+      if (!device.gatt?.connected) return false;
+
+      const service = await device.gatt.getPrimaryService(SOTERIA_BLE_CONFIG.serviceUUID);
+      const characteristic = await service.getCharacteristic(SOTERIA_BLE_CONFIG.feedbackCharacteristicUUID);
+      
+      const feedbackValue = feedbackType === 'vibrate' ? new Uint8Array([0x01]) : new Uint8Array([0x02]);
+      await characteristic.writeValue(feedbackValue);
+      
+      return true;
+    } catch (error) {
+      console.error('Error sending feedback to BLE device:', error);
+      return false;
+    }
+  }
+
+  // NFC API
+  async readNFCTag(): Promise<SoteriaNFCPayload | null> {
     if (!this.capabilities.nfc) {
       console.warn('NFC not supported');
       return null;
     }
 
-    // Implementation will be added when you provide NFC schema
-    console.log('NFC reading capability available');
-    return null;
+    try {
+      const ndef = new (window as any).NDEFReader();
+      
+      return new Promise((resolve, reject) => {
+        ndef.addEventListener('reading', (event: any) => {
+          const message = event.message;
+          
+          for (const record of message.records) {
+            if (record.recordType === 'text') {
+              const textDecoder = new TextDecoder(record.encoding);
+              const payload = textDecoder.decode(record.data);
+              
+              try {
+                const nfcData: SoteriaNFCPayload = JSON.parse(payload);
+                
+                // Validate payload structure
+                if (nfcData.soteria_action && nfcData.device_id) {
+                  console.log('Valid Soteria NFC tag detected:', nfcData);
+                  resolve(nfcData);
+                } else {
+                  console.warn('Invalid Soteria NFC payload');
+                  resolve(null);
+                }
+              } catch (parseError) {
+                console.error('Error parsing NFC payload:', parseError);
+                resolve(null);
+              }
+            }
+          }
+        });
+
+        ndef.addEventListener('readingerror', () => {
+          reject(new Error('Error reading NFC tag'));
+        });
+
+        ndef.scan().catch(reject);
+      });
+    } catch (error) {
+      console.error('Error reading NFC tag:', error);
+      return null;
+    }
+  }
+
+  async handleNFCAction(payload: SoteriaNFCPayload): Promise<void> {
+    console.log('Processing NFC action:', payload);
+    
+    switch (payload.soteria_action) {
+      case SOTERIA_NFC_ACTIONS.ACTIVATE:
+        document.dispatchEvent(new CustomEvent('nfcEmergencyActivate', {
+          detail: { deviceId: payload.device_id, timestamp: Date.now() }
+        }));
+        break;
+        
+      case SOTERIA_NFC_ACTIONS.CANCEL:
+        document.dispatchEvent(new CustomEvent('nfcEmergencyCancel', {
+          detail: { deviceId: payload.device_id, timestamp: Date.now() }
+        }));
+        break;
+        
+      case SOTERIA_NFC_ACTIONS.STATUS_CHECK:
+        document.dispatchEvent(new CustomEvent('nfcStatusCheck', {
+          detail: { deviceId: payload.device_id, timestamp: Date.now() }
+        }));
+        break;
+        
+      default:
+        console.warn('Unknown NFC action:', payload.soteria_action);
+    }
   }
 
   // Utility methods
