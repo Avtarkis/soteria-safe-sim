@@ -65,7 +65,14 @@ export const mockAIServices = {
 };
 
 // Test data generators
-export const generateMockThreat = (overrides: Record<string, any> = {}) => ({
+export const generateMockThreat = (overrides: Partial<{
+  id: string;
+  type: string;
+  severity: string;
+  description: string;
+  location: { lat: number; lng: number };
+  timestamp: number;
+}> = {}) => ({
   id: `threat-${Date.now()}`,
   type: 'security',
   severity: 'medium',
@@ -75,7 +82,15 @@ export const generateMockThreat = (overrides: Record<string, any> = {}) => ({
   ...overrides
 });
 
-export const generateMockAlert = (overrides: Record<string, any> = {}) => ({
+export const generateMockAlert = (overrides: Partial<{
+  id: string;
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  category: string;
+  status: string;
+  created_at: string;
+}> = {}) => ({
   id: `alert-${Date.now()}`,
   title: 'Test Alert',
   description: 'This is a test alert',
@@ -104,12 +119,22 @@ export const fillInput = (labelText: string, value: string) => {
 };
 
 // Mock localStorage for testing
-export const mockLocalStorage = {
-  getItem: jest.fn() as jest.Mock,
-  setItem: jest.fn() as jest.Mock,
-  removeItem: jest.fn() as jest.Mock,
-  clear: jest.fn() as jest.Mock
-};
+export const mockLocalStorage = (() => {
+  let store: Record<string, string> = {};
+  
+  return {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
+      store[key] = value.toString();
+    }),
+    removeItem: jest.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: jest.fn(() => {
+      store = {};
+    })
+  };
+})();
 
 // Setup function for tests
 export const setupTest = () => {
@@ -158,5 +183,101 @@ export const setupTest = () => {
   Object.defineProperty(navigator, 'geolocation', {
     value: mockGeolocation,
     writable: true
+  });
+
+  // Mock window.matchMedia for responsive hooks
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+
+  // Mock ResizeObserver
+  global.ResizeObserver = jest.fn().mockImplementation(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  }));
+
+  // Mock IntersectionObserver
+  global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  }));
+};
+
+// Additional mock helpers for voice and audio APIs
+export const setupAudioMocks = () => {
+  // Mock MediaRecorder
+  global.MediaRecorder = jest.fn().mockImplementation(() => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    pause: jest.fn(),
+    resume: jest.fn(),
+    requestData: jest.fn(),
+    state: 'inactive',
+    mimeType: 'audio/webm',
+    ondataavailable: null,
+    onstop: null,
+    onstart: null,
+    onpause: null,
+    onresume: null,
+    onerror: null
+  })) as any;
+
+  // Mock getUserMedia
+  Object.defineProperty(navigator, 'mediaDevices', {
+    value: {
+      getUserMedia: jest.fn().mockResolvedValue({
+        getTracks: () => [{
+          stop: jest.fn(),
+          getSettings: () => ({ deviceId: 'test-device' })
+        }]
+      })
+    },
+    writable: true
+  });
+
+  // Mock Web Speech API
+  global.SpeechRecognition = jest.fn().mockImplementation(() => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    abort: jest.fn(),
+    continuous: false,
+    interimResults: false,
+    lang: 'en-US',
+    onstart: null,
+    onend: null,
+    onresult: null,
+    onerror: null
+  })) as any;
+
+  global.webkitSpeechRecognition = global.SpeechRecognition;
+};
+
+// Mock network and connectivity
+export const setupNetworkMocks = () => {
+  Object.defineProperty(navigator, 'onLine', {
+    writable: true,
+    value: true
+  });
+
+  Object.defineProperty(navigator, 'connection', {
+    writable: true,
+    value: {
+      effectiveType: '4g',
+      type: 'cellular',
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }
   });
 };
