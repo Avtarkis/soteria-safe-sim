@@ -1,3 +1,4 @@
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -20,11 +21,12 @@ export const mockAuthContext = {
   resetPassword: jest.fn().mockResolvedValue({ error: null })
 };
 
-// Test wrapper component
+// Test wrapper component props interface
 interface TestWrapperProps {
   children: React.ReactNode;
 }
 
+// Test wrapper component
 export const TestWrapper: React.FC<TestWrapperProps> = ({ children }) => {
   return (
     <BrowserRouter>
