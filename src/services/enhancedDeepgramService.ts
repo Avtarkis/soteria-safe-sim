@@ -18,7 +18,7 @@ export class EnhancedDeepgramService {
       const formData = new FormData();
       formData.append('audio', audioBlob);
 
-      const response = await fetch('https://api.deepgram.com/v1/listen', {
+      const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', {
         method: 'POST',
         headers: {
           'Authorization': `Token ${this.apiKey}`,
@@ -27,7 +27,7 @@ export class EnhancedDeepgramService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to transcribe audio');
+        throw new Error(`Deepgram transcription failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -43,6 +43,8 @@ export class EnhancedDeepgramService {
     confidence: number;
   }> {
     try {
+      // Note: Deepgram doesn't have built-in sentiment analysis
+      // This is a placeholder implementation
       const response = await fetch('https://api.deepgram.com/v1/analyze', {
         method: 'POST',
         headers: {
@@ -57,17 +59,31 @@ export class EnhancedDeepgramService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to analyze sentiment');
+        // Fallback to simple keyword-based sentiment analysis
+        const negativeWords = ['help', 'emergency', 'danger', 'scared', 'threat'];
+        const hasNegative = negativeWords.some(word => text.toLowerCase().includes(word));
+        
+        return {
+          sentiment: hasNegative ? 'negative' : 'neutral',
+          confidence: hasNegative ? 0.8 : 0.5
+        };
       }
 
       const data = await response.json();
       return {
-        sentiment: data.results.sentiment.sentiment,
-        confidence: data.results.sentiment.confidence
+        sentiment: data.results?.sentiment?.sentiment || 'neutral',
+        confidence: data.results?.sentiment?.confidence || 0.5
       };
     } catch (error) {
       console.error('Deepgram sentiment analysis error:', error);
-      throw error;
+      // Fallback sentiment analysis
+      const negativeWords = ['help', 'emergency', 'danger', 'scared', 'threat'];
+      const hasNegative = negativeWords.some(word => text.toLowerCase().includes(word));
+      
+      return {
+        sentiment: hasNegative ? 'negative' : 'neutral',
+        confidence: hasNegative ? 0.8 : 0.5
+      };
     }
   }
 
@@ -84,13 +100,14 @@ export class EnhancedDeepgramService {
         },
         body: JSON.stringify({
           text,
-          voice: options.voice || 'female-1',
+          model: 'aura-asteria-en',
+          voice: options.voice || 'aura-asteria-en',
           speed: options.speed || 1.0
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to synthesize speech');
+        throw new Error(`Deepgram speech synthesis failed: ${response.status}`);
       }
 
       return await response.arrayBuffer();
@@ -102,6 +119,6 @@ export class EnhancedDeepgramService {
 }
 
 export const enhancedDeepgramService = new EnhancedDeepgramService({
-  apiKey: 'YOUR_DEEPGRAM_API_KEY', // This should be handled securely
+  apiKey: '33e343e49d829f70a8916cfb9dc96f238d5d3104',
   model: 'nova-2'
 });

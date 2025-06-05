@@ -1,103 +1,99 @@
 
-interface CachedResponse {
-  text: string;
+interface CacheEntry {
+  data: string;
   timestamp: number;
   confidence: number;
+  ttl: number;
 }
 
-class ResponseCacheService {
-  private cache: Map<string, CachedResponse> = new Map();
-  private readonly DEFAULT_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-  private maxCacheEntries = 100; // Default max cache size
-  
-  /**
-   * Add a response to the cache
-   */
-  public set(command: string, response: string, confidence: number, ttl?: number) {
-    // Handle cache size limits
-    if (this.cache.size >= this.maxCacheEntries) {
-      this.pruneCache();
+class ResponseCache {
+  private cache = new Map<string, CacheEntry>();
+  private maxSize = 100;
+  private defaultTtl = 5 * 60 * 1000; // 5 minutes
+
+  public set(key: string, data: string, confidence: number = 0.8, ttl?: number): void {
+    // Clean up old entries if cache is getting full
+    if (this.cache.size >= this.maxSize) {
+      this.cleanup();
     }
-    
-    this.cache.set(command, {
-      text: response,
+
+    const entry: CacheEntry = {
+      data,
       timestamp: Date.now(),
-      confidence
-    });
+      confidence,
+      ttl: ttl || this.defaultTtl
+    };
+
+    this.cache.set(this.normalizeKey(key), entry);
   }
 
-  /**
-   * Get a response from the cache if it exists and is not expired
-   * @returns The cached response text or null if not found or expired
-   */
-  public get(command: string, minConfidence = 0): string | null {
-    const cached = this.cache.get(command);
-    if (!cached) return null;
-
-    // Check for expiration
-    if (Date.now() - cached.timestamp > this.DEFAULT_CACHE_DURATION) {
-      this.cache.delete(command);
-      return null;
-    }
+  public get(key: string): string | null {
+    const entry = this.cache.get(this.normalizeKey(key));
     
-    // Check confidence threshold
-    if (cached.confidence < minConfidence) {
+    if (!entry) {
       return null;
     }
 
-    return cached.text;
+    // Check if entry has expired
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(this.normalizeKey(key));
+      return null;
+    }
+
+    return entry.data;
   }
 
-  /**
-   * Remove all expired entries from the cache
-   */
-  public pruneExpired(): void {
-    const now = Date.now();
-    for (const [key, value] of this.cache.entries()) {
-      if (now - value.timestamp > this.DEFAULT_CACHE_DURATION) {
-        this.cache.delete(key);
-      }
-    }
-  }
-  
-  /**
-   * Remove entries to keep cache size under limit
-   * Removes oldest entries first
-   */
-  private pruneCache(): void {
-    // First remove any expired entries
-    this.pruneExpired();
-    
-    // If still over limit, remove oldest entries
-    if (this.cache.size >= this.maxCacheEntries) {
-      // Convert to array to sort by timestamp
-      const entries = Array.from(this.cache.entries());
-      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
-      // Remove oldest entries until under limit
-      const entriesToRemove = entries.slice(0, entries.length - this.maxCacheEntries + 10);
-      for (const [key] of entriesToRemove) {
-        this.cache.delete(key);
-      }
-    }
+  public has(key: string): boolean {
+    return this.get(key) !== null;
   }
 
-  /**
-   * Clear the entire cache
-   */
-  public clear() {
+  public clear(): void {
     this.cache.clear();
   }
-  
-  /**
-   * Set maximum number of entries to cache
-   */
-  public setMaxEntries(max: number) {
-    this.maxCacheEntries = max;
-    if (this.cache.size > max) {
-      this.pruneCache();
+
+  public getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      entries: Array.from(this.cache.entries()).map(([key, entry]) => ({
+        key,
+        confidence: entry.confidence,
+        age: Date.now() - entry.timestamp
+      }))
+    };
+  }
+
+  private normalizeKey(key: string): string {
+    return key.toLowerCase().trim();
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    const entries = Array.from(this.cache.entries());
+    
+    // Remove expired entries first
+    for (const [key, entry] of entries) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+      }
+    }
+
+    // If still too many entries, remove oldest low-confidence entries
+    if (this.cache.size >= this.maxSize) {
+      const sortedEntries = Array.from(this.cache.entries())
+        .sort((a, b) => {
+          // Sort by confidence (ascending) then by age (descending)
+          const confidenceDiff = a[1].confidence - b[1].confidence;
+          if (confidenceDiff !== 0) return confidenceDiff;
+          return b[1].timestamp - a[1].timestamp;
+        });
+
+      const toRemove = sortedEntries.slice(0, Math.floor(this.maxSize * 0.2));
+      toRemove.forEach(([key]) => {
+        this.cache.delete(key);
+      });
     }
   }
 }
 
-export const responseCache = new ResponseCacheService();
+export const responseCache = new ResponseCache();

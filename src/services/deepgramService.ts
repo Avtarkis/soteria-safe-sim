@@ -26,11 +26,13 @@ export class DeepgramService {
 
   constructor() {
     this.config = {
+      apiKey: '33e343e49d829f70a8916cfb9dc96f238d5d3104',
       model: 'nova-2',
       language: 'en-US',
       smartFormat: true,
       punctuate: true
     };
+    this.isInitialized = true;
   }
 
   public async initialize(apiKey?: string): Promise<boolean> {
@@ -39,8 +41,6 @@ export class DeepgramService {
         this.config.apiKey = apiKey;
       }
 
-      // For now, we'll simulate initialization
-      // In production, this would validate the API key with Deepgram
       this.isInitialized = true;
       console.log('DeepgramService initialized');
       return true;
@@ -51,35 +51,35 @@ export class DeepgramService {
   }
 
   public async transcribeAudio(audioBlob: Blob): Promise<TranscriptionResult | null> {
-    if (!this.isInitialized) {
-      console.error('DeepgramService not initialized');
+    if (!this.isInitialized || !this.config.apiKey) {
+      console.error('DeepgramService not initialized or missing API key');
       return null;
     }
 
     try {
-      // Simulate transcription for testing
-      // In production, this would call the Deepgram API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const formData = new FormData();
+      formData.append('audio', audioBlob);
 
-      const mockTranscripts = [
-        'Soteria help me',
-        'Soteria emergency',
-        'Soteria call police',
-        'Soteria I need assistance',
-        'Soteria danger nearby'
-      ];
+      const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${this.config.apiKey}`,
+        },
+        body: formData
+      });
 
-      const randomTranscript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
+      if (!response.ok) {
+        throw new Error(`Deepgram API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+      const confidence = data.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0.5;
 
       return {
-        transcript: randomTranscript,
-        confidence: 0.8 + Math.random() * 0.2,
-        words: randomTranscript.split(' ').map((word, index) => ({
-          word,
-          start: index * 0.5,
-          end: (index + 1) * 0.5,
-          confidence: 0.8 + Math.random() * 0.2
-        }))
+        transcript,
+        confidence,
+        words: data.results?.channels?.[0]?.alternatives?.[0]?.words || []
       };
     } catch (error) {
       console.error('Transcription failed:', error);
@@ -87,9 +87,44 @@ export class DeepgramService {
     }
   }
 
+  public async synthesizeSpeech(text: string, options: {
+    voice?: string;
+    speed?: number;
+    pitch?: number;
+  } = {}): Promise<ArrayBuffer | null> {
+    if (!this.isInitialized || !this.config.apiKey) {
+      console.error('DeepgramService not initialized or missing API key');
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://api.deepgram.com/v1/speak', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          model: 'aura-asteria-en',
+          voice: options.voice || 'aura-asteria-en',
+          speed: options.speed || 1.0
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Deepgram TTS API error: ${response.status}`);
+      }
+
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error('Speech synthesis failed:', error);
+      return null;
+    }
+  }
+
   public async processVoiceCommand(transcript: string): Promise<ProcessedCommand | null> {
     try {
-      // Simple command processing logic
       const normalizedText = transcript.toLowerCase().trim();
       
       let commandType: ProcessedCommand['type'] = 'unknown';

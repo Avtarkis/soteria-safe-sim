@@ -28,13 +28,50 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
       setIsSpeaking(true);
       setError(null);
       
-      await deepgramService.synthesizeSpeech(text, {
-        voice: options.voice || 'default',
+      const audioBuffer = await deepgramService.synthesizeSpeech(text, {
+        voice: options.voice || 'aura-asteria-en',
         speed: options.speed || 1.0,
         pitch: options.pitch || 1.0
       });
       
-      setIsSpeaking(false);
+      if (audioBuffer) {
+        // Create audio element and play
+        const audioBlob = new Blob([audioBuffer], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          setError('Failed to play synthesized speech');
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        // Fallback to browser speech synthesis
+        if (window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = options.speed || 1.0;
+          utterance.pitch = options.pitch || 1.0;
+          
+          utterance.onend = () => setIsSpeaking(false);
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            setError('Speech synthesis failed');
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setIsSpeaking(false);
+          setError('Speech synthesis not supported');
+        }
+      }
+      
     } catch (err) {
       console.error('Error during speech synthesis:', err);
       setError('Failed to generate speech.');
