@@ -1,4 +1,3 @@
-
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -22,7 +21,11 @@ export const mockAuthContext = {
 };
 
 // Test wrapper component
-export const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface TestWrapperProps {
+  children: React.ReactNode;
+}
+
+export const TestWrapper: React.FC<TestWrapperProps> = ({ children }) => {
   return (
     <BrowserRouter>
       <AuthProvider>
