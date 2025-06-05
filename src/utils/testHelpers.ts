@@ -64,15 +64,28 @@ export const mockAIServices = {
   })
 };
 
-// Test data generators
-export const generateMockThreat = (overrides: Partial<{
-  id: string;
-  type: string;
-  severity: string;
-  description: string;
-  location: { lat: number; lng: number };
-  timestamp: number;
-}> = {}) => ({
+// Type definitions for mock data
+interface MockThreatOverrides {
+  id?: string;
+  type?: string;
+  severity?: string;
+  description?: string;
+  location?: { lat: number; lng: number };
+  timestamp?: number;
+}
+
+interface MockAlertOverrides {
+  id?: string;
+  title?: string;
+  description?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  category?: string;
+  status?: string;
+  created_at?: string;
+}
+
+// Test data generators with proper typing
+export const generateMockThreat = (overrides: MockThreatOverrides = {}) => ({
   id: `threat-${Date.now()}`,
   type: 'security',
   severity: 'medium',
@@ -82,15 +95,7 @@ export const generateMockThreat = (overrides: Partial<{
   ...overrides
 });
 
-export const generateMockAlert = (overrides: Partial<{
-  id: string;
-  title: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  category: string;
-  status: string;
-  created_at: string;
-}> = {}) => ({
+export const generateMockAlert = (overrides: MockAlertOverrides = {}) => ({
   id: `alert-${Date.now()}`,
   title: 'Test Alert',
   description: 'This is a test alert',
