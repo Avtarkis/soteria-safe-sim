@@ -143,10 +143,8 @@ export const mockLocalStorage = (() => {
 
 // Setup function for tests
 export const setupTest = () => {
-  // Reset all mocks
   jest.clearAllMocks();
   
-  // Mock console methods
   const consoleMock = {
     ...console,
     error: jest.fn(),
@@ -159,13 +157,11 @@ export const setupTest = () => {
     writable: true
   });
   
-  // Mock localStorage
   Object.defineProperty(window, 'localStorage', {
     value: mockLocalStorage,
     writable: true
   });
   
-  // Mock geolocation
   const mockGeolocation = {
     getCurrentPosition: jest.fn().mockImplementation((success: PositionCallback) =>
       success({
@@ -190,7 +186,6 @@ export const setupTest = () => {
     writable: true
   });
 
-  // Mock window.matchMedia for responsive hooks
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: jest.fn().mockImplementation(query => ({
@@ -205,14 +200,12 @@ export const setupTest = () => {
     })),
   });
 
-  // Mock ResizeObserver
   global.ResizeObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
     disconnect: jest.fn(),
   }));
 
-  // Mock IntersectionObserver
   global.IntersectionObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
@@ -220,9 +213,7 @@ export const setupTest = () => {
   }));
 };
 
-// Additional mock helpers for voice and audio APIs
 export const setupAudioMocks = () => {
-  // Mock MediaRecorder
   global.MediaRecorder = jest.fn().mockImplementation(() => ({
     start: jest.fn(),
     stop: jest.fn(),
@@ -239,7 +230,6 @@ export const setupAudioMocks = () => {
     onerror: null
   })) as any;
 
-  // Mock getUserMedia
   Object.defineProperty(navigator, 'mediaDevices', {
     value: {
       getUserMedia: jest.fn().mockResolvedValue({
@@ -252,7 +242,6 @@ export const setupAudioMocks = () => {
     writable: true
   });
 
-  // Mock Web Speech API
   global.SpeechRecognition = jest.fn().mockImplementation(() => ({
     start: jest.fn(),
     stop: jest.fn(),
@@ -269,7 +258,6 @@ export const setupAudioMocks = () => {
   global.webkitSpeechRecognition = global.SpeechRecognition;
 };
 
-// Mock network and connectivity
 export const setupNetworkMocks = () => {
   Object.defineProperty(navigator, 'onLine', {
     writable: true,

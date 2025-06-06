@@ -86,7 +86,6 @@ export class SafetyAIMonitoringService {
   public addListener(callback: (metrics: SafetyMetrics) => void): () => void {
     this.listeners.push(callback);
     
-    // Return unsubscribe function
     return () => {
       const index = this.listeners.indexOf(callback);
       if (index !== -1) {
@@ -95,25 +94,38 @@ export class SafetyAIMonitoringService {
     };
   }
 
+  public handleVoiceCommand(transcript: string, confidence: number): void {
+    // Process voice command for emergency detection
+    const emergencyKeywords = ['help', 'emergency', 'call 911', 'panic', 'danger'];
+    const hasEmergencyKeyword = emergencyKeywords.some(keyword => 
+      transcript.toLowerCase().includes(keyword)
+    );
+    
+    if (hasEmergencyKeyword && confidence > 0.7) {
+      this.createAlert({
+        type: 'security',
+        severity: 'high',
+        message: `Emergency voice command detected: "${transcript}"`
+      });
+    }
+  }
+
   private startMonitoringLoop(): void {
     this.monitoringInterval = setInterval(() => {
       this.updateMetrics();
       this.checkForAlerts();
       this.notifyListeners();
-    }, 5000); // Update every 5 seconds
+    }, 5000);
   }
 
   private updateMetrics(): void {
-    // Simulate metric updates
     const now = Date.now();
     
-    // Randomly adjust threat level (mostly stay low for testing)
-    if (Math.random() < 0.05) { // 5% chance to change
+    if (Math.random() < 0.05) {
       const levels: SafetyMetrics['threatLevel'][] = ['low', 'medium', 'high'];
       this.metrics.threatLevel = levels[Math.floor(Math.random() * levels.length)];
     }
 
-    // Update active threats based on threat level
     switch (this.metrics.threatLevel) {
       case 'low':
         this.metrics.activeThreats = Math.floor(Math.random() * 2);
@@ -129,8 +141,7 @@ export class SafetyAIMonitoringService {
         break;
     }
 
-    // System health is usually healthy
-    if (Math.random() < 0.02) { // 2% chance of issues
+    if (Math.random() < 0.02) {
       this.metrics.systemHealth = Math.random() < 0.5 ? 'warning' : 'error';
     } else {
       this.metrics.systemHealth = 'healthy';
@@ -140,7 +151,6 @@ export class SafetyAIMonitoringService {
   }
 
   private checkForAlerts(): void {
-    // Generate alerts based on current metrics
     if (this.metrics.threatLevel === 'high' && Math.random() < 0.1) {
       this.createAlert({
         type: 'security',
@@ -157,9 +167,8 @@ export class SafetyAIMonitoringService {
       });
     }
 
-    // Clean up old resolved alerts
     this.alerts = this.alerts.filter(alert => 
-      !alert.resolved || (Date.now() - alert.timestamp) < 300000 // Keep for 5 minutes
+      !alert.resolved || (Date.now() - alert.timestamp) < 300000
     );
   }
 
@@ -173,7 +182,6 @@ export class SafetyAIMonitoringService {
 
     this.alerts.push(alert);
     
-    // Show toast for high severity alerts
     if (alert.severity === 'high' || alert.severity === 'critical') {
       toast({
         title: "Safety Alert",
@@ -203,4 +211,9 @@ export class SafetyAIMonitoringService {
   }
 }
 
-export const safetyAIMonitoringService = new SafetyAIMonitoringService();
+// Create singleton instance
+const safetyAIMonitoringService = new SafetyAIMonitoringService();
+
+// Export both named and default exports
+export { safetyAIMonitoringService };
+export default safetyAIMonitoringService;
