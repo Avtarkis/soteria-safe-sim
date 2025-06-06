@@ -145,23 +145,24 @@ export const mockLocalStorage = (() => {
 export const setupTest = () => {
   jest.clearAllMocks();
   
+  // Mock console
   const consoleMock = {
-    ...console,
     error: jest.fn(),
     warn: jest.fn(),
-    log: jest.fn()
+    log: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
   };
   
-  Object.defineProperty(global, 'console', {
-    value: consoleMock,
-    writable: true
-  });
+  global.console = consoleMock as any;
   
+  // Mock localStorage
   Object.defineProperty(window, 'localStorage', {
     value: mockLocalStorage,
     writable: true
   });
   
+  // Mock geolocation
   const mockGeolocation = {
     getCurrentPosition: jest.fn().mockImplementation((success: PositionCallback) =>
       success({
@@ -186,6 +187,7 @@ export const setupTest = () => {
     writable: true
   });
 
+  // Mock matchMedia
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: jest.fn().mockImplementation(query => ({
@@ -200,12 +202,14 @@ export const setupTest = () => {
     })),
   });
 
+  // Mock ResizeObserver
   global.ResizeObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
     disconnect: jest.fn(),
   }));
 
+  // Mock IntersectionObserver
   global.IntersectionObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
