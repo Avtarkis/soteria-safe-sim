@@ -1,32 +1,43 @@
 
+// Platform detection utilities
 export const isStoreApp = (): boolean => {
-  // Check if running in a mobile app context (Capacitor)
-  return !!(window as any).Capacitor;
+  // Check if running as a store app (iOS App Store or Google Play)
+  return (
+    window.location.hostname === 'localhost' && 
+    (window.navigator.userAgent.includes('Mobile') || window.navigator.userAgent.includes('Android'))
+  ) || 
+  // Check for Capacitor native context
+  !!(window as any).Capacitor ||
+  // Check for store app environment variables
+  process.env.STORE_APP === 'true';
 };
 
 export const isWeb = (): boolean => {
-  return !isStoreApp();
+  return !isStoreApp() && window.location.hostname !== 'localhost';
 };
 
 export const isMobile = (): boolean => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  return window.navigator.userAgent.includes('Mobile') || 
+         window.navigator.userAgent.includes('Android') ||
+         window.navigator.userAgent.includes('iPhone');
 };
 
-export const getPlatform = (): 'web' | 'mobile-web' | 'ios' | 'android' => {
-  if (isStoreApp()) {
-    // If using Capacitor, check the platform
-    const platform = (window as any).Capacitor?.getPlatform?.();
-    return platform === 'ios' ? 'ios' : 'android';
+export const shouldShowSubscriptionPlans = (): boolean => {
+  // Only show subscription plans on web platform to avoid app store fees
+  return isWeb() && !isStoreApp();
+};
+
+export const shouldRedirectToSubscription = (): boolean => {
+  // Redirect to subscription only on web after signup
+  return isWeb() && !isStoreApp();
+};
+
+export const getAppStoreLink = (): string => {
+  const userAgent = window.navigator.userAgent;
+  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+    return 'https://apps.apple.com/app/soteria-safety';
+  } else if (userAgent.includes('Android')) {
+    return 'https://play.google.com/store/apps/details?id=com.soteria.safety';
   }
-  
-  return isMobile() ? 'mobile-web' : 'web';
-};
-
-export const getAppVersion = (): string => {
-  // In a real app, this would come from your build process
-  return '1.0.0';
-};
-
-export const isDebugMode = (): boolean => {
-  return import.meta.env.DEV;
+  return '#'; // Fallback
 };
