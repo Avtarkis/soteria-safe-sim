@@ -5,13 +5,11 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import React from 'react';
 
-// Mock user for testing
 export const mockUser = {
   id: 'test-user-id',
   email: 'test@example.com'
 };
 
-// Mock auth context for testing
 export const mockAuthContext = {
   user: mockUser,
   loading: false,
@@ -21,12 +19,10 @@ export const mockAuthContext = {
   resetPassword: jest.fn().mockResolvedValue({ error: null })
 };
 
-// Test wrapper component props interface
 interface TestWrapperProps {
   children: React.ReactNode;
 }
 
-// Test wrapper component
 export const TestWrapper: React.FC<TestWrapperProps> = ({ children }) => {
   return (
     <BrowserRouter>
@@ -38,12 +34,10 @@ export const TestWrapper: React.FC<TestWrapperProps> = ({ children }) => {
   );
 };
 
-// Render component with test wrapper
 export const renderWithProviders = (component: React.ReactElement) => {
   return render(component, { wrapper: TestWrapper });
 };
 
-// Mock emergency services
 export const mockEmergencyServices = {
   startEmergencyCall: jest.fn(),
   sendEmergencyAlerts: jest.fn().mockResolvedValue(true),
@@ -51,7 +45,6 @@ export const mockEmergencyServices = {
   shareLocation: jest.fn()
 };
 
-// Mock AI services
 export const mockAIServices = {
   startMonitoring: jest.fn().mockResolvedValue(true),
   stopMonitoring: jest.fn(),
@@ -64,7 +57,6 @@ export const mockAIServices = {
   })
 };
 
-// Type definitions for mock data
 interface MockThreatOverrides {
   id?: string;
   type?: string;
@@ -84,7 +76,6 @@ interface MockAlertOverrides {
   created_at?: string;
 }
 
-// Test data generators with proper typing
 export const generateMockThreat = (overrides: MockThreatOverrides = {}) => ({
   id: `threat-${Date.now()}`,
   type: 'security',
@@ -106,7 +97,6 @@ export const generateMockAlert = (overrides: MockAlertOverrides = {}) => ({
   ...overrides
 });
 
-// Common test utilities
 export const waitForElement = async (selector: string) => {
   return await waitFor(() => screen.getByTestId(selector));
 };
@@ -123,7 +113,6 @@ export const fillInput = (labelText: string, value: string) => {
   return input;
 };
 
-// Mock localStorage for testing
 export const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
   
@@ -141,11 +130,9 @@ export const mockLocalStorage = (() => {
   };
 })();
 
-// Setup function for tests
 export const setupTest = () => {
   jest.clearAllMocks();
   
-  // Mock console
   const consoleMock = {
     error: jest.fn(),
     warn: jest.fn(),
@@ -156,13 +143,11 @@ export const setupTest = () => {
   
   global.console = consoleMock as any;
   
-  // Mock localStorage
   Object.defineProperty(window, 'localStorage', {
     value: mockLocalStorage,
     writable: true
   });
   
-  // Mock geolocation
   const mockGeolocation = {
     getCurrentPosition: jest.fn().mockImplementation((success: PositionCallback) =>
       success({
@@ -187,7 +172,6 @@ export const setupTest = () => {
     writable: true
   });
 
-  // Mock matchMedia
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: jest.fn().mockImplementation(query => ({
@@ -202,14 +186,12 @@ export const setupTest = () => {
     })),
   });
 
-  // Mock ResizeObserver
   global.ResizeObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
     disconnect: jest.fn(),
   }));
 
-  // Mock IntersectionObserver
   global.IntersectionObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
