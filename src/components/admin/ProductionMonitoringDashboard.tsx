@@ -1,25 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  Eye, 
-  Shield, 
-  Phone, 
-  Heart,
-  Zap,
-  Globe,
-  Server,
-  Database
-} from 'lucide-react';
+import AlertSummaryCards from './monitoring/AlertSummaryCards';
+import SystemStatusCard from './monitoring/SystemStatusCard';
 
 interface SystemStatus {
   service: string;
@@ -105,32 +88,6 @@ const ProductionMonitoringDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusIcon = (status: SystemStatus['status']) => {
-    switch (status) {
-      case 'healthy':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'error':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Activity className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: SystemStatus['status']) => {
-    switch (status) {
-      case 'healthy':
-        return 'bg-green-500';
-      case 'warning':
-        return 'bg-yellow-500';
-      case 'error':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
   const restartService = (serviceName: string) => {
     toast({
       title: "Service Restart",
@@ -152,56 +109,7 @@ const ProductionMonitoringDashboard = () => {
         <p className="text-muted-foreground">Real-time system status and performance metrics</p>
       </div>
 
-      {/* Alert Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Critical</p>
-                <p className="text-2xl font-bold text-red-600">{alertCounts.critical}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">High</p>
-                <p className="text-2xl font-bold text-orange-600">{alertCounts.high}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Medium</p>
-                <p className="text-2xl font-bold text-yellow-600">{alertCounts.medium}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Low</p>
-                <p className="text-2xl font-bold text-blue-600">{alertCounts.low}</p>
-              </div>
-              <Activity className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AlertSummaryCards alertCounts={alertCounts} />
 
       <Tabs defaultValue="services" className="space-y-4">
         <TabsList>
@@ -214,55 +122,11 @@ const ProductionMonitoringDashboard = () => {
         <TabsContent value="services">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {systemStatuses.map((status, index) => (
-              <Card key={index}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium">{status.service}</CardTitle>
-                    {getStatusIcon(status.status)}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${getStatusColor(status.status)}`} />
-                    <span className="text-xs text-muted-foreground">
-                      {status.uptime}% uptime
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {status.metrics && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>CPU</span>
-                        <span>{status.metrics.cpu}%</span>
-                      </div>
-                      <Progress value={status.metrics.cpu} className="h-1" />
-                      
-                      <div className="flex justify-between text-sm">
-                        <span>Memory</span>
-                        <span>{status.metrics.memory}%</span>
-                      </div>
-                      <Progress value={status.metrics.memory} className="h-1" />
-                      
-                      <div className="flex justify-between text-sm">
-                        <span>Requests</span>
-                        <span>{status.metrics.requests}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-4 flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">
-                      Last check: {new Date(status.lastCheck).toLocaleTimeString()}
-                    </span>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => restartService(status.service)}
-                    >
-                      Restart
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <SystemStatusCard 
+                key={index} 
+                status={status} 
+                onRestart={restartService} 
+              />
             ))}
           </div>
         </TabsContent>
