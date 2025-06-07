@@ -49,6 +49,7 @@ export const setupTest = () => {
     debug: jest.fn()
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.console = consoleMock as any;
   
   const mockLocalStorage = {
@@ -89,7 +90,7 @@ export const setupTest = () => {
 
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: jest.fn().mockImplementation((query: string) => ({
       matches: false,
       media: query,
       onchange: null,
@@ -101,15 +102,19 @@ export const setupTest = () => {
     })),
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.ResizeObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
     disconnect: jest.fn(),
-  }));
+  })) as any;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.IntersectionObserver = jest.fn().mockImplementation(() => ({
     observe: jest.fn(),
     unobserve: jest.fn(),
     disconnect: jest.fn(),
-  }));
+  })) as any;
 };
+
+export { render, screen, fireEvent, waitFor };
