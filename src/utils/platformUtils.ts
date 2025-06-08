@@ -21,7 +21,7 @@ export const isStoreApp = (): boolean => {
   // Check for Capacitor native context
   !!(window as any).Capacitor ||
   // Check for store app environment variables
-  import.meta.env.VITE_STORE_APP === 'true';
+  process.env.STORE_APP === 'true';
 };
 
 export const isWeb = (): boolean => {
@@ -63,7 +63,7 @@ export const getAppStoreLink = (): string => {
   return '#'; // Fallback
 };
 
-export const getPlatform = (): PlatformInfo => {
+export const usePlatform = (): PlatformInfo => {
   const isWebPlatform = isWeb();
   const isIOSPlatform = isIOS();
   const isAndroidPlatform = isAndroid();
@@ -84,8 +84,4 @@ export const getPlatform = (): PlatformInfo => {
     isStoreApp: isStoreAppPlatform,
     platform
   };
-};
-
-export const usePlatform = (): PlatformInfo => {
-  return getPlatform();
 };

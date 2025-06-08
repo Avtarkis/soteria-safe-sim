@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -91,8 +90,8 @@ export class WeaponDetectionTransferLearning {
       // Use base model features
       let x = this.baseModel.apply(input) as tf.SymbolicTensor;
       
-      // Add custom layers for weapon detection - fix: add input shape for globalAveragePooling2d
-      x = tf.layers.globalAveragePooling2d({ dataFormat: 'channelsLast' }).apply(x) as tf.SymbolicTensor;
+      // Add custom layers for weapon detection
+      x = tf.layers.globalAveragePooling2d().apply(x) as tf.SymbolicTensor;
       x = tf.layers.dense({ units: 512, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
       x = tf.layers.dropout({ rate: 0.5 }).apply(x) as tf.SymbolicTensor;
       x = tf.layers.dense({ units: 256, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
@@ -155,14 +154,14 @@ export class WeaponDetectionTransferLearning {
       const { images, bboxes, classes } = this.prepareTrainingData(trainingData);
       const { images: valImages, bboxes: valBboxes, classes: valClasses } = this.prepareTrainingData(validationData);
 
-      // Training configuration - fix: use array format for multi-output model
+      // Training configuration
       const history = await this.transferModel.fit(
         images,
-        [bboxes, classes],
+        { bbox_output: bboxes, class_output: classes },
         {
           epochs,
           batchSize,
-          validationData: [valImages, [valBboxes, valClasses]],
+          validationData: [valImages, { bbox_output: valBboxes, class_output: valClasses }],
           callbacks: {
             onEpochEnd: (epoch, logs) => {
               const metrics: ModelMetrics = {
@@ -279,10 +278,9 @@ export class WeaponDetectionTransferLearning {
 
     const { images, bboxes, classes } = this.prepareTrainingData(testData);
     
-    // Fix: use array format for multi-output model evaluation
     const evaluation = await this.transferModel.evaluate(
       images,
-      [bboxes, classes]
+      { bbox_output: bboxes, class_output: classes }
     ) as tf.Tensor[];
 
     const loss = await evaluation[0].data();
