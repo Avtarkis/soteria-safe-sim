@@ -1,4 +1,3 @@
-
 import { useToast } from '@/hooks/use-toast';
 
 interface EmergencyRequest {
@@ -84,12 +83,10 @@ class RealEmergencyService {
 
   private async tryAlternativeEmergencyContact(request: EmergencyRequest) {
     // Try background sync if available
-    if ('serviceWorker' in navigator && 'ServiceWorkerRegistration' in window) {
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        if ('sync' in registration) {
-          await (registration as any).sync.register('emergency-contact-fallback');
-        }
+        await registration.sync.register('emergency-contact-fallback');
       } catch (error) {
         console.log('Background sync not available, using alternative methods');
       }

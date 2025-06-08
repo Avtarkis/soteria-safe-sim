@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from './use-toast';
 import { connectivityService } from '@/utils/voice/connectivity';
 import type { NetworkStatus } from '@/utils/voice/connectivity';
+import '@/types/speechRecognition';
 
 interface SpeechRecognitionOptions {
   lang?: string;
@@ -16,7 +17,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [networkStatus, setNetworkStatus] = useState<'poor' | 'online' | 'offline'>('online');
   
-  const recognitionRef = useRef<any | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasRecognitionSupport = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
@@ -56,16 +57,16 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
       recognition.continuous = options.continuous !== false;
       recognition.interimResults = options.interimResults !== false;
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const newTranscript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((speechRecognitionResult: any) => speechRecognitionResult.transcript)
+          .map((result) => result[0])
+          .map((speechRecognitionResult) => speechRecognitionResult.transcript)
           .join('');
 
         setTranscript(newTranscript);
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setError(`Speech recognition error: ${event.error}`);
         setIsListening(false);

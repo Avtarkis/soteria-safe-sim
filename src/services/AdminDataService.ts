@@ -148,7 +148,7 @@ class AdminDataService {
   }
 
   private async getTicketMetrics() {
-    const { data: tickets, error } = await supabase
+    const { data: tickets, error } = await this.supabase
       .from('support_tickets')
       .select('status');
 
@@ -161,7 +161,7 @@ class AdminDataService {
   }
 
   private async getEmergencyMetrics() {
-    const { data: alerts, error } = await supabase
+    const { data: alerts, error } = await this.supabase
       .from('user_alerts')
       .select('severity, created_at')
       .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -257,6 +257,47 @@ class AdminDataService {
       { period: '7-day', rate: sevenDayUsers.length > 0 ? sevenDayRetained / sevenDayUsers.length : 0 },
       { period: '30-day', rate: thirtyDayUsers.length > 0 ? thirtyDayRetained / thirtyDayUsers.length : 0 }
     ];
+  }
+
+  private async getTicketMetrics() {
+    const { data: tickets, error } = await supabase
+      .from('support_tickets')
+      .select('status');
+
+    if (error) throw error;
+
+    const resolved = tickets?.filter(t => t.status === 'resolved').length || 0;
+    const pending = tickets?.filter(t => t.status === 'open').length || 0;
+
+    return { resolved, pending };
+  }
+
+  private async getEmergencyMetrics() {
+    const { data: alerts, error } = await supabase
+      .from('user_alerts')
+      .select('severity, created_at')
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (error) throw error;
+
+    const totalAlerts = alerts?.length || 0;
+    const criticalAlerts = alerts?.filter(a => a.severity === 'critical').length || 0;
+
+    return { totalAlerts, criticalAlerts };
+  }
+
+  private calculateSystemHealth(users: any, tickets: any, alerts: any): 'healthy' | 'warning' | 'critical' {
+    const activeUserRate = users.totalUsers > 0 ? users.activeUsers / users.totalUsers : 0;
+    const ticketBacklog = tickets.pending;
+    const criticalAlerts = alerts.criticalAlerts;
+
+    if (criticalAlerts > 10 || activeUserRate < 0.1) {
+      return 'critical';
+    } else if (criticalAlerts > 5 || ticketBacklog > 20 || activeUserRate < 0.3) {
+      return 'warning';
+    } else {
+      return 'healthy';
+    }
   }
 }
 
