@@ -3,13 +3,12 @@ import { ThreatAlert } from '@/lib/supabase';
 import { ThreatMarker } from '@/types/threats';
 
 export const threatConverters = {
-  // Convert a ThreatAlert to a ThreatMarker for map display
   threatAlertToMarker: (threat: ThreatAlert, userLocation?: [number, number]): ThreatMarker => {
-    if (threat.latitude !== undefined && threat.longitude !== undefined) {
+    if (threat.location?.lat !== undefined && threat.location?.lng !== undefined) {
       return {
         id: threat.id,
-        position: [threat.latitude, threat.longitude] as [number, number],
-        level: threat.level as 'low' | 'medium' | 'high',
+        position: [threat.location.lat, threat.location.lng] as [number, number],
+        level: threat.severity as 'low' | 'medium' | 'high',
         title: threat.title,
         details: threat.description,
         type: 'environmental'
@@ -33,7 +32,7 @@ export const threatConverters = {
     return {
       id: threat.id,
       position: [baseLocation[0] + randomOffset(), baseLocation[1] + randomOffset()] as [number, number],
-      level: threat.level as 'low' | 'medium' | 'high',
+      level: threat.severity as 'low' | 'medium' | 'high',
       title: threat.title,
       details: threat.description,
       type

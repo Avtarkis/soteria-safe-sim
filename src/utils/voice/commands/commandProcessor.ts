@@ -1,67 +1,34 @@
 
-import { ProcessedCommand, VoiceCommandType } from '../types';
-import { determineUrgency } from '../commandTypes';
+import { ProcessedCommand } from '../types';
+import { determineCommandType, determineUrgency } from '../commandTypes';
 import { extractParameters } from './parameterExtractor';
-import { deepgramService } from '@/services/deepgramService';
-import { determineCommandType } from '../commandTypes';
-import EmergencyResponseSystem from '@/utils/emergency/EmergencyResponseSystem';
+import { toast } from '@/hooks/use-toast';
 
-export class CommandProcessor {
-  public static async processCommand(text: string): Promise<ProcessedCommand | null> {
-    if (!text?.trim()) return null;
+export const processCommand = async (transcript: string): Promise<ProcessedCommand | null> => {
+  if (!transcript?.trim()) return null;
+  
+  const normalizedText = transcript.toLowerCase().trim();
+  if (!normalizedText.includes('soteria')) return null;
+
+  try {
+    const commandType = determineCommandType(normalizedText);
+    const params = extractParameters(normalizedText, commandType);
+    const urgency = determineUrgency(normalizedText);
     
-    const normalizedText = text.toLowerCase().trim();
-    if (!normalizedText.includes('soteria')) return null;
-
-    try {
-      const type = await this.determineType(normalizedText);
-      const urgency = determineUrgency(normalizedText);
-      const params = extractParameters(normalizedText, type);
-      
-      // Check for emergency keywords that should trigger the emergency response
-      const emergencyKeywords = [
-        'help', 'police', 'danger', 'emergency', 'threat', 'attack', 
-        'weapon', 'gun', 'knife', 'hurt', 'kill', 'die'
-      ];
-      
-      const containsEmergencyKeyword = emergencyKeywords.some(keyword => 
-        normalizedText.includes(keyword)
-      );
-      
-      // If emergency keywords are detected, trigger emergency response systems
-      if (containsEmergencyKeyword) {
-        console.log("Emergency keywords detected in voice command:", text);
-        
-        // Trigger the emergency response system
-        EmergencyResponseSystem.handleVoiceTrigger(normalizedText, 0.95);
-      }
-      
-      return {
-        type,
-        confidence: 0.8,
-        originalText: text,
-        normalizedText,
-        urgency,
-        params
-      };
-    } catch (error) {
-      console.error('Error processing command:', error);
-      return null;
-    }
+    return {
+      type: commandType,
+      confidence: 0.8,
+      originalText: transcript,
+      normalizedText,
+      urgency,
+      params
+    };
+  } catch (error) {
+    console.error('Error processing command:', error);
+    toast({
+      title: "Command Processing Error",
+      description: "Failed to process command. Please try again."
+    });
+    return null;
   }
-
-  private static async determineType(text: string): Promise<VoiceCommandType> {
-    try {
-      const sentiment = await deepgramService.analyzeSentiment(text);
-      if (sentiment && sentiment.confidence > 0.8) {
-        if ('type' in sentiment) {
-          return sentiment.type as VoiceCommandType;
-        }
-      }
-    } catch (error) {
-      console.warn('Deepgram service unavailable, falling back to local processing');
-    }
-    
-    return determineCommandType(text);
-  }
-}
+};

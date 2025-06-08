@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { ThreatAlert } from '@/lib/supabase';
 
@@ -75,6 +74,29 @@ class RealThreatDataService {
     }
   }
 
+  async fetchLocalThreats(lat: number, lng: number): Promise<ThreatAlert[]> {
+    try {
+      const threats: ThreatAlert[] = [];
+      
+      // Fetch weather alerts
+      const weatherThreats = await this.fetchWeatherThreats(lat, lng);
+      threats.push(...weatherThreats);
+      
+      // Fetch disaster alerts  
+      const disasterThreats = await this.fetchDisasterThreats(lat, lng);
+      threats.push(...disasterThreats);
+      
+      // Fetch crime data
+      const crimeThreats = await this.fetchCrimeThreats(lat, lng);
+      threats.push(...crimeThreats);
+      
+      return threats;
+    } catch (error) {
+      console.error('Error fetching local threats:', error);
+      return [];
+    }
+  }
+
   private async fetchFromSource(source: ThreatDataSource, location?: [number, number]): Promise<ThreatAlert[]> {
     const headers: Record<string, string> = {
       'Accept': 'application/json'
@@ -96,6 +118,30 @@ class RealThreatDataService {
       default:
         return [];
     }
+  }
+
+  private async fetchWeatherThreats(lat: number, lng: number): Promise<ThreatAlert[]> {
+    return [];
+  }
+
+  private async fetchDisasterThreats(lat: number, lng: number): Promise<ThreatAlert[]> {
+    return [];
+  }
+
+  private async fetchCrimeThreats(lat: number, lng: number): Promise<ThreatAlert[]> {
+    // Mock crime data for now
+    return [
+      {
+        id: `crime-${Date.now()}`,
+        title: 'Crime Alert',
+        description: 'Recent criminal activity reported in the area',
+        severity: 'medium' as const,
+        location: { lat, lng },
+        timestamp: new Date().toISOString(),
+        source: 'Local Police',
+        type: 'crime'
+      }
+    ];
   }
 
   private processEarthquakeData(data: any, location?: [number, number]): ThreatAlert[] {

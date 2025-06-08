@@ -1,6 +1,8 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from './use-toast';
-import { NetworkStatus, connectivityService } from '@/utils/voice/connectivity';
+import { connectivityService } from '@/utils/voice/connectivity';
+import type { NetworkStatus } from '@/utils/voice/connectivity';
 
 interface SpeechRecognitionOptions {
   lang?: string;
@@ -17,6 +19,8 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const hasRecognitionSupport = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+
   useEffect(() => {
     const handleNetworkChange = (status: NetworkStatus) => {
       if (status.quality === 'poor') {
@@ -26,7 +30,6 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
       }
     };
 
-    // Subscribe to network status changes
     const checkStatus = () => {
       const status = connectivityService.getCurrentStatus();
       handleNetworkChange(status);
@@ -39,13 +42,14 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
   }, []);
 
   const startListening = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (!hasRecognitionSupport) {
       setError('Speech recognition not supported');
       return false;
     }
 
     try {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionConstructor();
       recognitionRef.current = recognition;
 
       recognition.lang = options.lang || 'en-US';
@@ -85,7 +89,6 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
         console.log('Speech recognition ended');
         setIsListening(false);
         
-        // Restart recognition automatically if continuous mode is enabled
         if (options.continuous && networkStatus !== 'offline') {
           if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
           restartTimeoutRef.current = setTimeout(() => {
@@ -103,7 +106,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
       setError('Failed to start speech recognition');
       return false;
     }
-  }, [options]);
+  }, [options, networkStatus, hasRecognitionSupport]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -118,6 +121,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
     error,
     networkStatus,
     startListening,
-    stopListening
+    stopListening,
+    hasRecognitionSupport
   };
 }

@@ -20,7 +20,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ className }) => {
   
   const { activeCommand, executeCommand } = useVoiceCommands();
   const { isListening, transcript, startListening, stopListening, hasRecognitionSupport } = 
-    useSpeechRecognition({ continuous: true, language: 'en-US' });
+    useSpeechRecognition({ continuous: true, lang: 'en-US' });
   const { speak, isSpeaking } = useTextToSpeech();
 
   const toggleListening = useCallback(async () => {
@@ -37,7 +37,6 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({ className }) => {
         description: "Listening for commands..."
       });
       
-      // Auto-stop after 10 seconds if no command detected
       setTimeout(() => {
         if (isListening) {
           stopListening();

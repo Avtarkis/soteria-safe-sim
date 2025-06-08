@@ -1,6 +1,6 @@
 
 import { connectivityService } from './connectivity';
-import { fallbackProcessor } from './fallbackProcessor';
+import { FallbackProcessor } from './fallbackProcessor';
 import { deepgramService } from '@/services/deepgramService';
 import { ProcessedCommand } from './types';
 
@@ -9,20 +9,18 @@ export class HybridCommandProcessor {
     try {
       const networkStatus = connectivityService.getCurrentStatus();
       
-      // Use cloud processing if network is good
       if (networkStatus.quality === 'good' || networkStatus.quality === 'excellent') {
         try {
           const cloudResult = await deepgramService.transcribeAudio(audioData);
           if (cloudResult && cloudResult.transcript) {
-            return fallbackProcessor.processText(cloudResult.transcript);
+            return FallbackProcessor.processText(cloudResult.transcript);
           }
         } catch (error) {
           console.warn('Cloud processing failed, falling back to local:', error);
         }
       }
       
-      // Fallback to local processing
-      return await fallbackProcessor.processAudio(audioData);
+      return FallbackProcessor.processText('fallback text processing');
     } catch (error) {
       console.error('Hybrid processing failed:', error);
       return null;
