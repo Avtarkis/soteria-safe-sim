@@ -49,7 +49,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
 
     try {
       const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognitionConstructor();
+      const recognition = new SpeechRecognitionConstructor() as SpeechRecognition;
       recognitionRef.current = recognition;
 
       recognition.lang = options.lang || 'en-US';

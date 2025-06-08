@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 interface UserData {
@@ -29,7 +30,28 @@ interface SupportTicket {
   assigned_to?: string;
 }
 
+interface AdminMetrics {
+  totalUsers: number;
+  activeUsers: number;
+  emergencyAlerts: number;
+  resolvedTickets: number;
+  systemHealth: 'healthy' | 'warning' | 'critical';
+}
+
+interface UserMetrics {
+  signups: Array<{ date: string; count: number }>;
+  activity: Array<{ date: string; activeUsers: number }>;
+  retention: Array<{ period: string; rate: number }>;
+}
+
+interface EmergencyMetrics {
+  totalAlerts: number;
+  criticalAlerts: number;
+}
+
 class AdminDataService {
+  private supabase = supabase;
+
   async getUsers(): Promise<UserData[]> {
     try {
       const { data, error } = await supabase.auth.admin.listUsers();

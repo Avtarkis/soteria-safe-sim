@@ -1,4 +1,18 @@
+
 import { toast } from '@/hooks/use-toast';
+
+export interface APICapabilities {
+  geolocation: boolean;
+  camera: boolean;
+  microphone: boolean;
+  bluetooth: boolean;
+  notifications: boolean;
+  vibration: boolean;
+  wakeLock: boolean;
+  fileSystem: boolean;
+  clipboard: boolean;
+  webRTC: boolean;
+}
 
 interface GeolocationOptions {
   enableHighAccuracy?: boolean;
@@ -32,7 +46,72 @@ interface CameraOptions {
   height?: number;
 }
 
+interface VibrationOptions {
+  pattern: number | number[];
+  intensity?: 'light' | 'medium' | 'heavy';
+}
+
+interface MediaRecordingOptions {
+  video?: boolean;
+  audio?: boolean;
+}
+
 class NativeAPIManager {
+  private wakeLock: any = null;
+
+  getCapabilities(): APICapabilities {
+    return {
+      geolocation: 'geolocation' in navigator,
+      camera: 'mediaDevices' in navigator && !!navigator.mediaDevices.getUserMedia,
+      microphone: 'mediaDevices' in navigator && !!navigator.mediaDevices.getUserMedia,
+      bluetooth: 'bluetooth' in navigator,
+      notifications: 'Notification' in window,
+      vibration: 'vibrate' in navigator,
+      wakeLock: 'wakeLock' in navigator,
+      fileSystem: 'showSaveFilePicker' in window,
+      clipboard: 'clipboard' in navigator,
+      webRTC: 'RTCPeerConnection' in window
+    };
+  }
+
+  isFeatureSupported(feature: keyof APICapabilities): boolean {
+    const capabilities = this.getCapabilities();
+    return capabilities[feature];
+  }
+
+  async requestAllPermissions(): Promise<{ [key: string]: boolean }> {
+    const results: { [key: string]: boolean } = {};
+    
+    // Notification permission
+    try {
+      const notificationPermission = await this.requestNotificationPermission();
+      results.notifications = notificationPermission === 'granted';
+    } catch (error) {
+      results.notifications = false;
+    }
+
+    // Geolocation permission
+    try {
+      await this.getCurrentPosition();
+      results.geolocation = true;
+    } catch (error) {
+      results.geolocation = false;
+    }
+
+    // Camera/microphone permission
+    try {
+      const stream = await this.getCameraStream();
+      if (stream) {
+        this.stopMediaStream(stream);
+        results.camera = true;
+      }
+    } catch (error) {
+      results.camera = false;
+    }
+
+    return results;
+  }
+
   // Geolocation
   async getCurrentPosition(options: GeolocationOptions = {}): Promise<GeolocationPosition> {
     if (!('geolocation' in navigator)) {
@@ -46,6 +125,11 @@ class NativeAPIManager {
         maximumAge: options.maximumAge || 0
       });
     });
+  }
+
+  // Alias for getCurrentPosition to match usage
+  async getCurrentLocation(options: GeolocationOptions = {}): Promise<GeolocationPosition> {
+    return this.getCurrentPosition(options);
   }
   
   watchPosition(
@@ -96,6 +180,37 @@ class NativeAPIManager {
     } catch (error) {
       console.error('Error accessing camera:', error);
       throw error;
+    }
+  }
+
+  // Media recording
+  async startRecording(options: MediaRecordingOptions = {}): Promise<MediaStream | null> {
+    if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+      return null;
+    }
+    
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: options.video || false,
+        audio: options.audio || true
+      });
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      return null;
+    }
+  }
+
+  // WebRTC
+  createPeerConnection(config?: RTCConfiguration): RTCPeerConnection | null {
+    if (!('RTCPeerConnection' in window)) {
+      return null;
+    }
+    
+    try {
+      return new RTCPeerConnection(config);
+    } catch (error) {
+      console.error('Error creating peer connection:', error);
+      return null;
     }
   }
   
@@ -205,12 +320,18 @@ class NativeAPIManager {
   }
   
   // Vibration
-  vibrate(pattern: number | number[]): boolean {
+  vibrate(options: VibrationOptions | number | number[]): boolean {
     if (!('vibrate' in navigator)) {
       return false;
     }
     
     try {
+      let pattern: number | number[];
+      if (typeof options === 'number' || Array.isArray(options)) {
+        pattern = options;
+      } else {
+        pattern = options.pattern;
+      }
       navigator.vibrate(pattern);
       return true;
     } catch (error) {
@@ -365,20 +486,32 @@ class NativeAPIManager {
   }
   
   // Screen wake lock
-  async requestWakeLock(): Promise<any> {
+  async requestWakeLock(): Promise<boolean> {
     if (!('wakeLock' in navigator)) {
       toast({
         title: "Wake Lock Not Supported",
         description: "Your device doesn't support keeping the screen awake."
       });
-      return null;
+      return false;
     }
     
     try {
-      return await (navigator as any).wakeLock.request('screen');
+      this.wakeLock = await (navigator as any).wakeLock.request('screen');
+      return true;
     } catch (error) {
       console.error('Wake lock error:', error);
-      return null;
+      return false;
+    }
+  }
+
+  async releaseWakeLock(): Promise<void> {
+    if (this.wakeLock) {
+      try {
+        await this.wakeLock.release();
+        this.wakeLock = null;
+      } catch (error) {
+        console.error('Error releasing wake lock:', error);
+      }
     }
   }
   

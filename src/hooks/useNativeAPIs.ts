@@ -23,7 +23,7 @@ export function useNativeAPIs() {
 
   const getCurrentLocation = useCallback(async () => {
     try {
-      return await nativeAPIManager.getCurrentLocation({
+      return await nativeAPIManager.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: 15000
       });
