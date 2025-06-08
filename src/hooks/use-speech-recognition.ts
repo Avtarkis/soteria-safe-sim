@@ -48,7 +48,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
     }
 
     try {
-      const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognitionConstructor();
       recognitionRef.current = recognition;
 
@@ -56,7 +56,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
       recognition.continuous = options.continuous !== false;
       recognition.interimResults = options.interimResults !== false;
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const newTranscript = Array.from(event.results)
           .map((result) => result[0])
           .map((speechRecognitionResult) => speechRecognitionResult.transcript)
@@ -65,7 +65,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
         setTranscript(newTranscript);
       };
 
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setError(`Speech recognition error: ${event.error}`);
         setIsListening(false);

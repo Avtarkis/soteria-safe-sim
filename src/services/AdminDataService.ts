@@ -1,31 +1,83 @@
+import { supabase } from '@/lib/supabase';
 
-import { createClient } from '@supabase/supabase-js';
-
-interface AdminMetrics {
-  totalUsers: number;
-  activeUsers: number;
-  emergencyAlerts: number;
-  resolvedTickets: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
+interface UserData {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  email_confirmed_at?: string;
 }
 
-interface UserMetrics {
-  signups: { date: string; count: number }[];
-  activity: { date: string; activeUsers: number }[];
-  retention: { period: string; rate: number }[];
+interface ThreatData {
+  id: string;
+  title: string;
+  description: string;
+  severity: string;
+  created_at: string;
+  user_id?: string;
 }
 
-interface EmergencyMetrics {
-  alerts: { date: string; count: number; type: string }[];
-  responseTime: { average: number; median: number }[];
-  resolution: { resolved: number; pending: number; escalated: number };
+interface SupportTicket {
+  id: string;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  created_at: string;
+  updated_at: string;
+  user_id?: string;
+  assigned_to?: string;
 }
 
 class AdminDataService {
-  private supabase = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
+  async getUsers(): Promise<UserData[]> {
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+      
+      if (error) throw error;
+      
+      return data.users.map(user => ({
+        id: user.id,
+        email: user.email || 'No email',
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at || undefined,
+        email_confirmed_at: user.email_confirmed_at || undefined,
+      }));
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  }
+
+  async getUserStats() {
+    try {
+      const { data: users, error } = await supabase.auth.admin.listUsers();
+      
+      if (error) throw error;
+      
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      const totalUsers = users.users.length;
+      const newThisWeek = users.users.filter(user => 
+        new Date(user.created_at) >= weekAgo
+      ).length;
+      const newThisMonth = users.users.filter(user => 
+        new Date(user.created_at) >= monthAgo
+      ).length;
+      
+      return {
+        total: totalUsers,
+        newThisWeek,
+        newThisMonth,
+        activeUsers: users.users.filter(user => user.last_sign_in_at).length
+      };
+    } catch (error) {
+      console.error('Error getting user stats:', error);
+      return { total: 0, newThisWeek: 0, newThisMonth: 0, activeUsers: 0 };
+    }
+  }
 
   async getAdminMetrics(): Promise<AdminMetrics> {
     try {

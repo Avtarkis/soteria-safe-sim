@@ -1,7 +1,7 @@
 
 import { nativeAPIManager } from './NativeAPIManager';
 
-interface PushSubscription {
+interface PushSubscriptionData {
   endpoint: string;
   keys: {
     p256dh: string;
@@ -45,7 +45,18 @@ class PushNotificationService {
         applicationServerKey: this.urlB64ToUint8Array(this.vapidPublicKey || '')
       });
 
-      await this.sendSubscriptionToServer(subscription);
+      // Convert native PushSubscription to our interface
+      const subscriptionData: PushSubscriptionData = {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.getKey('p256dh') ? 
+            btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))) : '',
+          auth: subscription.getKey('auth') ? 
+            btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))) : ''
+        }
+      };
+
+      await this.sendSubscriptionToServer(subscriptionData);
       console.log('Push notifications initialized successfully');
       return true;
 
@@ -55,7 +66,7 @@ class PushNotificationService {
     }
   }
 
-  async sendSubscriptionToServer(subscription: PushSubscription): Promise<void> {
+  async sendSubscriptionToServer(subscription: PushSubscriptionData): Promise<void> {
     try {
       const response = await fetch(`${this.serviceEndpoint}/subscribe`, {
         method: 'POST',
@@ -168,4 +179,4 @@ class PushNotificationService {
 
 export const pushNotificationService = new PushNotificationService();
 export default pushNotificationService;
-export type { NotificationPayload, PushSubscription };
+export type { NotificationPayload, PushSubscriptionData as PushSubscription };

@@ -226,15 +226,13 @@ class RealThreatDataService {
     return [
       {
         id: 'fallback-1',
-        user_id: 'system',
         title: 'System Alert',
         description: 'Real-time threat data temporarily unavailable. Using cached information.',
-        level: 'low' as const,
-        action: 'Refresh',
-        resolved: false,
-        created_at: new Date().toISOString(),
-        latitude: location?.[0] || 0,
-        longitude: location?.[1] || 0
+        severity: 'low' as const,
+        location: { lat: location?.[0] || 0, lng: location?.[1] || 0 },
+        timestamp: new Date().toISOString(),
+        source: 'Soteria',
+        type: 'system'
       }
     ];
   }

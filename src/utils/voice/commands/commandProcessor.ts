@@ -32,3 +32,10 @@ export const processCommand = async (transcript: string): Promise<ProcessedComma
     return null;
   }
 };
+
+// Export as CommandProcessor class for compatibility
+export class CommandProcessor {
+  static async processCommand(transcript: string): Promise<ProcessedCommand | null> {
+    return processCommand(transcript);
+  }
+}

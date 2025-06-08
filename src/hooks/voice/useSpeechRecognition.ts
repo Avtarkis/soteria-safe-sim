@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useAudioRecording } from './useAudioRecording';
-import { CommandProcessor } from '@/utils/voice/commands/commandProcessor';
+import { processCommand } from '@/utils/voice/commands/commandProcessor';
 import { ProcessedCommand } from '@/utils/voice/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -21,11 +21,11 @@ export function useSpeechRecognition(options: UseSpeechRecognitionOptions = {}) 
     
     setTranscript(text);
     
-    const command = await CommandProcessor.processCommand(text);
+    const command = await processCommand(text);
     if (command && options.onTranscript) {
       options.onTranscript(command);
     }
-  }, [options.onTranscript]);
+  }, [options]);
 
   useEffect(() => {
     if (audioBlob) {
