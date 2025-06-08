@@ -49,16 +49,22 @@ interface EmergencyMetrics {
   criticalAlerts: number;
 }
 
-class AdminDataService {
-  private supabase = supabase;
+interface SupabaseUser {
+  id: string;
+  email?: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  email_confirmed_at?: string;
+}
 
+class AdminDataService {
   async getUsers(): Promise<UserData[]> {
     try {
       const { data, error } = await supabase.auth.admin.listUsers();
       
       if (error) throw error;
       
-      return data.users.map(user => ({
+      return data.users.map((user: SupabaseUser) => ({
         id: user.id,
         email: user.email || 'No email',
         created_at: user.created_at,
@@ -82,10 +88,10 @@ class AdminDataService {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       
       const totalUsers = users.users.length;
-      const newThisWeek = users.users.filter(user => 
+      const newThisWeek = users.users.filter((user: SupabaseUser) => 
         new Date(user.created_at) >= weekAgo
       ).length;
-      const newThisMonth = users.users.filter(user => 
+      const newThisMonth = users.users.filter((user: SupabaseUser) => 
         new Date(user.created_at) >= monthAgo
       ).length;
       
@@ -93,7 +99,7 @@ class AdminDataService {
         total: totalUsers,
         newThisWeek,
         newThisMonth,
-        activeUsers: users.users.filter(user => user.last_sign_in_at).length
+        activeUsers: users.users.filter((user: SupabaseUser) => user.last_sign_in_at).length
       };
     } catch (error) {
       console.error('Error getting user stats:', error);
@@ -129,12 +135,12 @@ class AdminDataService {
   }
 
   private async getUserMetrics() {
-    const { data: users, error } = await this.supabase.auth.admin.listUsers();
+    const { data: users, error } = await supabase.auth.admin.listUsers();
     
     if (error) throw error;
 
     const totalUsers = users.users.length;
-    const activeUsers = users.users.filter(user => 
+    const activeUsers = users.users.filter((user: SupabaseUser) => 
       new Date(user.last_sign_in_at || 0) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     ).length;
 
@@ -184,7 +190,7 @@ class AdminDataService {
 
   async getUserAnalytics(days: number = 30): Promise<UserMetrics> {
     try {
-      const { data: users, error } = await this.supabase.auth.admin.listUsers();
+      const { data: users, error } = await supabase.auth.admin.listUsers();
       
       if (error) throw error;
 
@@ -200,7 +206,7 @@ class AdminDataService {
     }
   }
 
-  private processSignupData(users: any[], days: number) {
+  private processSignupData(users: SupabaseUser[], days: number) {
     const signupCounts: { [key: string]: number } = {};
     const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -215,7 +221,7 @@ class AdminDataService {
     return Object.entries(signupCounts).map(([date, count]) => ({ date, count }));
   }
 
-  private processActivityData(users: any[], days: number) {
+  private processActivityData(users: SupabaseUser[], days: number) {
     const activityCounts: { [key: string]: number } = {};
     const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -230,7 +236,7 @@ class AdminDataService {
     return Object.entries(activityCounts).map(([date, activeUsers]) => ({ date, activeUsers }));
   }
 
-  private calculateRetention(users: any[]) {
+  private calculateRetention(users: SupabaseUser[]) {
     // Calculate 7-day, 30-day retention rates
     const now = Date.now();
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -251,6 +257,47 @@ class AdminDataService {
       { period: '7-day', rate: sevenDayUsers.length > 0 ? sevenDayRetained / sevenDayUsers.length : 0 },
       { period: '30-day', rate: thirtyDayUsers.length > 0 ? thirtyDayRetained / thirtyDayUsers.length : 0 }
     ];
+  }
+
+  private async getTicketMetrics() {
+    const { data: tickets, error } = await supabase
+      .from('support_tickets')
+      .select('status');
+
+    if (error) throw error;
+
+    const resolved = tickets?.filter(t => t.status === 'resolved').length || 0;
+    const pending = tickets?.filter(t => t.status === 'open').length || 0;
+
+    return { resolved, pending };
+  }
+
+  private async getEmergencyMetrics() {
+    const { data: alerts, error } = await supabase
+      .from('user_alerts')
+      .select('severity, created_at')
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (error) throw error;
+
+    const totalAlerts = alerts?.length || 0;
+    const criticalAlerts = alerts?.filter(a => a.severity === 'critical').length || 0;
+
+    return { totalAlerts, criticalAlerts };
+  }
+
+  private calculateSystemHealth(users: any, tickets: any, alerts: any): 'healthy' | 'warning' | 'critical' {
+    const activeUserRate = users.totalUsers > 0 ? users.activeUsers / users.totalUsers : 0;
+    const ticketBacklog = tickets.pending;
+    const criticalAlerts = alerts.criticalAlerts;
+
+    if (criticalAlerts > 10 || activeUserRate < 0.1) {
+      return 'critical';
+    } else if (criticalAlerts > 5 || ticketBacklog > 20 || activeUserRate < 0.3) {
+      return 'warning';
+    } else {
+      return 'healthy';
+    }
   }
 }
 

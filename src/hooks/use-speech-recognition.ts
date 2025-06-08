@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from './use-toast';
 import { connectivityService } from '@/utils/voice/connectivity';
 import type { NetworkStatus } from '@/utils/voice/connectivity';
+import '@/types/speechRecognition';
 
 interface SpeechRecognitionOptions {
   lang?: string;
@@ -49,7 +50,7 @@ export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
 
     try {
       const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognitionConstructor() as SpeechRecognition;
+      const recognition = new SpeechRecognitionConstructor();
       recognitionRef.current = recognition;
 
       recognition.lang = options.lang || 'en-US';

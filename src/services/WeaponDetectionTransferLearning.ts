@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -158,15 +157,15 @@ export class WeaponDetectionTransferLearning {
       // Training configuration
       const history = await this.transferModel.fit(
         images,
-        { 'bbox_output': bboxes, 'class_output': classes },
+        [bboxes, classes], // Fixed: use array instead of object
         {
           epochs,
           batchSize,
-          validationData: [valImages, { 'bbox_output': valBboxes, 'class_output': valClasses }],
+          validationData: [valImages, [valBboxes, valClasses]], // Fixed: use array instead of object
           callbacks: {
             onEpochEnd: (epoch, logs) => {
               const metrics: ModelMetrics = {
-                accuracy: logs?.val_class_output_accuracy || 0,
+                accuracy: logs?.val_accuracy || 0,
                 precision: logs?.val_precision || 0,
                 recall: logs?.val_recall || 0,
                 f1Score: logs?.val_f1_score || 0,
@@ -281,11 +280,11 @@ export class WeaponDetectionTransferLearning {
     
     const evaluation = await this.transferModel.evaluate(
       images,
-      { 'bbox_output': bboxes, 'class_output': classes }
+      [bboxes, classes] // Fixed: use array instead of object
     ) as tf.Tensor[];
 
     const loss = await evaluation[0].data();
-    const accuracy = await evaluation[2].data(); // Assuming class accuracy is at index 2
+    const accuracy = await evaluation[1].data(); // Assuming accuracy is at index 1
 
     // Clean up tensors
     images.dispose();
