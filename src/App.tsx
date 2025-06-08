@@ -35,7 +35,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        {/* Redirect home to dashboard */}
+        {/* Redirect home to dashboard for authenticated users, login for guests */}
         <Route index element={<Navigate to="/dashboard" replace />} />
         
         {/* Auth routes */}
@@ -120,7 +120,7 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Admin routes - use AdminProtectedRoute */}
+        {/* Admin routes */}
         <Route path="admin" element={
           <AdminProtectedRoute>
             <AdminDashboardPage />
@@ -151,8 +151,6 @@ function App() {
             <AdminSettingsPage />
           </AdminProtectedRoute>
         } />
-        
-        {/* Add the new route for admin payment settings */}
         <Route path="admin/payment-settings" element={
           <AdminProtectedRoute>
             <AdminPaymentSettings />
