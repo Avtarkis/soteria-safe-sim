@@ -1,4 +1,3 @@
-
 import { nativeAPIManager } from './NativeAPIManager';
 
 export interface RecordingOptions {
@@ -183,27 +182,12 @@ class EmergencyRecordingService {
   }
 
   private async getMediaStream(options: RecordingOptions): Promise<MediaStream | null> {
-    const constraints: MediaStreamConstraints = {};
+    const cameraOptions = {
+      video: options.type === 'video' || options.type === 'photo',
+      audio: options.type === 'video' || options.type === 'audio'
+    };
 
-    switch (options.type) {
-      case 'video':
-        constraints.video = {
-          width: this.getVideoConstraints(options.quality).width,
-          height: this.getVideoConstraints(options.quality).height
-        };
-        constraints.audio = true;
-        break;
-      case 'audio':
-        constraints.audio = true;
-        constraints.video = false;
-        break;
-      case 'photo':
-        constraints.video = true;
-        constraints.audio = false;
-        break;
-    }
-
-    return await nativeAPIManager.startRecording(constraints);
+    return await nativeAPIManager.startRecording(cameraOptions);
   }
 
   private getVideoConstraints(quality: 'low' | 'medium' | 'high' = 'medium') {

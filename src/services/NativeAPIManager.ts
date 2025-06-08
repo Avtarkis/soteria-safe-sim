@@ -1,4 +1,3 @@
-
 import { isStoreApp, isMobile } from '@/utils/platformUtils';
 
 export interface APICapabilities {
@@ -50,6 +49,21 @@ export const SOTERIA_NFC_ACTIONS = {
 export interface SoteriaNFCPayload {
   soteria_action: typeof SOTERIA_NFC_ACTIONS[keyof typeof SOTERIA_NFC_ACTIONS];
   device_id: string;
+}
+
+// Add Bluetooth type definitions
+interface BluetoothDevice {
+  id: string;
+  name: string;
+  gatt?: {
+    connected: boolean;
+    connect(): Promise<BluetoothRemoteGATTServer>;
+  };
+}
+
+interface BluetoothRemoteGATTServer {
+  connected: boolean;
+  getPrimaryService(serviceUUID: string): Promise<any>;
 }
 
 class NativeAPIManager {
@@ -331,7 +345,9 @@ class NativeAPIManager {
       await this.storeEmergencyData(data);
       
       // Register sync
-      await this.serviceWorkerRegistration.sync.register('emergency-sync');
+      if ('sync' in this.serviceWorkerRegistration) {
+        await (this.serviceWorkerRegistration as any).sync.register('emergency-sync');
+      }
       return true;
     } catch (error) {
       console.error('Error registering emergency sync:', error);
@@ -593,6 +609,66 @@ class NativeAPIManager {
   stopVibration(): boolean {
     if (!this.capabilities.vibration) return false;
     return navigator.vibrate(0);
+  }
+
+  async requestBluetoothDevice(): Promise<BluetoothDevice | null> {
+    if (!this.capabilities.bluetooth) {
+      console.warn('Web Bluetooth not supported');
+      return null;
+    }
+
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [{
+          name: SOTERIA_BLE_CONFIG.deviceName,
+          services: [SOTERIA_BLE_CONFIG.serviceUUID]
+        }]
+      });
+      return device;
+    } catch (error) {
+      console.error('Error requesting Bluetooth device:', error);
+      return null;
+    }
+  }
+
+  async connectBluetoothDevice(device: BluetoothDevice): Promise<BluetoothRemoteGATTServer | null> {
+    try {
+      return await device.gatt?.connect() || null;
+    } catch (error) {
+      console.error('Error connecting to Bluetooth device:', error);
+      return null;
+    }
+  }
+
+  async subscribeToPanicButton(device: BluetoothDevice): Promise<boolean> {
+    try {
+      await this.setupPanicButtonListener(device, device.gatt as any);
+      return true;
+    } catch (error) {
+      console.error('Error subscribing to panic button:', error);
+      return false;
+    }
+  }
+
+  async sendFeedbackToBLEDevice(device: BluetoothDevice, feedbackType: 'vibrate' | 'led'): Promise<boolean> {
+    return this.sendDeviceFeedback(device, feedbackType);
+  }
+
+  vibrate(options: VibrationOptions): boolean {
+    return this.vibrateEmergencyPattern('custom', options.pattern);
+  }
+
+  async requestWakeLock(): Promise<boolean> {
+    return this.requestEmergencyWakeLock();
+  }
+
+  async saveFile(data: Blob, filename: string): Promise<void> {
+    const type = filename.includes('video') ? 'video' : filename.includes('audio') ? 'audio' : 'photo';
+    return this.saveEmergencyFile(data, filename, type);
+  }
+
+  createPeerConnection(configuration?: RTCConfiguration): RTCPeerConnection | null {
+    return this.createEmergencyRTCConnection(configuration);
   }
 }
 

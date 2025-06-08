@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { useLocationBasedCurrency } from '@/hooks/useLocationBasedCurrency';
@@ -92,7 +91,7 @@ const Subscription = () => {
   }
 
   // If user has an active subscription, show their current plan
-  if (hasActiveSubscription) {
+  if (hasActiveSubscription && (subscriptionTier === 'individual' || subscriptionTier === 'family')) {
     return (
       <CurrentSubscription 
         subscriptionTier={subscriptionTier} 

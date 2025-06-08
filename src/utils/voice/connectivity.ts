@@ -1,114 +1,33 @@
 
-export interface ConnectivityStatus {
+export interface NetworkStatus {
   isOnline: boolean;
-  connectionType: 'wifi' | 'cellular' | 'ethernet' | 'unknown';
-  effectiveType: 'slow-2g' | '2g' | '3g' | '4g' | 'unknown';
+  quality: 'poor' | 'good' | 'excellent';
+  timestamp: number;
 }
 
-class ConnectivityService {
-  private status: 'online' | 'offline' | 'poor' = 'online';
-  private listeners: Array<(status: 'online' | 'offline' | 'poor') => void> = [];
+export class ConnectivityService {
+  private status: NetworkStatus = {
+    isOnline: navigator.onLine,
+    quality: 'good',
+    timestamp: Date.now()
+  };
 
-  constructor() {
-    this.initializeListeners();
-    this.checkInitialStatus();
-  }
-
-  private initializeListeners() {
-    window.addEventListener('online', () => {
-      this.updateStatus('online');
-    });
-
-    window.addEventListener('offline', () => {
-      this.updateStatus('offline');
-    });
-
-    // Monitor connection quality if available
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
-      connection.addEventListener('change', () => {
-        this.assessConnectionQuality();
-      });
-    }
-  }
-
-  private checkInitialStatus() {
-    if (!navigator.onLine) {
-      this.status = 'offline';
-    } else {
-      this.assessConnectionQuality();
-    }
-  }
-
-  private assessConnectionQuality() {
-    if (!navigator.onLine) {
-      this.updateStatus('offline');
-      return;
-    }
-
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
-      const effectiveType = connection.effectiveType;
-      
-      if (effectiveType === 'slow-2g' || effectiveType === '2g') {
-        this.updateStatus('poor');
-      } else {
-        this.updateStatus('online');
-      }
-    } else {
-      this.updateStatus('online');
-    }
-  }
-
-  private updateStatus(newStatus: 'online' | 'offline' | 'poor') {
-    if (this.status !== newStatus) {
-      this.status = newStatus;
-      this.notifyListeners();
-    }
-  }
-
-  private notifyListeners() {
-    this.listeners.forEach(listener => {
-      try {
-        listener(this.status);
-      } catch (error) {
-        console.error('Error in connectivity listener:', error);
-      }
-    });
-  }
-
-  public getCurrentStatus(): 'online' | 'offline' | 'poor' {
+  async checkConnectionQuality(): Promise<NetworkStatus> {
+    this.status = {
+      isOnline: navigator.onLine,
+      quality: navigator.onLine ? 'good' : 'poor',
+      timestamp: Date.now()
+    };
     return this.status;
   }
 
-  public subscribe(listener: (status: 'online' | 'offline' | 'poor') => void): () => void {
-    this.listeners.push(listener);
-    
-    // Return unsubscribe function
-    return () => {
-      const index = this.listeners.indexOf(listener);
-      if (index !== -1) {
-        this.listeners.splice(index, 1);
-      }
-    };
+  getCurrentStatus(): NetworkStatus {
+    return { ...this.status };
   }
 
-  public getDetailedStatus(): ConnectivityStatus {
-    const isOnline = navigator.onLine;
-    let connectionType: ConnectivityStatus['connectionType'] = 'unknown';
-    let effectiveType: ConnectivityStatus['effectiveType'] = 'unknown';
-
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
-      connectionType = connection.type || 'unknown';
-      effectiveType = connection.effectiveType || 'unknown';
-    }
-
-    return {
-      isOnline,
-      connectionType,
-      effectiveType
-    };
+  updateStatus(status: 'online' | 'offline'): void {
+    this.status.isOnline = status === 'online';
+    this.status.timestamp = Date.now();
   }
 }
 

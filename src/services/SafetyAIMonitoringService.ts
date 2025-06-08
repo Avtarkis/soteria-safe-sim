@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 
 export interface MonitoringStatus {
@@ -79,6 +78,12 @@ class SafetyAIMonitoringService {
 
   private notifyListeners(): void {
     this.listeners.forEach(listener => listener(this.getStatus()));
+  }
+
+  handleVoiceCommand(command: string): void {
+    console.log('Voice command received:', command);
+    // Process voice command for AI monitoring
+    // This could trigger different monitoring modes based on the command
   }
 }
 
