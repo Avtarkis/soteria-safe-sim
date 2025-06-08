@@ -1,6 +1,5 @@
 
-
-// Platform detection utilities for determining app environment
+// Platform detection utilities
 
 export type Platform = 'web' | 'ios' | 'android' | 'mobile' | 'store';
 
@@ -14,75 +13,33 @@ export interface PlatformInfo {
 }
 
 export const isStoreApp = (): boolean => {
-  // Check if we're in a browser environment first
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  
-  // Check for environment variables safely
-  try {
-    // In Vite, environment variables are available on import.meta.env
-    const buildTarget = import.meta.env.VITE_BUILD_TARGET;
-    return buildTarget === 'store' || buildTarget === 'ios' || buildTarget === 'android';
-  } catch (error) {
-    console.warn('Could not access environment variables:', error);
-    return false;
-  }
-};
-
-export const getPlatform = (): 'web' | 'ios' | 'android' => {
-  if (typeof window === 'undefined') {
-    return 'web';
-  }
-  
-  try {
-    const buildTarget = import.meta.env.VITE_BUILD_TARGET;
-    if (buildTarget === 'ios') return 'ios';
-    if (buildTarget === 'android') return 'android';
-    return 'web';
-  } catch (error) {
-    console.warn('Could not access environment variables:', error);
-    return 'web';
-  }
+  // Check if running as a store app (iOS App Store or Google Play)
+  return (
+    window.location.hostname === 'localhost' && 
+    (window.navigator.userAgent.includes('Mobile') || window.navigator.userAgent.includes('Android'))
+  ) || 
+  // Check for Capacitor native context
+  !!(window as any).Capacitor ||
+  // Check for store app environment variables
+  process.env.STORE_APP === 'true';
 };
 
 export const isWeb = (): boolean => {
-  return getPlatform() === 'web' && !isStoreApp();
-};
-
-export const isWebPlatform = (): boolean => {
-  return getPlatform() === 'web';
+  return !isStoreApp() && window.location.hostname !== 'localhost';
 };
 
 export const isMobile = (): boolean => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  
   return window.navigator.userAgent.includes('Mobile') || 
          window.navigator.userAgent.includes('Android') ||
          window.navigator.userAgent.includes('iPhone');
 };
 
-export const isMobilePlatform = (): boolean => {
-  const platform = getPlatform();
-  return platform === 'ios' || platform === 'android';
-};
-
 export const isIOS = (): boolean => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  
   return window.navigator.userAgent.includes('iPhone') || 
          window.navigator.userAgent.includes('iPad');
 };
 
 export const isAndroid = (): boolean => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  
   return window.navigator.userAgent.includes('Android');
 };
 
@@ -97,10 +54,6 @@ export const shouldRedirectToSubscription = (): boolean => {
 };
 
 export const getAppStoreLink = (): string => {
-  if (typeof window === 'undefined') {
-    return '#';
-  }
-  
   const userAgent = window.navigator.userAgent;
   if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
     return 'https://apps.apple.com/app/soteria-safety';
@@ -132,4 +85,3 @@ export const usePlatform = (): PlatformInfo => {
     platform
   };
 };
-

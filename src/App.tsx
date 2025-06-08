@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from '@/components/Layout';
+import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/SignupPage';
@@ -25,7 +25,7 @@ import AdminTicketDetailPage from '@/pages/AdminTicketDetailPage';
 import AdminSettingsPage from '@/pages/AdminSettingsPage';
 import SupportPage from '@/pages/SupportPage';
 import TicketDetailPage from '@/pages/TicketDetailPage';
-import ThreatsMap from '@/components/threats/ThreatsMap';
+import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
 import SettingsPage from '@/pages/SettingsPage';
 import AdminPaymentSettings from '@/pages/AdminPaymentSettings';
