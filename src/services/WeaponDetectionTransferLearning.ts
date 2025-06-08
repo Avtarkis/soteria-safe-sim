@@ -118,8 +118,8 @@ export class WeaponDetectionTransferLearning {
       this.transferModel.compile({
         optimizer: tf.train.adam(0.001),
         loss: {
-          'bbox_output': 'meanSquaredError',
-          'class_output': 'categoricalCrossentropy'
+          bbox_output: 'meanSquaredError',
+          class_output: 'categoricalCrossentropy'
         },
         metrics: ['accuracy']
       });
@@ -157,11 +157,11 @@ export class WeaponDetectionTransferLearning {
       // Training configuration
       const history = await this.transferModel.fit(
         images,
-        [bboxes, classes], // Fixed: use array instead of object
+        { bbox_output: bboxes, class_output: classes },
         {
           epochs,
           batchSize,
-          validationData: [valImages, [valBboxes, valClasses]], // Fixed: use array instead of object
+          validationData: [valImages, { bbox_output: valBboxes, class_output: valClasses }],
           callbacks: {
             onEpochEnd: (epoch, logs) => {
               const metrics: ModelMetrics = {
@@ -280,7 +280,7 @@ export class WeaponDetectionTransferLearning {
     
     const evaluation = await this.transferModel.evaluate(
       images,
-      [bboxes, classes] // Fixed: use array instead of object
+      { bbox_output: bboxes, class_output: classes }
     ) as tf.Tensor[];
 
     const loss = await evaluation[0].data();
