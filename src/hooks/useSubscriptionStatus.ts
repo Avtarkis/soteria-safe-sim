@@ -1,63 +1,40 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 
-interface SubscriptionStatus {
+export type SubscriptionTier = 'free' | 'individual' | 'family' | 'premium';
+
+export interface SubscriptionStatus {
   hasActiveSubscription: boolean;
-  subscriptionType: 'free' | 'basic' | 'premium' | 'enterprise';
-  expiresAt: Date | null;
-  isLoading: boolean;
+  subscriptionTier: SubscriptionTier;
+  checkSubscription: () => void;
 }
 
-const useSubscriptionStatus = () => {
-  const { user } = useAuth();
-  const [status, setStatus] = useState<SubscriptionStatus>({
-    hasActiveSubscription: true, // Default to true for testing
-    subscriptionType: 'premium',
-    expiresAt: null,
-    isLoading: true
-  });
+const useSubscriptionStatus = (): SubscriptionStatus => {
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
+
+  const checkSubscription = () => {
+    // Check for active subscription in localStorage or API
+    const savedSubscription = localStorage.getItem('subscription_status');
+    if (savedSubscription) {
+      const subscriptionData = JSON.parse(savedSubscription);
+      setHasActiveSubscription(subscriptionData.active || false);
+      setSubscriptionTier(subscriptionData.tier || 'free');
+    } else {
+      setHasActiveSubscription(false);
+      setSubscriptionTier('free');
+    }
+  };
 
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      if (!user) {
-        setStatus({
-          hasActiveSubscription: false,
-          subscriptionType: 'free',
-          expiresAt: null,
-          isLoading: false
-        });
-        return;
-      }
+    checkSubscription();
+  }, []);
 
-      try {
-        setStatus(prev => ({ ...prev, isLoading: true }));
-        
-        // In a real app, this would check subscription status from the database
-        // For testing, we'll simulate an active subscription
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setStatus({
-          hasActiveSubscription: true,
-          subscriptionType: 'premium',
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-          isLoading: false
-        });
-      } catch (error) {
-        console.error('Error checking subscription status:', error);
-        setStatus({
-          hasActiveSubscription: false,
-          subscriptionType: 'free',
-          expiresAt: null,
-          isLoading: false
-        });
-      }
-    };
-
-    checkSubscriptionStatus();
-  }, [user]);
-
-  return status;
+  return {
+    hasActiveSubscription,
+    subscriptionTier,
+    checkSubscription
+  };
 };
 
 export default useSubscriptionStatus;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import useSubscriptionStatus, { SubscriptionTier } from '@/hooks/useSubscriptionStatus';
 
@@ -40,7 +39,7 @@ export const useFeatures = () => {
   return context;
 };
 
-export const FeatureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FeatureProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { hasActiveSubscription, subscriptionTier, isLoading } = useSubscriptionStatus();
   const [features, setFeatures] = useState<Features>({
     // Default to all features disabled

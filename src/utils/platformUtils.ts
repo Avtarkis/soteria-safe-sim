@@ -1,5 +1,17 @@
 
 // Platform detection utilities
+
+export type Platform = 'web' | 'ios' | 'android' | 'mobile' | 'store';
+
+export interface PlatformInfo {
+  isWeb: boolean;
+  isIOS: boolean;
+  isAndroid: boolean;
+  isMobile: boolean;
+  isStoreApp: boolean;
+  platform: Platform;
+}
+
 export const isStoreApp = (): boolean => {
   // Check if running as a store app (iOS App Store or Google Play)
   return (
@@ -22,6 +34,15 @@ export const isMobile = (): boolean => {
          window.navigator.userAgent.includes('iPhone');
 };
 
+export const isIOS = (): boolean => {
+  return window.navigator.userAgent.includes('iPhone') || 
+         window.navigator.userAgent.includes('iPad');
+};
+
+export const isAndroid = (): boolean => {
+  return window.navigator.userAgent.includes('Android');
+};
+
 export const shouldShowSubscriptionPlans = (): boolean => {
   // Only show subscription plans on web platform to avoid app store fees
   return isWeb() && !isStoreApp();
@@ -40,4 +61,27 @@ export const getAppStoreLink = (): string => {
     return 'https://play.google.com/store/apps/details?id=com.soteria.safety';
   }
   return '#'; // Fallback
+};
+
+export const usePlatform = (): PlatformInfo => {
+  const isWebPlatform = isWeb();
+  const isIOSPlatform = isIOS();
+  const isAndroidPlatform = isAndroid();
+  const isMobilePlatform = isMobile();
+  const isStoreAppPlatform = isStoreApp();
+  
+  let platform: Platform = 'web';
+  if (isStoreAppPlatform) platform = 'store';
+  else if (isIOSPlatform) platform = 'ios';
+  else if (isAndroidPlatform) platform = 'android';
+  else if (isMobilePlatform) platform = 'mobile';
+  
+  return {
+    isWeb: isWebPlatform,
+    isIOS: isIOSPlatform,
+    isAndroid: isAndroidPlatform,
+    isMobile: isMobilePlatform,
+    isStoreApp: isStoreAppPlatform,
+    platform
+  };
 };

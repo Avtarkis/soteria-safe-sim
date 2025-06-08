@@ -1,6 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  AlertTriangle, 
+  Activity, 
+  Shield, 
+  Eye, 
+  Server, 
+  Database, 
+  Globe 
+} from 'lucide-react';
 import AlertSummaryCards from './monitoring/AlertSummaryCards';
 import SystemStatusCard from './monitoring/SystemStatusCard';
 

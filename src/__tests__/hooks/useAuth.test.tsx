@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { renderHook } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { TestWrapper, setupTest } from '@/utils/testHelpers';
 
