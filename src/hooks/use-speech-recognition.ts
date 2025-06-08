@@ -1,194 +1,123 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from './use-toast';
+import { NetworkStatus, connectivityService } from '@/utils/voice/connectivity';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { deepgramService } from '@/services/deepgramService';
-import { toast } from '@/hooks/use-toast';
-import { useWebAudioRecorder } from './use-web-audio-recorder';
-import { NetworkStatusMonitor } from '@/utils/voice/networkStatusMonitor';
-import { HybridCommandProcessor } from '@/utils/voice/hybridCommandProcessor';
-import { FallbackProcessor } from '@/utils/voice/fallbackProcessor';
-import { ProcessedCommand } from '@/utils/voice/types';
-
-export interface SpeechRecognitionOptions {
-  language?: string;
+interface SpeechRecognitionOptions {
+  lang?: string;
   continuous?: boolean;
   interimResults?: boolean;
-  maxAlternatives?: number;
 }
 
-interface UseSpeechRecognitionReturn {
-  isListening: boolean;
-  transcript: string;
-  startListening: () => Promise<void>;
-  stopListening: () => void;
-  resetTranscript: () => void;
-  hasRecognitionSupport: boolean;
-  error: string | null;
-}
-
-export function useSpeechRecognition(
-  options: SpeechRecognitionOptions = {},
-  onTranscriptUpdate?: (transcript: string) => void
-): UseSpeechRecognitionReturn {
+export function useSpeechRecognition(options: SpeechRecognitionOptions = {}) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'poor'>('online');
+  const [networkStatus, setNetworkStatus] = useState<'poor' | 'online' | 'offline'>('online');
   
-  const { 
-    startRecording, 
-    stopRecording, 
-    isRecording, 
-    audioBlob, 
-    getAudioAsBase64 
-  } = useWebAudioRecorder();
-  
-  const hasRecognitionSupport = 'MediaRecorder' in window;
-  const processingIntervalRef = useRef<number | null>(null);
-  const networkMonitorUnsubscribeRef = useRef<(() => void) | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Subscribe to network status changes
   useEffect(() => {
-    networkMonitorUnsubscribeRef.current = NetworkStatusMonitor.subscribe((status) => {
-      setNetworkStatus(status);
-      console.log('Network status updated:', status);
-    });
-    
-    return () => {
-      if (networkMonitorUnsubscribeRef.current) {
-        networkMonitorUnsubscribeRef.current();
-      }
-    };
-  }, []);
-
-  // Clean up on component unmount
-  useEffect(() => {
-    return () => {
-      stopListening();
-      if (processingIntervalRef.current) {
-        window.clearInterval(processingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const resetTranscript = useCallback(() => {
-    setTranscript('');
-  }, []);
-
-  // Process audio using appropriate service based on network status
-  const processAudioChunks = useCallback(async () => {
-    if (!audioBlob) return;
-    
-    try {
-      let processedResult: ProcessedCommand | null = null;
-      
-      // Use hybrid processor to determine processing method
-      if (networkStatus === 'online') {
-        // Use advanced processing
-        try {
-          // Attempt to use Deepgram for transcription
-          processedResult = await HybridCommandProcessor.processCommand(transcript, audioBlob);
-        } catch (err) {
-          console.error('Error with advanced processing, falling back to local:', err);
-          // Fall back to local processing
-          processedResult = FallbackProcessor.processText(transcript);
-        }
+    const handleNetworkChange = (status: NetworkStatus) => {
+      if (status.quality === 'poor') {
+        setNetworkStatus('poor');
       } else {
-        // Use local processing for offline or poor connection
-        console.log('Using local processing due to network status:', networkStatus);
-        processedResult = FallbackProcessor.processText(transcript);
+        setNetworkStatus(status.isOnline ? 'online' : 'offline');
       }
-      
-      if (processedResult) {
-        setTranscript(prev => {
-          const newTranscript = `${prev} ${processedResult?.normalizedText}`.trim();
-          
-          // Call the callback if provided
-          if (onTranscriptUpdate) {
-            onTranscriptUpdate(newTranscript);
-          }
-          
-          return newTranscript;
-        });
-      }
-    } catch (err) {
-      console.error('Error processing audio:', err);
-      setError('Failed to process audio. Please try again.');
-    }
-  }, [audioBlob, options.language, onTranscriptUpdate, transcript, networkStatus]);
+    };
 
-  // Effect to process audio when the blob changes
-  useEffect(() => {
-    if (audioBlob) {
-      processAudioChunks();
-    }
-  }, [audioBlob, processAudioChunks]);
+    // Subscribe to network status changes
+    const checkStatus = () => {
+      const status = connectivityService.getCurrentStatus();
+      handleNetworkChange(status);
+    };
+    
+    checkStatus();
+    const interval = setInterval(checkStatus, 5000);
 
-  const startListening = useCallback(async () => {
-    resetTranscript();
-    setError(null);
+    return () => clearInterval(interval);
+  }, []);
 
-    if (!hasRecognitionSupport) {
-      setError('Speech recognition is not supported in this browser.');
-      toast({
-        title: "Feature Not Supported",
-        description: "Voice recognition is not supported in this browser."
-      });
-      return;
+  const startListening = useCallback(() => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setError('Speech recognition not supported');
+      return false;
     }
 
     try {
-      const started = await startRecording();
-      
-      if (started) {
-        setIsListening(true);
-        
-        // Show network status toast if not online
-        if (networkStatus !== 'online') {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognitionRef.current = recognition;
+
+      recognition.lang = options.lang || 'en-US';
+      recognition.continuous = options.continuous !== false;
+      recognition.interimResults = options.interimResults !== false;
+
+      recognition.onresult = (event) => {
+        const newTranscript = Array.from(event.results)
+          .map((result) => result[0])
+          .map((speechRecognitionResult) => speechRecognitionResult.transcript)
+          .join('');
+
+        setTranscript(newTranscript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setError(`Speech recognition error: ${event.error}`);
+        setIsListening(false);
+
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
           toast({
-            title: networkStatus === 'offline' ? "Offline Mode" : "Poor Connection",
-            description: networkStatus === 'offline'
-              ? "Using offline voice recognition. Limited features available."
-              : "Connection quality is poor. Some voice features may be limited.",
-            variant: "default"
+            title: "Voice Recognition Error",
+            description: "There was an issue with the voice recognition service. Please try again.",
+            variant: "destructive"
           });
         }
+      };
+
+      recognition.onstart = () => {
+        console.log('Speech recognition started');
+        setIsListening(true);
+        setError(null);
+      };
+
+      recognition.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
         
-        // For continuous recognition, process chunks at intervals
-        if (options.continuous) {
-          processingIntervalRef.current = window.setInterval(() => {
-            stopRecording();
-            startRecording();
-          }, 3000); // Process audio every 3 seconds
+        // Restart recognition automatically if continuous mode is enabled
+        if (options.continuous && networkStatus !== 'offline') {
+          if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = setTimeout(() => {
+            console.log('Restarting speech recognition...');
+            startListening();
+          }, 500);
         }
-      }
+      };
+
+      recognition.start();
+      setIsListening(true);
+      setError(null);
+      return true;
     } catch (err) {
-      console.error('Error accessing microphone:', err);
-      setError('Could not access microphone. Please check permissions.');
-      toast({
-        title: "Microphone Access Denied",
-        description: "Please allow microphone access to use voice features.",
-        variant: "destructive"
-      });
+      setError('Failed to start speech recognition');
+      return false;
     }
-  }, [options.continuous, resetTranscript, hasRecognitionSupport, startRecording, stopRecording, networkStatus]);
+  }, [options]);
 
   const stopListening = useCallback(() => {
-    if (processingIntervalRef.current) {
-      window.clearInterval(processingIntervalRef.current);
-      processingIntervalRef.current = null;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
     }
-    
-    stopRecording();
     setIsListening(false);
-  }, [stopRecording]);
+  }, []);
 
   return {
     isListening,
     transcript,
+    error,
+    networkStatus,
     startListening,
-    stopListening,
-    resetTranscript,
-    hasRecognitionSupport,
-    error
+    stopListening
   };
 }

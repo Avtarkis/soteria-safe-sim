@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import useSubscriptionStatus, { SubscriptionTier } from '@/hooks/useSubscriptionStatus';
 
@@ -40,7 +41,7 @@ export const useFeatures = () => {
 };
 
 export const FeatureProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { hasActiveSubscription, subscriptionTier, checkSubscription } = useSubscriptionStatus();
+  const { hasActiveSubscription, subscriptionTier, checkSubscription, isLoading } = useSubscriptionStatus();
   const [features, setFeatures] = useState<Features>({
     // Default to all features disabled
     threatDetection: false,
@@ -123,7 +124,7 @@ export const FeatureProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [hasActiveSubscription, subscriptionTier, isLoading]);
 
   return (
-    <FeatureContext.Provider value={{ features, hasActiveSubscription, subscriptionTier, isLoading: false }}>
+    <FeatureContext.Provider value={{ features, hasActiveSubscription, subscriptionTier, isLoading }}>
       {children}
     </FeatureContext.Provider>
   );

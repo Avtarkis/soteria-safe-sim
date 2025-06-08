@@ -24,3 +24,12 @@ export interface ThreatAlert {
   source: string;
   type: string;
 }
+
+export interface SecurityLog {
+  id: string;
+  user_id: string;
+  event: string;
+  timestamp: string;
+  details: string;
+  severity: 'low' | 'medium' | 'high';
+}

@@ -48,7 +48,7 @@ export function useVoiceAssistant(options: UseVoiceAssistantOptions = {}) {
       
       try {
         // Forward to safety AI for emergency detection
-        safetyAI.handleVoiceCommand(transcript, 0.8);
+        safetyAI.handleVoiceCommand(transcript);
         
         const command = await processVoiceCommand(transcript);
         

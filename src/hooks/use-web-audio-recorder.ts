@@ -16,11 +16,11 @@ export function useWebAudioRecorder() {
     
     // Check network status before starting
     const networkStatus = connectivityService.getCurrentStatus();
-    if (networkStatus === 'poor') {
+    if (networkStatus.quality === 'poor') {
       toast({
         title: "Poor Connection Detected",
         description: "Using basic voice recognition mode.",
-        variant: "default"  // Changed from "warning" to "default"
+        variant: "default"
       });
     }
     
