@@ -1,3 +1,4 @@
+
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -41,7 +42,7 @@ export class WeaponDetectionTransferLearning {
     } catch (error) {
       console.error('Failed to load pre-trained model:', error);
       
-      // Fallback: Create a simple CNN architecture
+      // Fallback: Create a simple CNN architecture with standard input shape
       this.baseModel = this.createFallbackModel([416, 416, 3]);
       return true;
     }
