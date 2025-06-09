@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -114,6 +113,9 @@ export class WeaponDetectionTransferLearning {
       return true;
     } catch (error) {
       console.error('Failed to create transfer learning model:', error);
+      
+      // Fallback: Create a simple model with standard input shape
+      this.transferModel = this.createFallbackModel([416, 416, 3]);
       return false;
     }
   }
