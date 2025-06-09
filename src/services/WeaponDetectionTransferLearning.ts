@@ -69,7 +69,6 @@ export class WeaponDetectionTransferLearning {
         tf.layers.dense({ units: 4, activation: 'softmax' }) // 4 weapon classes
       ]
     });
-
     return model;
   }
 
@@ -77,7 +76,6 @@ export class WeaponDetectionTransferLearning {
     if (!this.baseModel) {
       throw new Error('Base model not loaded. Call loadPretrainedModel() first.');
     }
-
     try {
       // Freeze the base model layers (transfer learning)
       for (let i = 0; i < this.baseModel.layers.length - 3; i++) {
@@ -86,33 +84,20 @@ export class WeaponDetectionTransferLearning {
 
       // Add custom classification head for weapon detection
       const input = tf.layers.input({ shape: [416, 416, 3] });
-      
       // Use base model features
       let x = this.baseModel.apply(input) as tf.SymbolicTensor;
-      
+
       // Add custom layers for weapon detection
       x = tf.layers.globalAveragePooling2d().apply(x) as tf.SymbolicTensor;
       x = tf.layers.dense({ units: 512, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
       x = tf.layers.dropout({ rate: 0.5 }).apply(x) as tf.SymbolicTensor;
       x = tf.layers.dense({ units: 256, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
-      
-      // Output layers for bounding box regression and classification
-      const bbox_output = tf.layers.dense({ 
-        units: 4, 
-        activation: 'linear',
-        name: 'bbox_output'
-      }).apply(x) as tf.SymbolicTensor;
-      
-      const class_output = tf.layers.dense({ 
-        units: 4, 
-        activation: 'softmax',
-        name: 'class_output'
-      }).apply(x) as tf.SymbolicTensor;
 
-      this.transferModel = tf.model({
-        inputs: input,
-        outputs: [bbox_output, class_output]
-      });
+      // Output layers for bounding box regression and classification
+      const bbox_output = tf.layers.dense({ units: 4, activation: 'linear', name: 'bbox_output' }).apply(x) as tf.SymbolicTensor;
+      const class_output = tf.layers.dense({ units: 4, activation: 'softmax', name: 'class_output' }).apply(x) as tf.SymbolicTensor;
+
+      this.transferModel = tf.model({ inputs: input, outputs: [bbox_output, class_output] });
 
       // Compile with multi-output loss
       this.transferModel.compile({
@@ -141,7 +126,6 @@ export class WeaponDetectionTransferLearning {
     if (!this.transferModel) {
       throw new Error('Transfer model not created. Call createTransferLearningModel() first.');
     }
-
     if (this.isTraining) {
       throw new Error('Training already in progress');
     }
@@ -172,7 +156,6 @@ export class WeaponDetectionTransferLearning {
                 loss: logs?.val_loss || 0,
                 epoch: epoch + 1
               };
-              
               this.trainingHistory.push(metrics);
               console.log(`Epoch ${epoch + 1}/${epochs} - Loss: ${metrics.loss.toFixed(4)} - Accuracy: ${metrics.accuracy.toFixed(4)}`);
             }
@@ -211,7 +194,7 @@ export class WeaponDetectionTransferLearning {
       // Use first annotation (could be extended for multiple objects)
       const annotation = sample.annotations[0];
       bboxArray.push(annotation.bbox);
-      
+
       // One-hot encode class
       const classOneHot = [0, 0, 0, 0];
       const classIndex = this.getClassIndex(annotation.class);
@@ -219,20 +202,11 @@ export class WeaponDetectionTransferLearning {
       classArray.push(classOneHot);
     });
 
-    return {
-      images: tf.tensor4d(imageArray),
-      bboxes: tf.tensor2d(bboxArray),
-      classes: tf.tensor2d(classArray)
-    };
+    return { images: tf.tensor4d(imageArray), bboxes: tf.tensor2d(bboxArray), classes: tf.tensor2d(classArray) };
   }
 
   private getClassIndex(className: string): number {
-    const classMap = {
-      'weapon': 0,
-      'firearm': 1,
-      'knife': 2,
-      'blunt_object': 3
-    };
+    const classMap = { 'weapon': 0, 'firearm': 1, 'knife': 2, 'blunt_object': 3 };
     return classMap[className as keyof typeof classMap] || 0;
   }
 
@@ -241,7 +215,6 @@ export class WeaponDetectionTransferLearning {
       console.error('No model to save');
       return false;
     }
-
     try {
       await this.transferModel.save(`indexeddb://${modelName}`);
       console.log(`Model saved as ${modelName}`);
@@ -277,7 +250,6 @@ export class WeaponDetectionTransferLearning {
     }
 
     const { images, bboxes, classes } = this.prepareTrainingData(testData);
-    
     const evaluation = await this.transferModel.evaluate(
       images,
       [bboxes, classes]
@@ -302,6 +274,3 @@ export class WeaponDetectionTransferLearning {
     };
   }
 }
-
-export const weaponDetectionTransferLearning = new WeaponDetectionTransferLearning();
-export default weaponDetectionTransferLearning;
