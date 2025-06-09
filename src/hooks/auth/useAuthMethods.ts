@@ -3,7 +3,6 @@ import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { isTestMode } from '@/utils/auth';
-import { useNavigate } from 'react-router-dom';
 
 /**
  * Hook for authentication methods - sign in, sign up, sign out, password reset
@@ -70,7 +69,7 @@ export const useAuthMethods = (setUser: (user: any) => void) => {
         email, 
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/map`
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
       

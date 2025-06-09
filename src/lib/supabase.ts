@@ -1,14 +1,18 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use the centralized Supabase configuration
+const supabaseUrl = 'https://xdljzbkczhyykhzyillj.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGp6Ymtjemh5eWtoenlpbGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NTY5MzEsImV4cCI6MjA2MTAzMjkzMX0.urlh_YAUvhu64I8ynJRGtdAUTtFURGcTn_vVAgbREAc';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a single instance to be reused throughout the app
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 // Export common types
 export interface ThreatAlert {

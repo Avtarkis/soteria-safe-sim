@@ -14,22 +14,30 @@ export const useAuthState = () => {
 
   // Check for current session and set up auth state listener
   useEffect(() => {
+    let mounted = true;
+
     const fetchSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ? {
-          id: session.user.id,
-          email: session.user.email || undefined
-        } : null);
+        if (mounted) {
+          setUser(session?.user ? {
+            id: session.user.id,
+            email: session.user.email || undefined
+          } : null);
+        }
       } catch (error) {
         console.error('Error fetching session:', error);
-        toast({
-          title: 'Authentication Error',
-          description: 'Failed to fetch current session',
-          variant: 'destructive',
-        });
+        if (mounted) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Failed to fetch current session',
+            variant: 'destructive',
+          });
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -38,6 +46,8 @@ export const useAuthState = () => {
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
+        
         console.log("Auth state changed:", event, session?.user?.email);
         if (event === 'SIGNED_IN') {
           setUser(session?.user ? {
@@ -51,15 +61,12 @@ export const useAuthState = () => {
           });
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
-          toast({
-            title: 'Signed out',
-            description: 'You have been signed out successfully',
-          });
         }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [toast]);
