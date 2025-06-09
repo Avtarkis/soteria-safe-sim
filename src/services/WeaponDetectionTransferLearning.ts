@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
@@ -43,16 +42,16 @@ export class WeaponDetectionTransferLearning {
       console.error('Failed to load pre-trained model:', error);
       
       // Fallback: Create a simple CNN architecture
-      this.baseModel = this.createFallbackModel();
+      this.baseModel = this.createFallbackModel([416, 416, 3]);
       return true;
     }
   }
 
-  private createFallbackModel(): tf.LayersModel {
+  private createFallbackModel(inputShape: number[]): tf.LayersModel {
     const model = tf.sequential({
       layers: [
         tf.layers.conv2d({
-          inputShape: [416, 416, 3],
+          inputShape: inputShape as [number, number, number],
           filters: 32,
           kernelSize: 3,
           activation: 'relu',
