@@ -20,8 +20,8 @@ export const isStoreApp = (): boolean => {
   ) || 
   // Check for Capacitor native context
   !!(window as any).Capacitor ||
-  // Check for store app environment variables
-  process.env.STORE_APP === 'true';
+  // Check for store app environment variables (with safe access)
+  (typeof process !== 'undefined' && process.env?.STORE_APP === 'true');
 };
 
 export const isWeb = (): boolean => {
