@@ -1,23 +1,9 @@
+
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
-
-export interface TrainingData {
-  image: tf.Tensor;
-  annotations: {
-    bbox: [number, number, number, number]; // [x, y, width, height]
-    class: 'weapon' | 'firearm' | 'knife' | 'blunt_object';
-    confidence: number;
-  }[];
-}
-
-export interface ModelMetrics {
-  accuracy: number;
-  precision: number;
-  recall: number;
-  f1Score: number;
-  loss: number;
-  epoch: number;
-}
+import { TrainingData, ModelMetrics } from './weapon-detection-transfer-learning/types';
+import { ModelUtils } from './weapon-detection-transfer-learning/ModelUtils';
+import { DataPreparation } from './weapon-detection-transfer-learning/DataPreparation';
 
 export class WeaponDetectionTransferLearning {
   private baseModel: tf.LayersModel | null = null;
@@ -42,34 +28,9 @@ export class WeaponDetectionTransferLearning {
       console.error('Failed to load pre-trained model:', error);
       
       // Fallback: Create a simple CNN architecture with standard input shape
-      this.baseModel = this.createFallbackModel([416, 416, 3]);
+      this.baseModel = ModelUtils.createFallbackModel([416, 416, 3]);
       return true;
     }
-  }
-
-  private createFallbackModel(inputShape: number[]): tf.LayersModel {
-    const model = tf.sequential({
-      layers: [
-        tf.layers.conv2d({
-          inputShape: inputShape as [number, number, number],
-          filters: 32,
-          kernelSize: 3,
-          activation: 'relu',
-          padding: 'same'
-        }),
-        tf.layers.maxPooling2d({ poolSize: 2 }),
-        tf.layers.conv2d({ filters: 64, kernelSize: 3, activation: 'relu', padding: 'same' }),
-        tf.layers.maxPooling2d({ poolSize: 2 }),
-        tf.layers.conv2d({ filters: 128, kernelSize: 3, activation: 'relu', padding: 'same' }),
-        tf.layers.maxPooling2d({ poolSize: 2 }),
-        tf.layers.flatten(),
-        tf.layers.dense({ units: 512, activation: 'relu' }),
-        tf.layers.dropout({ rate: 0.5 }),
-        tf.layers.dense({ units: 256, activation: 'relu' }),
-        tf.layers.dense({ units: 4, activation: 'softmax' }) // 4 weapon classes
-      ]
-    });
-    return model;
   }
 
   public async createTransferLearningModel(): Promise<boolean> {
@@ -77,45 +38,14 @@ export class WeaponDetectionTransferLearning {
       throw new Error('Base model not loaded. Call loadPretrainedModel() first.');
     }
     try {
-      // Freeze the base model layers (transfer learning)
-      for (let i = 0; i < this.baseModel.layers.length - 3; i++) {
-        this.baseModel.layers[i].trainable = false;
-      }
-
-      // Add custom classification head for weapon detection
-      const input = tf.layers.input({ shape: [416, 416, 3] });
-      // Use base model features
-      let x = this.baseModel.apply(input) as tf.SymbolicTensor;
-
-      // Add custom layers for weapon detection
-      x = tf.layers.globalAveragePooling2d().apply(x) as tf.SymbolicTensor;
-      x = tf.layers.dense({ units: 512, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
-      x = tf.layers.dropout({ rate: 0.5 }).apply(x) as tf.SymbolicTensor;
-      x = tf.layers.dense({ units: 256, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
-
-      // Output layers for bounding box regression and classification
-      const bbox_output = tf.layers.dense({ units: 4, activation: 'linear', name: 'bbox_output' }).apply(x) as tf.SymbolicTensor;
-      const class_output = tf.layers.dense({ units: 4, activation: 'softmax', name: 'class_output' }).apply(x) as tf.SymbolicTensor;
-
-      this.transferModel = tf.model({ inputs: input, outputs: [bbox_output, class_output] });
-
-      // Compile with multi-output loss
-      this.transferModel.compile({
-        optimizer: tf.train.adam(0.001),
-        loss: {
-          'bbox_output': 'meanSquaredError',
-          'class_output': 'categoricalCrossentropy'
-        },
-        metrics: ['accuracy']
-      });
-
+      this.transferModel = await ModelUtils.createTransferLearningModel(this.baseModel);
       console.log('Transfer learning model created successfully');
       return true;
     } catch (error) {
       console.error('Failed to create transfer learning model:', error);
       
       // Fallback: Create a simple model with standard input shape
-      this.transferModel = this.createFallbackModel([416, 416, 3]);
+      this.transferModel = ModelUtils.createFallbackModel([416, 416, 3]);
       return false;
     }
   }
@@ -138,8 +68,8 @@ export class WeaponDetectionTransferLearning {
       console.log(`Starting training with ${trainingData.length} samples for ${epochs} epochs`);
 
       // Prepare training data tensors
-      const { images, bboxes, classes } = this.prepareTrainingData(trainingData);
-      const { images: valImages, bboxes: valBboxes, classes: valClasses } = this.prepareTrainingData(validationData);
+      const { images, bboxes, classes } = DataPreparation.prepareTrainingData(trainingData);
+      const { images: valImages, bboxes: valBboxes, classes: valClasses } = DataPreparation.prepareTrainingData(validationData);
 
       // Training configuration
       const history = await this.transferModel.fit(
@@ -184,35 +114,6 @@ export class WeaponDetectionTransferLearning {
     }
   }
 
-  private prepareTrainingData(data: TrainingData[]) {
-    const imageArray: number[][][][] = [];
-    const bboxArray: number[][] = [];
-    const classArray: number[][] = [];
-
-    data.forEach(sample => {
-      // Convert tensor to array (assuming normalized)
-      const imageData = sample.image.arraySync() as number[][][];
-      imageArray.push(imageData);
-
-      // Use first annotation (could be extended for multiple objects)
-      const annotation = sample.annotations[0];
-      bboxArray.push(annotation.bbox);
-
-      // One-hot encode class
-      const classOneHot = [0, 0, 0, 0];
-      const classIndex = this.getClassIndex(annotation.class);
-      classOneHot[classIndex] = 1;
-      classArray.push(classOneHot);
-    });
-
-    return { images: tf.tensor4d(imageArray), bboxes: tf.tensor2d(bboxArray), classes: tf.tensor2d(classArray) };
-  }
-
-  private getClassIndex(className: string): number {
-    const classMap = { 'weapon': 0, 'firearm': 1, 'knife': 2, 'blunt_object': 3 };
-    return classMap[className as keyof typeof classMap] || 0;
-  }
-
   public async saveModel(modelName: string): Promise<boolean> {
     if (!this.transferModel) {
       console.error('No model to save');
@@ -252,7 +153,7 @@ export class WeaponDetectionTransferLearning {
       throw new Error('No model available for evaluation');
     }
 
-    const { images, bboxes, classes } = this.prepareTrainingData(testData);
+    const { images, bboxes, classes } = DataPreparation.prepareTrainingData(testData);
     const evaluation = await this.transferModel.evaluate(
       images,
       [bboxes, classes]
@@ -277,3 +178,6 @@ export class WeaponDetectionTransferLearning {
     };
   }
 }
+
+// Re-export types for backward compatibility
+export type { TrainingData, ModelMetrics };
