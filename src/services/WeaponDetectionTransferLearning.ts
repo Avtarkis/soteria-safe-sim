@@ -166,7 +166,7 @@ export class WeaponDetectionTransferLearning {
           callbacks: {
             onEpochEnd: (epoch, logs) => {
               const metrics: ModelMetrics = {
-                accuracy: logs?.val_accuracy || 0,
+                accuracy: logs?.val_class_output_accuracy || logs?.val_accuracy || 0,
                 precision: logs?.val_precision || 0,
                 recall: logs?.val_recall || 0,
                 f1Score: logs?.val_f1_score || 0,

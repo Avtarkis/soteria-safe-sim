@@ -29,7 +29,6 @@ import ThreatsMap from '@/components/ThreatsMap';
 import Dashboard from '@/components/Dashboard';
 import SettingsPage from '@/pages/SettingsPage';
 import AdminPaymentSettings from '@/pages/AdminPaymentSettings';
-import { isStoreApp } from '@/utils/platformUtils';
 
 function App() {
   return (
@@ -99,13 +98,9 @@ function App() {
         
         {/* Subscription page - only available on web */}
         <Route path="subscription" element={
-          !isStoreApp() ? (
-            <ProtectedRoute>
-              <SubscriptionPage />
-            </ProtectedRoute>
-          ) : (
-            <Navigate to="/dashboard" replace />
-          )
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
         } />
         
         {/* Support routes */}
