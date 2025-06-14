@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 export class ModelUtils {
@@ -39,7 +38,7 @@ export class ModelUtils {
     let x = baseModel.apply(input) as tf.SymbolicTensor;
 
     // Add custom layers for weapon detection
-    x = tf.layers.globalAveragePooling2d().apply(x) as tf.SymbolicTensor;
+    x = tf.layers.globalAveragePooling2d({}).apply(x) as tf.SymbolicTensor;
     x = tf.layers.dense({ units: 512, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
     x = tf.layers.dropout({ rate: 0.5 }).apply(x) as tf.SymbolicTensor;
     x = tf.layers.dense({ units: 256, activation: 'relu' }).apply(x) as tf.SymbolicTensor;
