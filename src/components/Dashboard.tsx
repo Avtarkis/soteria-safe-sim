@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -57,6 +56,7 @@ const DashboardGridCards = ({ handleRouteClick }) => (
     <Card className="bg-gradient-to-br from-[#212943] to-[#10131c] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
+          className=""
           icon={Shield}
           bg="bg-blue-900"
           border="border-blue-600"
@@ -80,6 +80,7 @@ const DashboardGridCards = ({ handleRouteClick }) => (
     <Card className="bg-gradient-to-br from-[#233a34] to-[#142919] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
+          className=""
           icon={Globe}
           bg="bg-green-900"
           border="border-green-600"
@@ -103,6 +104,7 @@ const DashboardGridCards = ({ handleRouteClick }) => (
     <Card className="bg-gradient-to-br from-[#272330] to-[#161124] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
+          className=""
           icon={Lock}
           bg="bg-purple-900"
           border="border-purple-600"
@@ -129,7 +131,7 @@ const DashboardGridCards = ({ handleRouteClick }) => (
 const QuickActionCard = ({ title, description, icon: Icon, color, onClick, buttonText }) => (
   <Card className="transition transform hover:scale-105 shadow-xl bg-gradient-to-br from-[#20293c] to-[#181b25]">
     <CardHeader className="flex items-center gap-3">
-      <IconCircle icon={Icon} bg={color} border="border-white/10" iconColor="text-white" />
+      <IconCircle className="" icon={Icon} bg={color} border="border-white/10" iconColor="text-white" />
       <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
     </CardHeader>
     <CardContent>
@@ -198,4 +200,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
