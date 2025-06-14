@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 import { TrainingData, ModelMetrics } from './weapon-detection-transfer-learning/types';

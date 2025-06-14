@@ -1,4 +1,6 @@
 
+import * as tf from '@tensorflow/tfjs';
+
 export interface TrainingData {
   image: tf.Tensor;
   annotations: {
