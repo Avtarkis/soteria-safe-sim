@@ -24,7 +24,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 
-// 3D/gradient/flat iconic SVG backgrounds for cards
+// Icon wrapper component with proper styling
 const IconCircle = ({ className, icon: Icon, bg, border, iconColor }: {
   className?: string;
   icon: LucideIcon;
@@ -34,94 +34,97 @@ const IconCircle = ({ className, icon: Icon, bg, border, iconColor }: {
 }) => (
   <div
     className={cn(
-      "w-14 h-14 flex items-center justify-center rounded-full shadow-lg border-2",
+      "w-12 h-12 flex items-center justify-center rounded-full shadow-lg border-2 flex-shrink-0",
       border,
       bg,
       className
     )}
   >
-    <Icon size={28} className={iconColor} />
+    <Icon size={24} className={iconColor} />
   </div>
 );
 
-// HEADLINE component
+// Dashboard header component
 const DashboardHeader = () => (
-  <div className="pb-2 md:pb-4">
-    <h1 className="text-3xl md:text-4xl font-extrabold text-white flex items-center gap-2">
-      <Zap className="text-blue-500 h-8 w-8 drop-shadow-md animate-pulse" /> Dashboard
+  <div className="pb-6">
+    <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-3 mb-2">
+      <Zap className="text-blue-500 h-8 w-8 animate-pulse" />
+      Dashboard
     </h1>
-    <p className="text-lg text-muted-foreground mt-2">
+    <p className="text-lg text-muted-foreground">
       Your safety command center. Get real-time insights and take action.
     </p>
   </div>
 );
 
-// DASHBOARD GRID CARDS
-const DashboardGridCards = ({ handleRouteClick }: { handleRouteClick: (destination: string) => void }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-2 mt-8">
-    <Card className="bg-gradient-to-br from-[#212943] to-[#10131c] border-transparent shadow-2xl">
-      <CardHeader className="flex items-center gap-3">
+// Main feature cards
+const MainFeatureCards = () => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="flex flex-row items-center gap-4 pb-4">
         <IconCircle
           icon={Shield}
-          bg="bg-blue-900"
-          border="border-blue-600"
-          iconColor="text-blue-400"
+          bg="bg-blue-600"
+          border="border-blue-400"
+          iconColor="text-white"
         />
-        <CardTitle className="text-lg font-bold flex flex-row gap-2 items-center text-white">
+        <CardTitle className="text-lg font-semibold text-blue-900 dark:text-blue-100">
           Emergency
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-sm mb-3">
+      <CardContent className="pt-0">
+        <p className="text-blue-700 dark:text-blue-300 text-sm mb-4">
           Access emergency features and SOS functionality.
         </p>
-        <Button size="sm" variant="secondary" asChild>
+        <Button size="sm" variant="default" asChild className="w-full">
           <Link to="/emergency">
             Emergency Mode <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>
       </CardContent>
     </Card>
-    <Card className="bg-gradient-to-br from-[#233a34] to-[#142919] border-transparent shadow-2xl">
-      <CardHeader className="flex items-center gap-3">
+
+    <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="flex flex-row items-center gap-4 pb-4">
         <IconCircle
           icon={Globe}
-          bg="bg-green-900"
-          border="border-green-600"
-          iconColor="text-green-400"
+          bg="bg-green-600"
+          border="border-green-400"
+          iconColor="text-white"
         />
-        <CardTitle className="text-lg font-bold flex flex-row gap-2 items-center text-white">
+        <CardTitle className="text-lg font-semibold text-green-900 dark:text-green-100">
           Travel
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-sm mb-3">
+      <CardContent className="pt-0">
+        <p className="text-green-700 dark:text-green-300 text-sm mb-4">
           Plan safe travel routes and review travel advisories.
         </p>
-        <Button size="sm" variant="secondary" asChild>
+        <Button size="sm" variant="default" asChild className="w-full">
           <Link to="/travel">
             Travel Safety <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>
       </CardContent>
     </Card>
-    <Card className="bg-gradient-to-br from-[#272330] to-[#161124] border-transparent shadow-2xl">
-      <CardHeader className="flex items-center gap-3">
+
+    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="flex flex-row items-center gap-4 pb-4">
         <IconCircle
           icon={Lock}
-          bg="bg-purple-900"
-          border="border-purple-600"
-          iconColor="text-purple-400"
+          bg="bg-purple-600"
+          border="border-purple-400"
+          iconColor="text-white"
         />
-        <CardTitle className="text-lg font-bold flex flex-row gap-2 items-center text-white">
-          Cyber
+        <CardTitle className="text-lg font-semibold text-purple-900 dark:text-purple-100">
+          Cyber Security
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-sm mb-3">
+      <CardContent className="pt-0">
+        <p className="text-purple-700 dark:text-purple-300 text-sm mb-4">
           Check cybersecurity threats and protect your digital assets.
         </p>
-        <Button size="sm" variant="secondary" asChild>
+        <Button size="sm" variant="default" asChild className="w-full">
           <Link to="/cyber">
             Cyber Security <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
@@ -131,21 +134,27 @@ const DashboardGridCards = ({ handleRouteClick }: { handleRouteClick: (destinati
   </div>
 );
 
-const QuickActionCard = ({ title, description, icon: Icon, color, onClick, buttonText }: {
+// Quick action card component
+const QuickActionCard = ({ title, description, icon: Icon, bgColor, onClick, buttonText }: {
   title: string;
   description: string;
   icon: LucideIcon;
-  color: string;
+  bgColor: string;
   onClick: () => void;
   buttonText: string;
 }) => (
-  <Card className="transition transform hover:scale-105 shadow-xl bg-gradient-to-br from-[#20293c] to-[#181b25]">
-    <CardHeader className="flex items-center gap-3">
-      <IconCircle icon={Icon} bg={color} border="border-white/10" iconColor="text-white" />
-      <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
+  <Card className="hover:shadow-lg transition-all duration-300 border border-border">
+    <CardHeader className="flex flex-row items-center gap-3 pb-3">
+      <IconCircle 
+        icon={Icon} 
+        bg={bgColor} 
+        border="border-gray-300 dark:border-gray-600" 
+        iconColor="text-white" 
+      />
+      <CardTitle className="text-base font-semibold">{title}</CardTitle>
     </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground text-xs mb-2">{description}</p>
+    <CardContent className="pt-0">
+      <p className="text-muted-foreground text-sm mb-3">{description}</p>
       <Button size="sm" variant="outline" className="w-full" onClick={onClick}>
         {buttonText}
       </Button>
@@ -153,57 +162,45 @@ const QuickActionCard = ({ title, description, icon: Icon, color, onClick, butto
   </Card>
 );
 
+// Quick actions grid
+const QuickActionsGrid = ({ navigate, toast }: { navigate: any, toast: any }) => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <QuickActionCard
+      title="Family Safety"
+      description="Monitor and manage your family's safety status."
+      icon={Users}
+      bgColor="bg-pink-600"
+      buttonText="Family Center"
+      onClick={() => navigate('/family')}
+    />
+    <QuickActionCard
+      title="Threat Map"
+      description="Visualize real-time threats on an interactive map."
+      icon={MapPin}
+      bgColor="bg-blue-600"
+      buttonText="View Map"
+      onClick={() => navigate('/map')}
+    />
+    <QuickActionCard
+      title="AI Protection"
+      description="Activate 24/7 AI-driven security monitoring."
+      icon={ShieldCheck}
+      bgColor="bg-yellow-600"
+      buttonText="Activate AI"
+      onClick={() => toast({ title: "AI Protection", description: "AI Security Activated!" })}
+    />
+  </div>
+);
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Route calculation example action
-  const handleRouteClick = (destination: string) => {
-    toast({
-      title: `Safe Route to ${destination}`,
-      description: `Calculating the safest route to your ${destination.toLowerCase()} location...`,
-    });
-    setTimeout(() => {
-      toast({
-        title: `Route Found`,
-        description: `Redirecting to map view for your ${destination.toLowerCase()}.`,
-      });
-      navigate(`/map?destination=${destination.toLowerCase()}`);
-    }, 1200);
-  };
-
   return (
-    <div className="space-y-8 pb-10 animate-fade-in min-h-[90vh] bg-gradient-to-br from-[#151928] to-[#080915] px-0 md:px-4">
+    <div className="space-y-8 pb-10 animate-fade-in min-h-screen bg-background p-6">
       <DashboardHeader />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-        <QuickActionCard
-          title="Family Safety"
-          description="Monitor and manage your family's safety status."
-          icon={Users}
-          color="bg-pink-800"
-          buttonText="Family Center"
-          onClick={() => navigate('/family')}
-        />
-        <QuickActionCard
-          title="Threat Map"
-          description="Visualize real-time threats on an interactive map."
-          icon={MapPin}
-          color="bg-blue-800"
-          buttonText="View Map"
-          onClick={() => navigate('/map')}
-        />
-        <QuickActionCard
-          title="AI Protection"
-          description="Activate 24/7 AI-driven security monitoring."
-          icon={ShieldCheck}
-          color="bg-yellow-700"
-          buttonText="Activate AI"
-          onClick={() => toast({ title: "AI Protection", description: "AI Security Activated!" })}
-        />
-      </div>
-
-      <DashboardGridCards handleRouteClick={handleRouteClick} />
+      <MainFeatureCards />
+      <QuickActionsGrid navigate={navigate} toast={toast} />
     </div>
   );
 };
