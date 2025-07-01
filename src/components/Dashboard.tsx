@@ -20,13 +20,14 @@ import {
   ShieldCheck,
   User,
   SearchCheck,
-  Route as RouteIcon
+  Route as RouteIcon,
+  LucideIcon
 } from 'lucide-react';
 
 // 3D/gradient/flat iconic SVG backgrounds for cards
 const IconCircle = ({ className, icon: Icon, bg, border, iconColor }: {
   className?: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   bg: string;
   border: string;
   iconColor: string;
@@ -133,7 +134,7 @@ const DashboardGridCards = ({ handleRouteClick }: { handleRouteClick: (destinati
 const QuickActionCard = ({ title, description, icon: Icon, color, onClick, buttonText }: {
   title: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   color: string;
   onClick: () => void;
   buttonText: string;
