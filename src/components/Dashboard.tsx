@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/CardWrapper';
@@ -5,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import useAIMonitoring from '@/hooks/use-ai-monitoring';
 import {
   MapPin,
   AlertTriangle,
@@ -22,10 +22,15 @@ import {
   SearchCheck,
   Route as RouteIcon
 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // 3D/gradient/flat iconic SVG backgrounds for cards
-const IconCircle = ({ className, icon: Icon, bg, border, iconColor }) => (
+const IconCircle = ({ className, icon: Icon, bg, border, iconColor }: {
+  className?: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  bg: string;
+  border: string;
+  iconColor: string;
+}) => (
   <div
     className={cn(
       "w-14 h-14 flex items-center justify-center rounded-full shadow-lg border-2",
@@ -51,12 +56,11 @@ const DashboardHeader = () => (
 );
 
 // DASHBOARD GRID CARDS
-const DashboardGridCards = ({ handleRouteClick }) => (
+const DashboardGridCards = ({ handleRouteClick }: { handleRouteClick: (destination: string) => void }) => (
   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-2 mt-8">
     <Card className="bg-gradient-to-br from-[#212943] to-[#10131c] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
-          className=""
           icon={Shield}
           bg="bg-blue-900"
           border="border-blue-600"
@@ -80,7 +84,6 @@ const DashboardGridCards = ({ handleRouteClick }) => (
     <Card className="bg-gradient-to-br from-[#233a34] to-[#142919] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
-          className=""
           icon={Globe}
           bg="bg-green-900"
           border="border-green-600"
@@ -104,7 +107,6 @@ const DashboardGridCards = ({ handleRouteClick }) => (
     <Card className="bg-gradient-to-br from-[#272330] to-[#161124] border-transparent shadow-2xl">
       <CardHeader className="flex items-center gap-3">
         <IconCircle
-          className=""
           icon={Lock}
           bg="bg-purple-900"
           border="border-purple-600"
@@ -128,10 +130,17 @@ const DashboardGridCards = ({ handleRouteClick }) => (
   </div>
 );
 
-const QuickActionCard = ({ title, description, icon: Icon, color, onClick, buttonText }) => (
+const QuickActionCard = ({ title, description, icon: Icon, color, onClick, buttonText }: {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  color: string;
+  onClick: () => void;
+  buttonText: string;
+}) => (
   <Card className="transition transform hover:scale-105 shadow-xl bg-gradient-to-br from-[#20293c] to-[#181b25]">
     <CardHeader className="flex items-center gap-3">
-      <IconCircle className="" icon={Icon} bg={color} border="border-white/10" iconColor="text-white" />
+      <IconCircle icon={Icon} bg={color} border="border-white/10" iconColor="text-white" />
       <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
     </CardHeader>
     <CardContent>
@@ -146,7 +155,6 @@ const QuickActionCard = ({ title, description, icon: Icon, color, onClick, butto
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { detections } = useAIMonitoring();
 
   // Route calculation example action
   const handleRouteClick = (destination: string) => {
@@ -170,7 +178,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         <QuickActionCard
           title="Family Safety"
-          description="Monitor and manage your family’s safety status."
+          description="Monitor and manage your family's safety status."
           icon={Users}
           color="bg-pink-800"
           buttonText="Family Center"

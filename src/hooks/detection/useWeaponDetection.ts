@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { DetectionMode, DetectionState, DetectionAlert } from '@/types/detection';
-import { v4 as uuidv4 } from 'uuid';
+
+// Generate a simple UUID function instead of importing the library
+const generateId = () => {
+  return 'xxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 // Sample detection patterns for testing
 const detectionPatterns = {
@@ -322,7 +330,7 @@ export const useWeaponDetection = () => {
   const triggerTestAlert = useCallback(() => {
     // Create a test alert
     const testAlert: DetectionAlert = {
-      id: uuidv4(),
+      id: generateId(),
       title: 'Test Alert',
       description: 'This is a test of the weapon detection system.',
       level: detectionState.sensitivityLevel as 1 | 2 | 3,

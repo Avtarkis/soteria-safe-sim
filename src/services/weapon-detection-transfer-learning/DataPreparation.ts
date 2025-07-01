@@ -3,36 +3,45 @@ import * as tf from '@tensorflow/tfjs';
 import { TrainingData } from './types';
 
 export class DataPreparation {
-  public static prepareTrainingData(data: TrainingData[]) {
+  public static prepareTrainingData(trainingData: TrainingData[]) {
     const imageArray: number[][][][] = [];
     const bboxArray: number[][] = [];
     const classArray: number[][] = [];
 
-    data.forEach(sample => {
-      // Convert tensor to array (assuming normalized)
-      const imageData = sample.image.arraySync() as number[][][];
+    for (const data of trainingData) {
+      // Convert tensor to array for processing
+      const imageData = data.image.arraySync() as number[][][];
       imageArray.push(imageData);
+      
+      // Process annotations
+      for (const annotation of data.annotations) {
+        bboxArray.push(annotation.bbox);
+        
+        // Convert class to one-hot encoding
+        const classOneHot = [0, 0, 0, 0];
+        switch (annotation.class) {
+          case 'weapon':
+            classOneHot[0] = 1;
+            break;
+          case 'firearm':
+            classOneHot[1] = 1;
+            break;
+          case 'knife':
+            classOneHot[2] = 1;
+            break;
+          case 'blunt_object':
+            classOneHot[3] = 1;
+            break;
+        }
+        classArray.push(classOneHot);
+      }
+    }
 
-      // Use first annotation (could be extended for multiple objects)
-      const annotation = sample.annotations[0];
-      bboxArray.push(annotation.bbox);
+    // Convert to tensors
+    const images = tf.tensor4d(imageArray);
+    const bboxes = tf.tensor2d(bboxArray);
+    const classes = tf.tensor2d(classArray);
 
-      // One-hot encode class
-      const classOneHot = [0, 0, 0, 0];
-      const classIndex = this.getClassIndex(annotation.class);
-      classOneHot[classIndex] = 1;
-      classArray.push(classOneHot);
-    });
-
-    return { 
-      images: tf.tensor4d(imageArray), 
-      bboxes: tf.tensor2d(bboxArray), 
-      classes: tf.tensor2d(classArray) 
-    };
-  }
-
-  private static getClassIndex(className: string): number {
-    const classMap = { 'weapon': 0, 'firearm': 1, 'knife': 2, 'blunt_object': 3 };
-    return classMap[className as keyof typeof classMap] || 0;
+    return { images, bboxes, classes };
   }
 }
